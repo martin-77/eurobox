@@ -8,17 +8,17 @@ Kernziele:
 
 1. starre, ausreichend tiefe Tragstruktur statt langer 8-mm-Flacharme;
 2. echte, montierbare Rohrklemmen um Ø12.42 mm;
-3. eine Klemmplatte, die geführt ist und über reale Durchgangsbohrungen von zwei Spindeln aktiv vor- **und** zurückbewegt wird;
-4. getrennte Spindel und Handknopf;
-5. ein Testgewinde, das grob genug zum Drucken ist, aber dieselbe Kinematik wie die spätere Metall-/M4-Version verwendet;
-6. ein separater Stabilisator für die diagonale EQP-Gepäckträgerstrebe, damit der Halter beim Montieren nicht nach unten wegklappt;
+3. integrierter Anti-Rotationsanschlag an der Gepäckträgerkante statt separatem V-Sattel an einer diagonalen Strebe;
+4. eine Klemmplatte, die geführt ist und über reale Durchgangsbohrungen von zwei Spindeln aktiv vor- und zurückbewegt wird;
+5. getrennte Spindel und Handknopf;
+6. ein Testgewinde, das grob genug zum Drucken ist, aber dieselbe Kinematik wie die spätere Metall-/M4-Version verwendet;
 7. jede kritische Geometrie wird automatisiert in GitHub Actions geprüft.
 
-## 1. Seitenmodul statt einteiliger 600-mm-Brücke
+## 1. Seitenmodul
 
-Ein v50-Seitenmodul sitzt auf **einem** der beiden längs verlaufenden Gepäckträgerrohre. Es besitzt zwei Rohrklemmen im Abstand X = ±90 mm und reicht von dort quer nach außen zur Boxkante.
+Ein v50-Seitenmodul sitzt auf einem der beiden längs verlaufenden Gepäckträgerrohre. Es besitzt zwei Rohrklemmen im Abstand X = ±90 mm und reicht von dort quer nach außen zur Boxkante.
 
-Das komplette Fahrrad verwendet zwei spiegelbildlich montierte Module. So bleiben die Teile auf einem üblichen Druckbett druckbar und links/rechts geometrisch identisch bzw. spiegelbar.
+Das komplette Fahrrad verwendet zwei spiegelbildlich montierte Module. Die beiden Module tragen die 600-mm-Box gemeinsam.
 
 ## 2. Tragstruktur
 
@@ -30,16 +30,17 @@ v50 verwendet pro Seitenmodul zwei Doppelsteg-I-Träger:
 - 30 mm Gesamtbauhöhe
 - 4.5-mm Ober- und Unterflansch
 - zwei 3.2-mm Stege
+- Querschnittsfläche ca. 422.4 mm²
+- Flächenträgheitsmoment Ix ca. 52,243 mm⁴
 
-Vorteile:
+Die Auflageoberseite bleibt auf Z = 39.54 mm. Die volle Tiefe beginnt erst außerhalb des Rohr-/Klemmbereichs. Übergänge an Rohrklemme und Außenrahmen werden mit großen Radien/Gussets verstärkt; keine tragenden Aussparungen direkt an der Klemmenwurzel.
 
-- hohe vertikale Biegesteifigkeit durch große Bauhöhe;
-- offene Bereiche statt Vollmaterial;
-- bessere Torsionssteifigkeit als ein einzelner Mittelsteg;
-- kurze Brückenweiten beim Drucken;
-- Übergänge an Rohrklemme und Außenrahmen werden breit verrippt statt durch Aussparungen geschwächt.
+Analytischer Sanity-Check bei 220 mm angenommener freier Biegelänge, vier Armen, E(PETG)=1500 MPa:
 
-Die Auflageoberseite bleibt auf Z = 39.54 mm. Die volle Tiefe beginnt erst außerhalb der Rohrklemme, damit das reale Ø12.42-mm-Rohr und die Montagebewegung frei bleiben.
+- 16 kg Gesamtlast: ca. 2.48 MPa Biegespannung und ca. 1.78 mm Balken-Enddurchbiegung;
+- 3× Dynamikfall: ca. 7.44 MPa und ca. 5.33 mm.
+
+Das ist kein FEA-Nachweis, aber die Geometrie liegt damit nicht mehr in der Größenordnung der v45-Flacharme.
 
 ## 3. Rohrklemme
 
@@ -49,36 +50,62 @@ v50 erhält eine neu aufgebaute zweiteilige Klemme:
 - separate untere Klemmhälfte;
 - reale Rohrkontur Ø12.42 mm wird als Prüfgeometrie modelliert;
 - starre obere Hälfte erhält bewusst etwas Freiraum;
-- die untere PETG-Hälfte übernimmt eine kleine definierte Vorspannung.
+- die untere PETG-Hälfte übernimmt eine kleine definierte Vorspannung;
+- untere Hälfte formschlüssig zwischen seitlichen Ohren geführt und mit gedruckten Pins gesichert.
 
-Die untere Hälfte wird nicht über einen fragilen Rastarm gehalten. Stattdessen wird sie formschlüssig zwischen den seitlichen Ohren der Base geführt und mit gedruckten Pins gesichert. Pin, Loch und Clip werden als getrennte Teile modelliert und in der Assembly geprüft.
+Pin, Loch und Clip werden als getrennte Teile modelliert und in der Assembly geprüft.
 
-## 4. Boxauflage und Rand
+## 4. Integrierter Anti-Rotationsanschlag
 
-Die Eurobox wird nicht nur seitlich geklemmt, sondern auf einer steifen Außenrahmen-/Auflagezone abgestützt. Die harte Auflagehöhe bleibt Z = 39.54 mm.
+Der separate V-Sattel für die diagonale Gepäckträgerstrebe ist vollständig verworfen.
 
-Für den unteren 16.45×16.45-mm-Rand wird im Validierungsskript ein konservatives Prüfvolumen erzeugt. Die Klemmplatte darf dieses Volumen im geschlossenen Zustand nur an den vorgesehenen Kontaktflächen tangieren und muss nach dem Öffnen vollständig freigeben.
+Stattdessen wird die Base an jeder der beiden Klemmenstationen auf der zum Fahrrad zeigenden Seite nach unten gezogen. Es entsteht ein massiver, nach unten gezogener Innenanschlag unmittelbar an der Gepäckträgerkante/äußeren Längsstrebe.
 
-## 5. Klemmplatte
+Konstruktionsprinzip:
 
-Die Platte ist ein massiver Hauptkörper mit echten Bohrungen bei X = ±42 mm / Z = 31 mm.
+- oberer Sattel trägt auf dem Ø12.42-mm-Rohr;
+- Rack-Lower klemmt das Rohr von unten;
+- zusätzlich liegt ein breiter Innenanschlag seitlich am Gepäckträgerrand an;
+- versucht der lange Außenarm mit der Box nach unten zu rotieren, wird das Kippmoment nicht nur über Reibung der Rundrohrklemme aufgenommen: der Innenanschlag geht auf Druck gegen den Gepäckträgerrand;
+- der Anschlag ist integraler Bestandteil der massiven Klemmenwurzel und kein dünner Zusatzsteg.
+
+Erste CAD-Zielwerte pro Klemmenstation:
+
+- Anschlagbreite in X: 24 mm;
+- Wandstärke nach innen: 6 mm;
+- Kontaktbereich umfasst Z=0 des Gepäckträgerrohres und reicht ungefähr von Z=+5 bis Z=-8 mm;
+- nominaler Montagefreiraum zur Rohr-/Randtangente: 0.15–0.25 mm;
+- große Innenradien am Übergang zur Klemmenwurzel, Ziel ≥4 mm;
+- kein Bauteil unterhalb/in Richtung Schutzblech außerhalb des lokalen Rohrklemmenbereichs.
+
+Die endgültige Kontaktposition wird im CAD gegen das reale Ø12.42-Prüfrohr und die gemessene Trägerbreite geprüft. Dieser Anschlag ersetzt ausdrücklich den früher vorgesehenen V-Sattel und alle Kabelbinder-/Diagonalstrebenlösungen.
+
+## 5. Boxauflage und Rand
+
+Die Eurobox wird auf einer steifen Außenrahmen-/Auflagezone abgestützt. Die harte Auflagehöhe bleibt Z = 39.54 mm.
+
+Für den unteren 16.45×16.45-mm-Rand wird im Validierungsskript ein konservatives Prüfvolumen erzeugt. Die Klemmplatte darf dieses Volumen nur an vorgesehenen Kontaktflächen berühren und muss es nach dem Öffnen vollständig freigeben.
+
+## 6. Klemmplatte
+
+Die Platte ist ein massiver Hauptkörper mit echten Durchgangsbohrungen bei X = ±42 mm / Z = 31 mm.
 
 Nicht mehr verwendet werden:
 
 - offene T-Schlitze;
 - große Montageschlitze durch tragende Bereiche;
-- nur angedeutete Blindtaschen ohne echte axiale Verbindung;
+- Blindtaschen ohne axiale Verbindung;
 - Gewinde direkt in der Klemmplatte.
 
-Die Platte läuft ausschließlich in externen Führungsleisten der Base. Kleine seitliche Führungsnasen sind **zusätzliches Material**, keine Aussparungen.
+Die Platte läuft in externen Führungen der Base. Führungsnasen sind zusätzliches Material und schwächen den Hauptkörper nicht.
 
-Öffnungsweg: Ziel 4.5 mm, davon mindestens 4.0 mm vollständig geprüft.
+Öffnungsweg: 4.5 mm Ziel, mindestens 4.0 mm zwingend kollisionsfrei.
 
-## 6. Richtige Spindelkinematik
+## 7. Spindelkinematik
 
 Die Spindel ist normal rechtsgängig.
 
-Ablauf beim Zudrehen:
+Beim Zudrehen:
 
 1. Knob dreht die Spindel;
 2. feststehende Lead-Nut zwingt die Spindel axial nach innen;
@@ -89,61 +116,40 @@ Beim Aufdrehen:
 
 1. die Spindel wandert nach außen;
 2. ein axial gefangener Retainer hinter der Platte zieht die Platte mit;
-3. die Platte öffnet aktiv – sie muss nicht von Hand herausgezogen werden.
+3. die Platte öffnet aktiv.
 
-Der innere Retainer sitzt in einer versenkten Tasche und darf die Kontaktfläche zur Box nicht überragen.
+Der innere Retainer sitzt in einer Senkung und darf die Boxkontaktfläche nicht überragen.
 
-## 7. Austauschbare Lead-Nut
+## 8. Austauschbare Lead-Nut
 
-Das Testgewinde wird **nicht** zum festen Bestandteil der Base gemacht.
+Das Testgewinde wird nicht zum festen Bestandteil der Base gemacht.
 
-Für den Drucktest:
+Drucktest:
 
 - RH Ø8×2 mm;
 - separate Lead-Nut;
-- Lead-Nut sitzt formschlüssig in einem von oben zugänglichen Käfig der Base;
-- ein separater Deckel hält die Nut im Käfig;
-- axiale Schraubkräfte werden von den Käfigwänden aufgenommen, nicht vom Deckel.
+- Lead-Nut formschlüssig in einem zugänglichen Käfig der Base;
+- Deckel hält die Nut nur im Käfig; Axialkräfte laufen in die Käfigwände.
 
-Später kann die Lead-Nut durch einen äußerlich identischen Einsatz für M4/Heat-Set/Metallgewinde ersetzt werden. Dadurch bleiben Base, Plattenführung und Kinematik erhalten.
+Später kann derselbe Bauraum einen M4-/Heat-Set-/Metallgewinde-Einsatz aufnehmen. Base, Plattenführung und Kinematik bleiben unverändert.
 
-## 8. Separate Spindel und separater Knob
+## 9. Separate Spindel und separater Knob
 
-Die frühere integrierte `screw_with_knob`-Geometrie ist verworfen.
+Die integrierte `screw_with_knob`-Geometrie ist verworfen.
 
 v50:
 
 - Spindel separat;
 - Knob separat;
-- Drehmoment über AF10-Sechskant;
-- axiale Sicherung über einen separaten Retainer-Abschnitt und eine separate Kappe/Mutter;
-- die Retainer-Verschraubung trägt nicht das Bedienmoment.
+- Drehmomentübertragung formschlüssig über AF10-Sechskant;
+- axiale Sicherung über separaten Retainer und separate Mutter/Kappe;
+- Sicherung überträgt nicht das Hauptdrehmoment.
 
-Dadurch lässt sich die Spindel zuerst durch Base/Lead-Nut montieren und der Knob anschließend außen anbringen.
+Dadurch wird zuerst die Spindel durch Base/Lead-Nut montiert und der Knob anschließend außen aufgesetzt.
 
-## 9. Anti-Flop-Stabilisator am THRON² EQP
+## 10. Lastgrenze
 
-Die Fotos/Herstellerunterlagen zeigen die typischen seitlichen/diagonalen EQP-Trägerstreben Richtung Hinterachse. Deren exakte Rohrabmessung und Winkel liegen aber nicht als verlässliche Messung vor.
-
-v50 verwendet deshalb einen justierbaren Stabilisator:
-
-- breite V-Auflage für unterschiedliche Rohrdurchmesser;
-- zwei Kabelbinderkanäle zur dauerhaften Befestigung an der diagonalen Strebe;
-- höhenverstellbare Stützschraube;
-- breite Kontaktfläche zur Unterseite des v50-Arms.
-
-Der Stabilisator trägt nicht die reguläre Boxlast. Seine Aufgabe ist:
-
-- Halter beim Ansetzen/Montieren abstützen;
-- ungewolltes Abklappen nach unten verhindern;
-- Spiel aus der Montage nehmen.
-
-## 10. Was v50 ausdrücklich nicht behauptet
-
-- Keine aus Fotos erfundenen Maße der diagonalen Focus-Streben.
-- Keine Freigabe oberhalb der zulässigen FOCUS-Gepäckträgerlast.
-- Keine FEA, solange wir nur analytische Querschnitts- und Kollisionschecks durchführen.
-- Der Ø8×2-Druckmechanismus ist ein Prototyp-Lead-Screw-System, kein als M4 verkleidetes Ersatzgewinde.
+Das Zielrad ist das FOCUS THRON² 6.8 EQP Modelljahr 2023. FOCUS nennt für dieses Modell einen Massload-3-leg-Gepäckträger mit 16 kg maximaler Zuladung. Diese 16 kg bleiben die harte obere Zielgröße des originalen Gepäckträgers; der 3×-Rechenfall ist nur ein Sanity-Check des gedruckten Adapters und erhöht die Herstellerfreigabe nicht.
 
 ## 11. Dateistruktur
 
@@ -160,8 +166,6 @@ Der GitHub-Build soll erzeugen:
 - `eurobox_v50_plate_retainer_clip.FCStd/STEP/STL`
 - `eurobox_v50_pin.FCStd/STEP/STL`
 - `eurobox_v50_pin_clip.FCStd/STEP/STL`
-- `eurobox_v50_stay_saddle.FCStd/STEP/STL`
-- `eurobox_v50_stay_support_screw.FCStd/STEP/STL`
 - Assembly-FCStd
 - JSON-Validierungsberichte
 - vollständiges ZIP-Artefakt.
