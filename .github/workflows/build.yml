@@ -79,7 +79,7 @@ jobs:
           fi
 
       - name: Diagnose base topology after CAD failure
-        if: steps.cadbuild.outcome == 'failure'
+        if: failure()
         run: |
           set -o pipefail
           "$FREECADCMD" scripts/diagnose_v50_base.py | tee base_debug.log || true
