@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "scripts/build_v50.py"
+      - "scripts/apply_v50_fixups.py"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
       - "docs/V50_**"
@@ -50,6 +51,12 @@ jobs:
           test -n "$FREECADCMD"
           echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
           "$FREECADCMD" -c 'import FreeCAD,Part; print(FreeCAD.Version()); s=Part.makeBox(1,1,1); assert s.isValid()'
+
+      - name: Apply v50 source fixups
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_v50_fixups.py
+          python3 -m py_compile scripts/build_v50.py
 
       - name: Build and validate v50 CAD
         id: cadbuild
