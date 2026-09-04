@@ -10,6 +10,7 @@ on:
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
       - "scripts/preview_v50.scad"
+      - "scripts/final_print_meshes.scad"
       - "docs/V50_**"
       - "docs/MEASUREMENTS.md"
       - "docs/FOCUS_THRON2_EQP_2023.md"
@@ -92,7 +93,7 @@ jobs:
           set -o pipefail
           "$FREECADCMD" scripts/diagnose_v50_base.py | tee base_debug.log || true
 
-      - name: Upload pre-mesh validation on failure
+      - name: Upload pre-mesh validation
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -105,6 +106,17 @@ jobs:
             base_debug.log
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Generate final printable spindle mesh
+        if: steps.cadbuild.outcome == 'success'
+        run: |
+          set -euo pipefail
+          cp build_v50/eurobox_v50_lead_screw_print.stl build_v50/eurobox_v50_lead_screw_BREP_export_reference.stl
+          openscad -D 'part="spindle"' \
+            -o build_v50/eurobox_v50_lead_screw_print.stl \
+            scripts/final_print_meshes.scad
+          test -s build_v50/eurobox_v50_lead_screw_print.stl
+          cp scripts/final_print_meshes.scad build_v50/final_print_meshes.scad
 
       - name: Validate STL meshes
         if: steps.cadbuild.outcome == 'success'
@@ -142,10 +154,17 @@ jobs:
           test -s build_v50/eurobox_v50_clamp_plate.stl
           test -s build_v50/eurobox_v50_rack_lower.step
           test -s build_v50/eurobox_v50_rack_lower.stl
+          test -s build_v50/eurobox_v50_lead_screw_print.step
           test -s build_v50/eurobox_v50_lead_screw_print.stl
+          test -s build_v50/eurobox_v50_knob.stl
           test -s build_v50/PREVIEW_v50.png
           test -s build_v50/VALIDATION_v50_source.json
           test -s build_v50/MESH_VALIDATION.json
+          python3 - <<'PY'
+          import json
+          m=json.load(open('build_v50/MESH_VALIDATION.json'))
+          assert not m['failed'], m['failed']
+          PY
 
       - name: Package output
         if: steps.cadbuild.outcome == 'success'
