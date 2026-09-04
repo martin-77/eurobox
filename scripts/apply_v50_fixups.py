@@ -46,7 +46,20 @@ def export_part'''
 s, n = pattern.subn(replacement, s, count=1)
 assert n == 1, 'import_scad_shape block not found exactly once'
 
-# 2) The upper guide bar had a deliberate 0.4 mm guide clearance in X but
+# 2) Use the already measured/proven rigid saddle clearance: actual tube
+# Ø12.42, saddle Ø12.52 => 0.05 mm radial clearance.
+s = s.replace('UPPER_SADDLE_R = 6.31', 'UPPER_SADDLE_R = 6.26', 1)
+
+# 3) The previous integrated stop attempted to infer an anti-rotation datum
+# from the same circular rack tube. That cannot work: rotation around a circle
+# preserves its radial relationship. Remove that stop from the load-bearing
+# station. Anti-flop is a separate support against a diagonal Massload stay.
+old = "    s = fuse_all([bridge, cheek_l, cheek_r, stop, transition])"
+new = "    s = fuse_all([bridge, cheek_l, cheek_r, transition])"
+assert old in s, 'upper station stop fuse source not found'
+s = s.replace(old, new, 1)
+
+# 4) The upper guide bar had a deliberate 0.4 mm guide clearance in X but
 # that also disconnected the bar from both side towers. Extend the bar over
 # the towers; Z clearance above the moving plate remains unchanged.
 old = "box(-70.0, BOX_EDGE_Y, PLATE_Z1+GUIDE_Z_CLEAR, 140.0, 14.0, 3.4),"
@@ -54,36 +67,60 @@ new = "box(-78.0, BOX_EDGE_Y, PLATE_Z1+GUIDE_Z_CLEAR, 156.0, 14.0, 3.4),"
 assert old in s, 'upper guide bar source not found'
 s = s.replace(old, new, 1)
 
-# 3) The Ø11 spindle thrust shoulder travels with the plate. The original
-# Ø8.9 passage only cleared the threaded shank and clipped the shoulder at
-# 4.0/4.5 mm opening. Give the shoulder its own short clearance tunnel up to
-# just before the fixed lead-nut cartridge, then keep the smaller shank bore.
+# 5) The Ø11 spindle thrust shoulder travels with the plate. Give it a short
+# clearance tunnel up to just before the fixed lead-nut cartridge, then keep
+# the smaller shank bore through the fixed outer cage.
 old = "    BASE = BASE.cut(cyl_y(4.45, CAGE_Y1-(BOX_EDGE_Y+8.0)+1.0, sx, BOX_EDGE_Y+8.0, SPINDLE_Z))"
 new = """    BASE = BASE.cut(cyl_y(SHOULDER_D/2 + 0.30, (NUT_Y0-0.50)-(BOX_EDGE_Y+7.50), sx, BOX_EDGE_Y+7.50, SPINDLE_Z))
     BASE = BASE.cut(cyl_y(4.45, CAGE_Y1-(NUT_Y0-0.50)+1.0, sx, NUT_Y0-0.50, SPINDLE_Z))"""
 assert old in s, 'spindle passage source not found'
 s = s.replace(old, new, 1)
 
-# 4) A stop referenced only to the same circular tube cannot be proven as an
-# anti-rotation stop: rotation about that tube preserves all radial distances.
-# Keep the integrated inboard drop geometry requested for the real rack edge,
-# but report only the measured tube clearance until a non-coaxial rack-edge
-# datum is measured. Do not manufacture a fake hard pass from a photo.
+# 6) Add a genuine separate anti-flop calibration part for the diagonal
+# Massload 3-leg stay. Stay diameter and angle are not measured yet, so this
+# is deliberately a V saddle with two zip-tie windows rather than a claimed
+# form-fit clamp.
+old = "PLATE_CLIP = make_c_clip(5.4, 2.45, 1.4, 3.8)\n\nPARTS = {"
+new = '''PLATE_CLIP = make_c_clip(5.4, 2.45, 1.4, 3.8)
+
+# Universal diagonal-stay anti-flop support (calibration part).
+# Body X=36, Y=20, Z=12. An 8 mm-deep 90° V groove runs along X.
+STAY_SUPPORT = box(-18.0, -10.0, 0.0, 36.0, 20.0, 12.0)
+vpts = [
+    App.Vector(-18.5, -8.5, 12.5),
+    App.Vector(-18.5,  0.0,  4.0),
+    App.Vector(-18.5,  8.5, 12.5),
+    App.Vector(-18.5, -8.5, 12.5),
+]
+vgroove = Part.Face(Part.makePolygon(vpts)).extrude(App.Vector(37.0, 0.0, 0.0))
+STAY_SUPPORT = STAY_SUPPORT.cut(vgroove)
+# Two zip-tie windows, preserving material around and between them.
+for xx in (-10.0, 10.0):
+    STAY_SUPPORT = STAY_SUPPORT.cut(box(xx-2.0, -5.0, -0.2, 4.0, 10.0, 5.2))
+STAY_SUPPORT = STAY_SUPPORT.removeSplitter()
+
+PARTS = {'''
+assert old in s, 'plate clip / PARTS anchor not found'
+s = s.replace(old, new, 1)
+
+old = "    'eurobox_v50_plate_retainer_clip': PLATE_CLIP,\n}"
+new = "    'eurobox_v50_plate_retainer_clip': PLATE_CLIP,\n    'eurobox_v50_rack_stay_support_universal': STAY_SUPPORT,\n}"
+assert old in s, 'PARTS tail not found'
+s = s.replace(old, new, 1)
+
+# 7) Replace the invalid same-tube anti-rotation test with an honest state
+# report for the separate diagonal-stay support.
 pattern = re.compile(r"# Anti-rotation contact: nominally free;.*?\n\nRIM =", re.S)
-replacement = '''# Integrated inboard drop-stop.  It is intentionally NOT validated against
-# the same round tube as an anti-rotation contact: that would be a meaningless
-# rotationally symmetric test.  Exact contact with the non-coaxial rack edge
-# remains a physical-fit datum; all geometry relative to the measured tube is
-# still checked here.
+replacement = '''# Anti-flop support is referenced to a diagonal Massload rack stay, not to
+# the coaxial upper tube. Exact stay contact stays pending until stay Ø/angle
+# are measured. The printable calibration support itself is fully exported.
 V['anti_rotation'] = {
-    'mode': 'integrated_inboard_drop_stop',
-    'tube_inner_tangent_y_mm': round(-RACK_R, 3),
-    'stop_face_y_mm': STOP_FACE_Y,
-    'nominal_clearance_from_round_tube_mm': round((-RACK_R) - STOP_FACE_Y, 3),
-    'stop_z_min_mm': STOP_Z0,
-    'stop_z_max_mm': STOP_Z1,
-    'stop_x_width_mm': STOP_X_W,
-    'rack_edge_contact_validation': 'pending non-coaxial rack-edge datum / physical fit; not inferred from photo'
+    'mode': 'separate_diagonal_stay_V_support',
+    'part': 'eurobox_v50_rack_stay_support_universal',
+    'groove_depth_mm': 8.0,
+    'stay_diameter_mm': None,
+    'stay_angle_deg': None,
+    'contact_validation': 'pending measured diagonal-stay diameter and angle / physical fit'
 }
 
 RIM ='''
@@ -91,6 +128,42 @@ s, n = pattern.subn(replacement, s, count=1)
 assert n == 1, 'anti-rotation validation block not found'
 
 s = s.replace("if V['anti_rotation'][0]['tube_common_mm3'] > 1e-4:\n    failures.append('Anti-rotation stop collides at nominal position')\nif max(x['tube_common_mm3'] for x in V['anti_rotation'][1:]) < 0.1:\n    failures.append('Anti-rotation stop does not contact rack tube within 5 degrees')\n", "")
+
+# 8) Add an actual articulated lower-jaw sweep test around the v50 pivot.
+# This is intentionally a hard check rather than assuming the closed-position
+# fit proves that the jaw can open.
+anchor = "V['rack_pin_checks'] = []\n"
+sweep = '''V['rack_lower_sweep'] = []
+for deg in [0, -15, -30, -45, -60, -75]:
+    lo = LOWER.copy()
+    lo.rotate(App.Vector(0, PIN_Y, PIN_Z), App.Vector(1,0,0), deg)
+    lo.translate(App.Vector(CLAMP_X[0], 0, 0))
+    V['rack_lower_sweep'].append({
+        'rotation_deg': deg,
+        'base_common_mm3': round(BASE.common(lo).Volume, 6),
+        'tube_common_mm3': round(TUBE.common(lo).Volume, 6),
+    })
+
+'''
+assert anchor in s, 'rack pin validation anchor not found'
+s = s.replace(anchor, sweep + anchor, 1)
+
+fail_anchor = "for c in V['rack_pin_checks']:\n"
+fail_insert = '''for c in V['rack_lower_sweep']:
+    if c['base_common_mm3'] > 1e-4:
+        failures.append('Rack lower sweep collides with base at rotation='+str(c['rotation_deg']))
+# By -45° the real Ø12.42 tube should be released, allowing a tiny numeric tolerance.
+if next(c for c in V['rack_lower_sweep'] if c['rotation_deg'] == -45)['tube_common_mm3'] > 0.05:
+    failures.append('Rack lower has not released the Ø12.42 tube by -45 degrees')
+'''
+assert fail_anchor in s, 'rack pin failure anchor not found'
+s = s.replace(fail_anchor, fail_insert + fail_anchor, 1)
+
+# 9) Documentation emitted with the artifact must match the actual design.
+s = s.replace(
+    "f.write('No diagonal-stay V saddle. Anti-rotation is integrated into both rack-clamp roots.\\n')",
+    "f.write('Includes a separate universal V-saddle anti-flop support for the diagonal Massload stay; exact stay fit awaits measurement.\\n')"
+)
 
 assert s != orig
 p.write_text(s, encoding='utf-8')
