@@ -9,25 +9,35 @@ OUT = os.path.join(ROOT, 'docs', 'renders')
 os.makedirs(OUT, exist_ok=True)
 
 # Deterministic FreeCAD screenshots for GitHub README previews.
-# These are deliberately generated from the FCStd files produced by the build,
-# not from a second renderer or from STL meshes.
+# Generated directly from the FCStd files produced by the build.
 
 def set_view(view):
-    view.setAnimationEnabled(False)
-    view.setCameraType('Perspective')
+    try:
+        view.setAnimationEnabled(False)
+    except Exception:
+        pass
+    try:
+        view.setCameraType('Perspective')
+    except Exception:
+        pass
     view.viewAxonometric()
     view.fitAll(0.80)
 
 
-def style_doc(doc, assembly=False):
+def style_doc(doc):
     for obj in doc.Objects:
         if not hasattr(obj, 'ViewObject') or not hasattr(obj, 'Shape'):
             continue
         n = obj.Name.lower()
-        obj.ViewObject.DisplayMode = 'Flat Lines'
-        obj.ViewObject.LineWidth = 1.0
+        try:
+            obj.ViewObject.DisplayMode = 'Flat Lines'
+        except Exception:
+            pass
+        try:
+            obj.ViewObject.LineWidth = 1.0
+        except Exception:
+            pass
         if n.startswith('ref_'):
-            # References stay visible in the assembly but muted.
             obj.ViewObject.ShapeColor = (0.72, 0.72, 0.72)
             obj.ViewObject.LineColor = (0.45, 0.45, 0.45)
             obj.ViewObject.Transparency = 65
@@ -43,26 +53,47 @@ def style_doc(doc, assembly=False):
             obj.ViewObject.ShapeColor = (0.48, 0.52, 0.56)
 
 
-def render_fcstd(path, out_name, assembly=False, width=1000, height=760):
+def gui_doc_for(doc):
+    # FreeCAD 1.1.x AppImage does not expose FreeCADGui.activeDocument().
+    # Resolve the GUI document explicitly from the application document name.
+    try:
+        gdoc = Gui.getDocument(doc.Name)
+    except Exception:
+        gdoc = None
+    if gdoc is None:
+        Gui.activateWorkbench('Part')
+        gdoc = Gui.getDocument(doc.Name)
+    return gdoc
+
+
+def render_fcstd(path, out_name, width=1000, height=760):
     doc = App.openDocument(path)
-    Gui.activeDocument().activeView().setAnimationEnabled(False)
-    style_doc(doc, assembly=assembly)
-    view = Gui.activeDocument().activeView()
+    App.setActiveDocument(doc.Name)
+    Gui.updateGui()
+    gdoc = gui_doc_for(doc)
+    view = gdoc.activeView()
+    style_doc(doc)
     set_view(view)
     Gui.updateGui()
     out = os.path.join(OUT, out_name)
-    view.saveImage(out, width, height, 'Current')
+    ok = view.saveImage(out, width, height, 'Current')
+    Gui.updateGui()
     App.closeDocument(doc.Name)
+    if not os.path.isfile(out) or os.path.getsize(out) == 0:
+        raise RuntimeError('FreeCAD did not create preview: ' + out)
     return out
+
 
 assembly = os.path.join(BUILD, 'eurobox_v50_assembly.FCStd')
 if not os.path.isfile(assembly):
     raise SystemExit('Missing assembly FCStd: ' + assembly)
 
-render_fcstd(assembly, 'v50_assembly.png', assembly=True, width=1400, height=900)
+render_fcstd(assembly, 'v50_assembly.png', width=1400, height=900)
 
-parts = sorted(p for p in glob.glob(os.path.join(BUILD, 'eurobox_v50_*.FCStd'))
-               if not p.endswith('eurobox_v50_assembly.FCStd'))
+parts = sorted(
+    p for p in glob.glob(os.path.join(BUILD, 'eurobox_v50_*.FCStd'))
+    if not p.endswith('eurobox_v50_assembly.FCStd')
+)
 if not parts:
     raise SystemExit('No part FCStd files found in ' + BUILD)
 
