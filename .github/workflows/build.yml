@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "scripts/build_v50.py"
+      - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
       - "docs/V50_**"
       - "docs/MEASUREMENTS.md"
@@ -77,6 +78,12 @@ jobs:
             echo 'VALIDATION_v50_source.json missing'
           fi
 
+      - name: Diagnose base topology after CAD failure
+        if: steps.cadbuild.outcome == 'failure'
+        run: |
+          set -o pipefail
+          "$FREECADCMD" scripts/diagnose_v50_base.py | tee base_debug.log || true
+
       - name: Upload pre-mesh validation on failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -84,7 +91,10 @@ jobs:
           name: eurobox-v50-prevalidation
           path: |
             build_v50/VALIDATION_v50_source.json
+            build_v50/BASE_DEBUG_v50.json
+            build_v50/DEBUG_v50_base.brep
             build_v50.log
+            base_debug.log
           if-no-files-found: warn
           retention-days: 7
 
