@@ -93,14 +93,11 @@ assert n == 1, 'anti-rotation validation block not found'
 s = s.replace("if V['anti_rotation'][0]['tube_common_mm3'] > 1e-4:\n    failures.append('Anti-rotation stop collides at nominal position')\nif max(x['tube_common_mm3'] for x in V['anti_rotation'][1:]) < 0.1:\n    failures.append('Anti-rotation stop does not contact rack tube within 5 degrees')\n", "")
 
 # 5) Do not build the final printable spindle by fusing an OCC primitive to a
-# mesh-derived helical BRep.  The BRep itself validates, but re-tessellation at
-# the polygonal/analytic interfaces can produce a non-manifold STL.  Build the
-# COMPLETE prototype spindle as one OpenSCAD CSG solid, then bring that one
-# resolved solid back into FreeCAD.  The thread ridge starts at the exact same
-# Y datum and phase as before; only the core cylinders overlap neighbours by
-# 0.10 mm to make the CSG union unambiguous.
+# mesh-derived helical BRep. The BRep validates, but re-tessellation at those
+# mixed interfaces can produce a non-manifold STL. Build the COMPLETE print
+# spindle as one OpenSCAD CSG solid, then bring that resolved solid to FreeCAD.
 pattern = re.compile(r"SPINDLE = fuse_all\(\[.*?\n\]\)\.removeSplitter\(\)\n\nKNOB =", re.S)
-replacement = '''SPINDLE_SCAD = os.path.join(OUT, 'eurobox_v50_lead_screw_print_source.scad')
+replacement = """SPINDLE_SCAD = os.path.join(OUT, 'eurobox_v50_lead_screw_print_source.scad')
 spindle_scad = f'''$fn=48;
 module ridge(core_r, major_r, pitch, length, root_w, crest_w){{
   linear_extrude(height=length,twist=360*length/pitch,slices=ceil(length/pitch*18),convexity=40)
@@ -127,7 +124,7 @@ with open(SPINDLE_SCAD, 'w') as f:
     f.write(spindle_scad)
 SPINDLE = z_to_y(import_scad_shape(SPINDLE_SCAD), 0, 0, 0).removeSplitter()
 
-KNOB ='''
+KNOB ="""
 s, n = pattern.subn(replacement, s, count=1)
 assert n == 1, 'spindle construction block not found'
 
