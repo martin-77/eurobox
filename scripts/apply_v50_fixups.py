@@ -92,6 +92,45 @@ assert n == 1, 'anti-rotation validation block not found'
 
 s = s.replace("if V['anti_rotation'][0]['tube_common_mm3'] > 1e-4:\n    failures.append('Anti-rotation stop collides at nominal position')\nif max(x['tube_common_mm3'] for x in V['anti_rotation'][1:]) < 0.1:\n    failures.append('Anti-rotation stop does not contact rack tube within 5 degrees')\n", "")
 
+# 5) Do not build the final printable spindle by fusing an OCC primitive to a
+# mesh-derived helical BRep.  The BRep itself validates, but re-tessellation at
+# the polygonal/analytic interfaces can produce a non-manifold STL.  Build the
+# COMPLETE prototype spindle as one OpenSCAD CSG solid, then bring that one
+# resolved solid back into FreeCAD.  The thread ridge starts at the exact same
+# Y datum and phase as before; only the core cylinders overlap neighbours by
+# 0.10 mm to make the CSG union unambiguous.
+pattern = re.compile(r"SPINDLE = fuse_all\(\[.*?\n\]\)\.removeSplitter\(\)\n\nKNOB =", re.S)
+replacement = '''SPINDLE_SCAD = os.path.join(OUT, 'eurobox_v50_lead_screw_print_source.scad')
+spindle_scad = f'''$fn=48;
+module ridge(core_r, major_r, pitch, length, root_w, crest_w){{
+  linear_extrude(height=length,twist=360*length/pitch,slices=ceil(length/pitch*18),convexity=40)
+    polygon(points=[[core_r-0.08,-root_w/2],[major_r,-crest_w/2],[major_r,crest_w/2],[core_r-0.08,root_w/2]]);
+}}
+module male_thread(length){{
+  union(){{
+    translate([0,0,-0.10]) cylinder(r={THREAD_CORE_R},h=length+0.20);
+    ridge({THREAD_CORE_R},{THREAD_MAJOR/2},{THREAD_PITCH},length,0.58,0.24);
+  }}
+}}
+union(){{
+  cylinder(r=3.0,h=0.5);
+  translate([0,0,0.35]) cylinder(r=2.5,h=1.55);
+  translate([0,0,1.75]) cylinder(r=3.0,h={SPINDLE_LOCAL_JOURNAL-1.65});
+  translate([0,0,{SPINDLE_LOCAL_JOURNAL-0.10}]) cylinder(r={SHOULDER_D/2},h={SPINDLE_LOCAL_SHOULDER+0.20});
+  translate([0,0,{SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER}]) male_thread({LEAD_THREAD_LEN});
+  translate([0,0,{SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN-0.10}])
+    rotate([0,0,30]) cylinder(r={10.0/math.sqrt(3.0)},h={HEX_LEN+0.20},$fn=6);
+  translate([0,0,{SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN+HEX_LEN}]) male_thread({OUTER_STUD_LEN});
+}}
+'''
+with open(SPINDLE_SCAD, 'w') as f:
+    f.write(spindle_scad)
+SPINDLE = z_to_y(import_scad_shape(SPINDLE_SCAD), 0, 0, 0).removeSplitter()
+
+KNOB ='''
+s, n = pattern.subn(replacement, s, count=1)
+assert n == 1, 'spindle construction block not found'
+
 assert s != orig
 p.write_text(s, encoding='utf-8')
 print('Applied deterministic v50 fixups to scripts/build_v50.py')
