@@ -3,16 +3,21 @@ name: Build Eurobox v50
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, v50-fix-render]
     paths:
       - "scripts/build_v50.py"
       - "scripts/apply_v50_fixups.py"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
+      - "scripts/render_v50.py"
+      - "README.md"
       - "docs/V50_**"
       - "docs/MEASUREMENTS.md"
       - "docs/FOCUS_THRON2_EQP_2023.md"
       - ".github/workflows/build.yml"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -21,10 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install OpenSCAD and mesh checks
+      - name: Install OpenSCAD, Xvfb and mesh checks
         run: |
           sudo apt-get update
-          sudo apt-get install -y openscad libfuse2
+          sudo apt-get install -y openscad libfuse2 xvfb libgl1 libegl1
           python3 -m pip install --break-system-packages trimesh
 
       - name: Cache FreeCAD AppImage
@@ -48,8 +53,11 @@ jobs:
           rm -rf squashfs-root
           ./FreeCAD.AppImage --appimage-extract >/dev/null
           FREECADCMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) | head -n1)
+          FREECADGUI=$(find squashfs-root -type f -name freecad | head -n1)
           test -n "$FREECADCMD"
+          test -n "$FREECADGUI"
           echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
+          echo "FREECADGUI=$FREECADGUI" >> "$GITHUB_ENV"
           "$FREECADCMD" -c 'import FreeCAD,Part; print(FreeCAD.Version()); s=Part.makeBox(1,1,1); assert s.isValid()'
 
       - name: Apply v50 source fixups
@@ -91,7 +99,7 @@ jobs:
           set -o pipefail
           "$FREECADCMD" scripts/diagnose_v50_base.py | tee base_debug.log || true
 
-      - name: Upload pre-mesh validation on failure
+      - name: Upload pre-mesh validation
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -109,11 +117,40 @@ jobs:
         if: steps.cadbuild.outcome == 'success'
         run: python3 scripts/validate_meshes.py build_v50
 
+      - name: Render FCStd previews with FreeCAD
+        if: steps.cadbuild.outcome == 'success'
+        env:
+          QT_QPA_PLATFORM: xcb
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          set -euo pipefail
+          rm -rf docs/renders
+          mkdir -p docs/renders
+          xvfb-run -a "$FREECADGUI" -c scripts/render_v50.py
+          test -s docs/renders/v50_assembly.png
+          test -s docs/renders/eurobox_v50_base.png
+          test -s docs/renders/eurobox_v50_clamp_plate.png
+          test -s docs/renders/eurobox_v50_lead_screw_print.png
+
+      - name: Commit successful FreeCAD previews
+        if: steps.cadbuild.outcome == 'success' && github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/renders
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: refresh v50 FreeCAD previews [skip ci]"
+            git push
+          fi
+
       - name: Copy design documentation into artifact
         if: steps.cadbuild.outcome == 'success'
         run: |
           mkdir -p build_v50/docs
           cp docs/V50_DESIGN.md docs/V50_DIMENSIONS.json docs/MEASUREMENTS.md docs/FOCUS_THRON2_EQP_2023.md docs/VALIDATION_V50.md build_v50/docs/
+          cp -r docs/renders build_v50/docs/
+          cp README.md build_v50/docs/README_REPOSITORY.md
           cp build_v50.log build_v50/
 
       - name: Package output
@@ -140,5 +177,6 @@ jobs:
             build_v50/MESH_VALIDATION.json
             build_v50/build_seconds.txt
             build_v50.log
+            docs/renders/*.png
           if-no-files-found: error
           retention-days: 14
