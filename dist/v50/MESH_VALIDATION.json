@@ -1,0 +1,730 @@
+{
+  "meshes": {
+    "eurobox_v50_base.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 3,
+      "shells_form_one_body": true,
+      "component_faces": [
+        10016,
+        12,
+        12
+      ],
+      "component_signed_volume_mm3": [
+        438349.5186807317,
+        -49996.81419067438,
+        -49996.81419067438
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -107.0,
+            -12.5,
+            -14.0
+          ],
+          [
+            107.0,
+            276.7650146484375,
+            49.79999923706055
+          ]
+        ],
+        [
+          [
+            -96.4000015258789,
+            30.0,
+            14.039999961853027
+          ],
+          [
+            -83.5999984741211,
+            216.0,
+            35.040000915527344
+          ]
+        ],
+        [
+          [
+            83.5999984741211,
+            30.0,
+            14.039999961853027
+          ],
+          [
+            96.4000015258789,
+            216.0,
+            35.040000915527344
+          ]
+        ]
+      ],
+      "faces": 10040,
+      "vertices": 5000,
+      "volume_mm3": 338355.8902993828,
+      "bounds_mm": [
+        [
+          -107.0,
+          -12.5,
+          -14.0
+        ],
+        [
+          107.0,
+          276.7650146484375,
+          49.79999923706055
+        ]
+      ]
+    },
+    "eurobox_v50_clamp_plate.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        2052
+      ],
+      "component_signed_volume_mm3": [
+        35101.764586533536
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -70.0,
+            240.46499633789062,
+            16.0
+          ],
+          [
+            70.0,
+            252.6649932861328,
+            46.0
+          ]
+        ]
+      ],
+      "faces": 2052,
+      "vertices": 1024,
+      "volume_mm3": 35101.764586533536,
+      "bounds_mm": [
+        [
+          -70.0,
+          240.46499633789062,
+          16.0
+        ],
+        [
+          70.0,
+          252.6649932861328,
+          46.0
+        ]
+      ]
+    },
+    "eurobox_v50_knob.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        2228
+      ],
+      "component_signed_volume_mm3": [
+        3828.764132071061
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -14.687654495239258,
+            -6.634221446735777e-16,
+            -14.687654495239258
+          ],
+          [
+            14.687654495239258,
+            7.0,
+            14.687654495239258
+          ]
+        ]
+      ],
+      "faces": 2228,
+      "vertices": 1114,
+      "volume_mm3": 3828.764132071061,
+      "bounds_mm": [
+        [
+          -14.687654495239258,
+          -6.634221446735777e-16,
+          -14.687654495239258
+        ],
+        [
+          14.687654495239258,
+          7.0,
+          14.687654495239258
+        ]
+      ]
+    },
+    "eurobox_v50_knob_retainer_nut.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        1230
+      ],
+      "component_signed_volume_mm3": [
+        458.82197663173065
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -6.5,
+            -8.332838555149093e-16,
+            -7.505553722381592
+          ],
+          [
+            6.5,
+            4.199999809265137,
+            7.505553722381592
+          ]
+        ]
+      ],
+      "faces": 1230,
+      "vertices": 615,
+      "volume_mm3": 458.82197663173065,
+      "bounds_mm": [
+        [
+          -6.5,
+          -8.332838555149093e-16,
+          -7.505553722381592
+        ],
+        [
+          6.5,
+          4.199999809265137,
+          7.505553722381592
+        ]
+      ]
+    },
+    "eurobox_v50_lead_nut_pin_clip.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        748
+      ],
+      "component_signed_volume_mm3": [
+        28.841385465419393
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -3.199909210205078,
+            -3.199287176132202,
+            0.0
+          ],
+          [
+            3.200000047683716,
+            2.9664793014526367,
+            1.2999999523162842
+          ]
+        ]
+      ],
+      "faces": 748,
+      "vertices": 376,
+      "volume_mm3": 28.841385465419393,
+      "bounds_mm": [
+        [
+          -3.199909210205078,
+          -3.199287176132202,
+          0.0
+        ],
+        [
+          3.200000047683716,
+          2.9664793014526367,
+          1.2999999523162842
+        ]
+      ]
+    },
+    "eurobox_v50_lead_nut_print.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        3592
+      ],
+      "component_signed_volume_mm3": [
+        2891.4883378179616
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -8.0,
+            -3.79696282892133e-16,
+            -7.0
+          ],
+          [
+            8.0,
+            14.0,
+            11.0
+          ]
+        ]
+      ],
+      "faces": 3592,
+      "vertices": 1794,
+      "volume_mm3": 2891.4883378179616,
+      "bounds_mm": [
+        [
+          -8.0,
+          -3.79696282892133e-16,
+          -7.0
+        ],
+        [
+          8.0,
+          14.0,
+          11.0
+        ]
+      ]
+    },
+    "eurobox_v50_lead_nut_retaining_pin.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        1004
+      ],
+      "component_signed_volume_mm3": [
+        222.5681100428598
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -13.75,
+            -2.999067544937134,
+            -3.0
+          ],
+          [
+            11.75,
+            2.999067544937134,
+            3.0
+          ]
+        ]
+      ],
+      "faces": 1004,
+      "vertices": 504,
+      "volume_mm3": 222.5681100428598,
+      "bounds_mm": [
+        [
+          -13.75,
+          -2.999067544937134,
+          -3.0
+        ],
+        [
+          11.75,
+          2.999067544937134,
+          3.0
+        ]
+      ]
+    },
+    "eurobox_v50_lead_screw_print.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        6612
+      ],
+      "component_signed_volume_mm3": [
+        1693.7318323331062
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -5.5,
+            -3.3306690738754696e-16,
+            -5.773499965667725
+          ],
+          [
+            5.5,
+            41.099998474121094,
+            5.773499965667725
+          ]
+        ]
+      ],
+      "faces": 6612,
+      "vertices": 3308,
+      "volume_mm3": 1693.7318323331062,
+      "bounds_mm": [
+        [
+          -5.5,
+          -3.3306690738754696e-16,
+          -5.773499965667725
+        ],
+        [
+          5.5,
+          41.099998474121094,
+          5.773499965667725
+        ]
+      ]
+    },
+    "eurobox_v50_lead_screw_print_source_compiled.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        6612
+      ],
+      "component_signed_volume_mm3": [
+        1693.7319900436225
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -5.5,
+            -5.7735,
+            0.0
+          ],
+          [
+            5.5,
+            5.7735,
+            41.1
+          ]
+        ]
+      ],
+      "faces": 6612,
+      "vertices": 3308,
+      "volume_mm3": 1693.7319900436225,
+      "bounds_mm": [
+        [
+          -5.5,
+          -5.7735,
+          0.0
+        ],
+        [
+          5.5,
+          5.7735,
+          41.1
+        ]
+      ]
+    },
+    "eurobox_v50_plate_retainer_clip.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        820
+      ],
+      "component_signed_volume_mm3": [
+        85.26284019057753
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -5.398430824279785,
+            -5.3996076583862305,
+            0.0
+          ],
+          [
+            5.400000095367432,
+            5.05470085144043,
+            1.399999976158142
+          ]
+        ]
+      ],
+      "faces": 820,
+      "vertices": 412,
+      "volume_mm3": 85.26284019057753,
+      "bounds_mm": [
+        [
+          -5.398430824279785,
+          -5.3996076583862305,
+          0.0
+        ],
+        [
+          5.400000095367432,
+          5.05470085144043,
+          1.399999976158142
+        ]
+      ]
+    },
+    "eurobox_v50_rack_lower.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        748
+      ],
+      "component_signed_volume_mm3": [
+        4376.679426032929
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -12.600000381469727,
+            -5.800000190734863,
+            -14.0
+          ],
+          [
+            12.600000381469727,
+            12.0,
+            0.0
+          ]
+        ]
+      ],
+      "faces": 748,
+      "vertices": 374,
+      "volume_mm3": 4376.679426032929,
+      "bounds_mm": [
+        [
+          -12.600000381469727,
+          -5.800000190734863,
+          -14.0
+        ],
+        [
+          12.600000381469727,
+          12.0,
+          0.0
+        ]
+      ]
+    },
+    "eurobox_v50_rack_pin.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        2012
+      ],
+      "component_signed_volume_mm3": [
+        559.4545476632314
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -20.799999237060547,
+            -3.7488343715667725,
+            -3.75
+          ],
+          [
+            18.299999237060547,
+            3.7488343715667725,
+            3.75
+          ]
+        ]
+      ],
+      "faces": 2012,
+      "vertices": 1008,
+      "volume_mm3": 559.4545476632314,
+      "bounds_mm": [
+        [
+          -20.799999237060547,
+          -3.7488343715667725,
+          -3.75
+        ],
+        [
+          18.299999237060547,
+          3.7488343715667725,
+          3.75
+        ]
+      ]
+    },
+    "eurobox_v50_rack_pin_clip.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        776
+      ],
+      "component_signed_volume_mm3": [
+        57.986693874545345
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -4.199914932250977,
+            -4.199001789093018,
+            0.0
+          ],
+          [
+            4.199999809265137,
+            3.923009157180786,
+            1.5
+          ]
+        ]
+      ],
+      "faces": 776,
+      "vertices": 390,
+      "volume_mm3": 57.986693874545345,
+      "bounds_mm": [
+        [
+          -4.199914932250977,
+          -4.199001789093018,
+          0.0
+        ],
+        [
+          4.199999809265137,
+          3.923009157180786,
+          1.5
+        ]
+      ]
+    },
+    "thread_RH_8x2_cap_cutter_compiled.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        1116
+      ],
+      "component_signed_volume_mm3": [
+        167.01751579462447
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -4.22455,
+            -4.22291,
+            0.0
+          ],
+          [
+            4.22291,
+            4.22455,
+            4.5
+          ]
+        ]
+      ],
+      "faces": 1116,
+      "vertices": 560,
+      "volume_mm3": 167.01751579462447,
+      "bounds_mm": [
+        [
+          -4.22455,
+          -4.22291,
+          0.0
+        ],
+        [
+          4.22291,
+          4.22455,
+          4.5
+        ]
+      ]
+    },
+    "thread_RH_8x2_female_cutter_compiled.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        3048
+      ],
+      "component_signed_volume_mm3": [
+        519.6063754563884
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -4.21999,
+            -4.1906,
+            0.0
+          ],
+          [
+            4.21999,
+            4.1906,
+            14.0
+          ]
+        ]
+      ],
+      "faces": 3048,
+      "vertices": 1526,
+      "volume_mm3": 519.6063754563884,
+      "bounds_mm": [
+        [
+          -4.21999,
+          -4.1906,
+          0.0
+        ],
+        [
+          4.21999,
+          4.1906,
+          14.0
+        ]
+      ]
+    },
+    "thread_RH_8x2_male_compiled.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        4724
+      ],
+      "component_signed_volume_mm3": [
+        741.6025765156388
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -4.00179,
+            -3.98901,
+            0.0
+          ],
+          [
+            4.00179,
+            3.99,
+            22.2
+          ]
+        ]
+      ],
+      "faces": 4724,
+      "vertices": 2364,
+      "volume_mm3": 741.6025765156388,
+      "bounds_mm": [
+        [
+          -4.00179,
+          -3.98901,
+          0.0
+        ],
+        [
+          4.00179,
+          3.99,
+          22.2
+        ]
+      ]
+    },
+    "thread_RH_8x2_stud_compiled.stl": {
+      "watertight": true,
+      "winding_consistent": true,
+      "surface_shells": 1,
+      "shells_form_one_body": true,
+      "component_faces": [
+        1116
+      ],
+      "component_signed_volume_mm3": [
+        150.32530111542997
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -4.00166,
+            -4.0,
+            0.0
+          ],
+          [
+            4.0,
+            4.00166,
+            4.5
+          ]
+        ]
+      ],
+      "faces": 1116,
+      "vertices": 560,
+      "volume_mm3": 150.32530111542997,
+      "bounds_mm": [
+        [
+          -4.00166,
+          -4.0,
+          0.0
+        ],
+        [
+          4.0,
+          4.00166,
+          4.5
+        ]
+      ]
+    }
+  },
+  "failed": []
+}
