@@ -1,18 +1,16 @@
 # Focus THRON² EQP 2023 – Einbaukontext für Eurobox v50
 
-## Zweck dieser Datei
+## Zweck
 
 Diese Datei trennt Hersteller-/Modellinformationen von direkt am Fahrrad gemessenen CAD-Daten. Werte aus Fotos werden nicht als Millimetermaße behandelt.
 
 ## Bestätigter Modellkontext
 
-Zielrad ist ein **FOCUS THRON² EQP Modelljahr 2023**. Für die Recherche wurden offizielle FOCUS-Produkt-/Archivunterlagen zum THRON² EQP 2023 sowie verfügbare Modellabbildungen herangezogen.
+Zielrad ist ein **FOCUS THRON² 6.8 EQP Modelljahr 2023**. Die offizielle FOCUS-Spezifikation führt für dieses Modell einen **Massload 3-leg Gepäckträger mit 16 kg maximaler Zuladung**.
 
-Die EQP-Ausstattung besitzt einen integrierten Gepäckträger über dem Hinterrad mit seitlichen bzw. diagonal Richtung Hinterachse laufenden Stützstreben. Das ist für v50 relevant, weil unser Seitenmodul nicht nur am oberen Rohr befestigt wird, sondern optional über einen kleinen Anti-Flop-Stabilisator an einer dieser Streben abgestützt werden kann.
+Für die CAD-Passung haben die Messwerte am konkreten Fahrrad Vorrang.
 
 ## Vom konkreten Fahrrad gemessene Geometrie
-
-Diese Werte haben für das CAD Vorrang vor Fotointerpretationen:
 
 - oberes Gepäckträgerrohr: Ø12.42 mm
 - Gepäckträger Außenbreite: 123.09 mm
@@ -25,38 +23,31 @@ Diese Werte haben für das CAD Vorrang vor Fotointerpretationen:
 - Schutzblechoberkante Z = 34.54 mm
 - verbleibende vertikale Reserve: 5.00 mm
 
-## Was aus den Focus-Unterlagen für die Formgebung relevant ist
+## Relevanz der Focus-Geometrie
 
-Die Modellabbildungen bestätigen qualitativ:
+Die obere Gepäckträgerstruktur besitzt lange parallele Längsstreben und eignet sich damit für zwei weit auseinanderliegende Klemmpunkte pro Seitenmodul.
 
-1. Die oberen Gepäckträgerrohre verlaufen über eine längere Strecke in Fahrtrichtung und eignen sich damit für zwei weit auseinanderliegende Klemmpunkte.
-2. Der EQP-Träger ist über Streben Richtung Hinterachse abgestützt.
-3. Das Schutzblech sitzt eng innerhalb/unterhalb des Gepäckträgerbereichs; unnötig tiefe Bauteile auf der Innenseite des oberen Rohres sind daher zu vermeiden.
-4. Ein Zusatzteil zur Montageabstützung kann sinnvoll auf einer diagonalen Strebe sitzen, muss aber tolerant sein, solange Winkel und Rohrdurchmesser nicht direkt vermessen wurden.
+Für v50 wird **keine separate Befestigung an den diagonalen Streben Richtung Hinterachse mehr verwendet**. Der zuvor erwogene V-Sattel mit Kabelbindern ist verworfen, weil er unnötig zusätzlichen Bauraum beansprucht und beim realen Fahrrad stören kann.
+
+Stattdessen wird die Base im Bereich der beiden oberen Rohrklemmen zur Fahrradseite nach unten gezogen. Dieser integrierte Innenanschlag liegt mit geringem Freiraum am Rand/der seitlichen Kontur des Gepäckträgers an und verhindert ein Abkippen des langen Außenarms um das Rundrohr.
+
+Vorteile für das THRON² EQP:
+
+1. kein zusätzliches Teil an der Achs-/Diagonalstrebe;
+2. keine Kabelbinder am Gepäckträger;
+3. keine aus Fotos geschätzten Winkel oder Streben-Durchmesser nötig;
+4. Anti-Rotation entsteht direkt dort, wo die Hauptklemme sitzt;
+5. der Anschlag kann zusammen mit Rohr, Rack-Lower und Schutzblechfreiraum automatisiert geprüft werden.
 
 ## Herstellerlast
 
-Für die Konstruktion wird die in den bisherigen FOCUS-Unterlagen für diesen EQP-Träger verwendete Größenordnung von **16 kg Gesamtlast** als obere Zielgröße des originalen Gepäckträgers geführt. Vor einer finalen Lastfreigabe wird der konkrete Herstellerhinweis für genau das am Fahrrad verbaute Trägermodell nochmals gegen dessen Kennzeichnung/Bedienunterlage abgeglichen.
+Für das Modelljahr 2023 nennt FOCUS:
 
-Wichtig: Der in v50 verwendete dynamische 3×-Rechenfall ist **nur ein Sanity-Check der gedruckten Haltergeometrie**. Er erhöht die zulässige Herstellerlast des Gepäckträgers nicht.
+- Rear rack: Massload, 3-leg
+- Max. load: **16 kg**
 
-## Nicht bekannte Focus-Maße
-
-Noch nicht direkt gemessen:
-
-- Durchmesser der diagonalen Strebe
-- Winkel der diagonalen Strebe relativ zu unserem Arm
-- exakter Abstand der diagonalen Strebe zur Unterseite des montierten v50-Moduls
-
-Daraus folgt für v50:
-
-- kein hart dimensionierter Snap-Fit auf diese Strebe;
-- V-Sattel statt exakter Halbkreis;
-- Kabelbinderbefestigung statt starrer Rohrschelle;
-- höhenverstellbare Stütze statt festem Abstandshalter.
+Die v50-Berechnung darf diese Herstellergrenze nicht erhöhen. Der zusätzliche 3×-Dynamikfall dient nur als Sanity-Check der gedruckten Adaptergeometrie.
 
 ## Quellenstatus
 
-Die verwendeten FOCUS-Unterlagen werden im Projekt als externe Modellreferenz behandelt. Die für die eigentliche Passung relevanten Millimeterwerte stammen dagegen aus der Vermessung des konkreten Fahrrads und stehen in `docs/MEASUREMENTS.md`.
-
-Sobald am Fahrrad der Durchmesser und der Winkel der diagonalen Strebe nachgemessen sind, können diese drei offenen Werte ergänzt werden, ohne die Hauptkonstruktion zu ändern.
+Die Herstellerangaben dienen als Modell-/Lastreferenz. Die für die reale Passung verwendeten Millimeterwerte stammen aus der Vermessung des konkreten Fahrrads und stehen in `docs/MEASUREMENTS.md`.
