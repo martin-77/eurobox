@@ -25,7 +25,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y openscad libfuse2
-          python3 -m pip install --break-system-packages trimesh
+          python3 -m pip install --break-system-packages trimesh networkx
 
       - name: Cache FreeCAD AppImage
         id: cache-freecad
@@ -78,7 +78,7 @@ jobs:
           p='build_v50/VALIDATION_v50_source.json'
           v=json.load(open(p))
           print('V50_FAILURES='+json.dumps(v.get('failures', []), ensure_ascii=False))
-          keys=['tube_base_common_mm3','rack_lower_checks','rack_pin_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','anti_rotation','beam_sanity','system_width_estimate_mm']
+          keys=['tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','anti_rotation','beam_sanity','system_width_estimate_mm']
           print('V50_DIAGNOSTIC='+json.dumps({k:v.get(k) for k in keys}, ensure_ascii=False))
           PY
           else
@@ -113,7 +113,7 @@ jobs:
         if: steps.cadbuild.outcome == 'success'
         run: |
           mkdir -p build_v50/docs
-          cp docs/V50_DESIGN.md docs/V50_DIMENSIONS.json docs/MEASUREMENTS.md docs/FOCUS_THRON2_EQP_2023.md docs/VALIDATION_V50.md build_v50/docs/
+          cp docs/V50_DESIGN.md docs/V50_DIMENSIONS.json docs/MEASUREMENTS.md docs/FOCUS_THRON2_EQP_2023.md docs/VALIDATION_V50.md docs/DESIGN_V50.md build_v50/docs/
           cp build_v50.log build_v50/
 
       - name: Package output
