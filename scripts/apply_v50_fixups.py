@@ -128,6 +128,17 @@ KNOB ="""
 s, n = pattern.subn(replacement, s, count=1)
 assert n == 1, 'spindle construction block not found'
 
+# 6) At the fully closed position the 10 mm AF drive hex begins exactly at
+# CAGE_Y1. The outer screw frame intentionally extends 0.1 mm past that datum,
+# so the hex clipped the frame by ~2.4 mm^3 while every opened position was
+# clean. Add a short circular relief at the OUTER face only. This does not
+# enlarge the threaded guide bore or weaken the lead-nut seating region; it
+# simply gives the separately mounted knob/hex a real assembly clearance.
+needle = "    BASE = BASE.cut(cyl_y(4.45, CAGE_Y1-(NUT_Y0-0.50)+1.0, sx, NUT_Y0-0.50, SPINDLE_Z))"
+replacement = needle + "\n    BASE = BASE.cut(cyl_y(6.0, 1.60, sx, CAGE_Y1-0.35, SPINDLE_Z))"
+assert needle in s, 'outer spindle bore patch point not found'
+s = s.replace(needle, replacement, 1)
+
 assert s != orig
 p.write_text(s, encoding='utf-8')
 print('Applied deterministic v50 fixups to scripts/build_v50.py')
