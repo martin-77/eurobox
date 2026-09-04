@@ -2,170 +2,209 @@
 
 ## Ziel
 
-v50 ist kein kosmetisches Update von v47/v49, sondern ein Neuaufbau mit den inzwischen bekannten realen Randbedingungen des Focus THRON² EQP 2023 und der 600×400-Eurobox.
+v50 ist ein Neuaufbau für das **FOCUS THRON² EQP Modelljahr 2023** und eine 600×400-mm-Eurobox. Es ist ausdrücklich kein kosmetisches Update von v47/v49.
 
-Kernziele:
+Die Konstruktion soll:
 
-1. starre, ausreichend tiefe Tragstruktur statt langer 8-mm-Flacharme;
-2. echte, montierbare Rohrklemmen um Ø12.42 mm;
-3. integrierter Anti-Rotationsanschlag an der Gepäckträgerkante statt separatem V-Sattel an einer diagonalen Strebe;
-4. eine Klemmplatte, die geführt ist und über reale Durchgangsbohrungen von zwei Spindeln aktiv vor- und zurückbewegt wird;
-5. getrennte Spindel und Handknopf;
-6. ein Testgewinde, das grob genug zum Drucken ist, aber dieselbe Kinematik wie die spätere Metall-/M4-Version verwendet;
-7. jede kritische Geometrie wird automatisiert in GitHub Actions geprüft.
+1. die gemessene Ø12.42-mm-Rackgeometrie respektieren;
+2. die Box ohne Bohrung werkzeuglos halten;
+3. die langen Querarme als echte Tragprofile ausführen;
+4. bei der Montage nicht um das runde Rackrohr nach unten kippen;
+5. mit PETG/0.4-mm-Düse und wenig Support druckbar sein;
+6. für den Test vollständig gedruckte Spindeln verwenden;
+7. später auf M4/Heat-Set/Metallhardware umstellbar sein, ohne die Base neu zu konstruieren;
+8. alle kritischen Maße und Prüfungen reproduzierbar in GitHub Actions halten.
 
-## 1. Seitenmodul
+Die vollständige Maßherkunft steht in `MEASUREMENTS.md`; der Fahrradkontext und die widersprüchlichen Lastangaben stehen in `FOCUS_THRON2_EQP_2023.md`.
 
-Ein v50-Seitenmodul sitzt auf einem der beiden längs verlaufenden Gepäckträgerrohre. Es besitzt zwei Rohrklemmen im Abstand X = ±90 mm und reicht von dort quer nach außen zur Boxkante.
+## 1. Koordinatensystem und Seitenmodul
 
-Das komplette Fahrrad verwendet zwei spiegelbildlich montierte Module. Die beiden Module tragen die 600-mm-Box gemeinsam.
+- X = Fahrtrichtung
+- Y = vom jeweiligen oberen Gepäckträgerrohr nach außen zur Boxkante
+- Z = oben
+- lokale Rohrmitte = Y0/Z0
+- Rohrachse = X
+
+Ein Seitenmodul sitzt auf einem der beiden oberen Rack-Längsrohre und besitzt zwei Klemmpunkte bei X = ±90 mm. Das zweite Modul wird spiegelbildlich montiert; separate linke/rechte Druckteile sind nicht nötig.
 
 ## 2. Tragstruktur
 
-Die alten langen Arme mit ca. 28×8 mm Querschnitt waren für PETG als Biegeträger zu flach.
+Die alten ca. 28×8-mm-Flacharme werden nicht weiterverwendet. Die v50-Arme erhalten eine hohe U-/I-artige Struktur, weil bei PETG die Bauhöhe für die Biegesteifigkeit wesentlich wirksamer ist als zusätzliche Breite.
 
-v50 verwendet pro Seitenmodul zwei Doppelsteg-I-Träger:
+Der aktuelle CAD-Zielbereich beträgt:
 
-- 32 mm Gesamtbreite
-- 30 mm Gesamtbauhöhe
-- 4.5-mm Ober- und Unterflansch
-- zwei 3.2-mm Stege
-- Querschnittsfläche ca. 422.4 mm²
-- Flächenträgheitsmoment Ix ca. 52,243 mm⁴
+- ca. 28–32 mm Breite je Arm;
+- ca. 22–30 mm strukturelle Bauhöhe außerhalb des Rack-/Fenderbereichs;
+- 4.5–5.0 mm obere Auflage;
+- 3.2 mm vertikale Stege;
+- Auflageoberseite immer Z = 39.54 mm.
 
-Die Auflageoberseite bleibt auf Z = 39.54 mm. Die volle Tiefe beginnt erst außerhalb des Rohr-/Klemmbereichs. Übergänge an Rohrklemme und Außenrahmen werden mit großen Radien/Gussets verstärkt; keine tragenden Aussparungen direkt an der Klemmenwurzel.
+Die volle Tiefe beginnt erst außerhalb des unmittelbaren Rohrklemmbereichs. An der Klemmenwurzel wird Material **addiert** (Gusset/Transition), nicht durch große Taschen entfernt.
 
-Analytischer Sanity-Check bei 220 mm angenommener freier Biegelänge, vier Armen, E(PETG)=1500 MPa:
-
-- 16 kg Gesamtlast: ca. 2.48 MPa Biegespannung und ca. 1.78 mm Balken-Enddurchbiegung;
-- 3× Dynamikfall: ca. 7.44 MPa und ca. 5.33 mm.
-
-Das ist kein FEA-Nachweis, aber die Geometrie liegt damit nicht mehr in der Größenordnung der v45-Flacharme.
+Frühere einfache Querschnittsrechnungen zeigten gegenüber der alten 28×8-mm-Platte einen sehr großen Steifigkeitsgewinn. Diese Rechnung ist nur ein Sanity-Check, keine FEA und keine Freigabe der Herstellerlast.
 
 ## 3. Rohrklemme
 
-v50 erhält eine neu aufgebaute zweiteilige Klemme:
+Die Hauptbefestigung besteht aus zwei identischen Stationen:
 
-- starre obere Hälfte ist Bestandteil der Base;
-- separate untere Klemmhälfte;
-- reale Rohrkontur Ø12.42 mm wird als Prüfgeometrie modelliert;
-- starre obere Hälfte erhält bewusst etwas Freiraum;
-- die untere PETG-Hälfte übernimmt eine kleine definierte Vorspannung;
-- untere Hälfte formschlüssig zwischen seitlichen Ohren geführt und mit gedruckten Pins gesichert.
+- starre obere Sattelhälfte ist Teil der Base;
+- separate flexible `rack_lower`-Hälfte;
+- reales Rackrohr Ø12.42 mm ist die harte Kollisionsgeometrie;
+- starre Sattelkontur ca. Ø12.52 mm, also 0.05 mm radialer Freiraum;
+- flexible untere Sattelkontur ca. Ø12.30 mm für kleine definierte PETG-Vorspannung;
+- Pin Ø4.0 mm;
+- Pinbohrung Ø4.6 mm;
+- Pivotzentrum aus dem funktionierenden Vorgängerprinzip: Y = -12.0 mm / Z = -5.5 mm, sofern der v50-Neuaufbau nicht in CI eine bessere kollisionsfreie Lage nachweist.
 
-Pin, Loch und Clip werden als getrennte Teile modelliert und in der Assembly geprüft.
+Die untere Hälfte muss in negativer X-Rotation öffnen. Geprüft werden 0, -15, -30, -45, -60 und -75 Grad. Spätestens ungefähr bei -45 Grad soll das reale Ø12.42-mm-Rohr frei sein.
 
-## 4. Integrierter Anti-Rotationsanschlag
+## 4. Anti-Flop am FOCUS-Massload-3-leg
 
-Der separate V-Sattel für die diagonale Gepäckträgerstrebe ist vollständig verworfen.
+Die MY23-EQP-Bilder und -Explosionszeichnung zeigen den 3-leg-Träger mit diagonalen Streben Richtung Hinterachse. Das ist für die Montage nützlich, aber die Strebe wird **nicht zum Hauptlastpfad**.
 
-Stattdessen wird die Base an jeder der beiden Klemmenstationen auf der zum Fahrrad zeigenden Seite nach unten gezogen. Es entsteht ein massiver, nach unten gezogener Innenanschlag unmittelbar an der Gepäckträgerkante/äußeren Längsstrebe.
+v50 behält deshalb ein kleines separates Anti-Flop-Teil:
 
-Konstruktionsprinzip:
+- Hauptlast weiterhin ausschließlich über die zwei oberen Rackklemmen pro Seitenmodul;
+- Anti-Flop-Stütze liegt lediglich an einer diagonalen Rackstrebe an bzw. wird dort leicht fixiert;
+- Zweck: das leere Seitenmodul klappt beim Aufsetzen der Box nicht um das runde Längsrohr nach unten;
+- da Durchmesser und Winkel dieser Strebe noch nicht gemessen sind, ist die erste Version ein universeller V-Sattel mit Anpassspiel/Schlitzen, **keine erfundene formschlüssige Klemme**;
+- nach einer einzigen Messung von Streben-Ø und Winkel kann daraus ein definierter Clip werden.
 
-- oberer Sattel trägt auf dem Ø12.42-mm-Rohr;
-- Rack-Lower klemmt das Rohr von unten;
-- zusätzlich liegt ein breiter Innenanschlag seitlich am Gepäckträgerrand an;
-- versucht der lange Außenarm mit der Box nach unten zu rotieren, wird das Kippmoment nicht nur über Reibung der Rundrohrklemme aufgenommen: der Innenanschlag geht auf Druck gegen den Gepäckträgerrand;
-- der Anschlag ist integraler Bestandteil der massiven Klemmenwurzel und kein dünner Zusatzsteg.
+Wichtig: Es wird nichts zwischen Hauptrahmen und bewegtem Hinterbau verspannt. Alle Kontaktpunkte bleiben am fahrwerkmitbewegten EQP-Träger.
 
-Erste CAD-Zielwerte pro Klemmenstation:
+## 5. Boxauflage und unterer Rand
 
-- Anschlagbreite in X: 24 mm;
-- Wandstärke nach innen: 6 mm;
-- Kontaktbereich umfasst Z=0 des Gepäckträgerrohres und reicht ungefähr von Z=+5 bis Z=-8 mm;
-- nominaler Montagefreiraum zur Rohr-/Randtangente: 0.15–0.25 mm;
-- große Innenradien am Übergang zur Klemmenwurzel, Ziel ≥4 mm;
-- kein Bauteil unterhalb/in Richtung Schutzblech außerhalb des lokalen Rohrklemmenbereichs.
+Harte Werte:
 
-Die endgültige Kontaktposition wird im CAD gegen das reale Ø12.42-Prüfrohr und die gemessene Trägerbreite geprüft. Dieser Anschlag ersetzt ausdrücklich den früher vorgesehenen V-Sattel und alle Kabelbinder-/Diagonalstrebenlösungen.
+- Eurobox 600×400 mm quer montiert;
+- unterer Rand 16.45 mm horizontal und 16.45 mm vertikal;
+- Rohrmitte → Boxkante 244.665 mm;
+- Boxauflage Z = 39.54 mm;
+- Schutzblechoberkante Z = 34.54 mm;
+- damit nur 5.00 mm nomineller vertikaler Restabstand.
 
-## 5. Boxauflage und Rand
-
-Die Eurobox wird auf einer steifen Außenrahmen-/Auflagezone abgestützt. Die harte Auflagehöhe bleibt Z = 39.54 mm.
-
-Für den unteren 16.45×16.45-mm-Rand wird im Validierungsskript ein konservatives Prüfvolumen erzeugt. Die Klemmplatte darf dieses Volumen nur an vorgesehenen Kontaktflächen berühren und muss es nach dem Öffnen vollständig freigeben.
+Die Base darf diesen 5-mm-Raum nicht gedankenlos als Strukturvolumen benutzen. Der exakte Querschnitt des Schutzblechs ist noch nicht vermessen; CI darf deshalb nur gegen eindeutig bekannte Keep-outs prüfen und keine erfundene Fenderform als Realität deklarieren.
 
 ## 6. Klemmplatte
 
-Die Platte ist ein massiver Hauptkörper mit echten Durchgangsbohrungen bei X = ±42 mm / Z = 31 mm.
+Eine breite Platte wird von zwei Spindeln geführt.
 
-Nicht mehr verwendet werden:
+Zielwerte:
 
-- offene T-Schlitze;
-- große Montageschlitze durch tragende Bereiche;
-- Blindtaschen ohne axiale Verbindung;
-- Gewinde direkt in der Klemmplatte.
+- Schraubachsen X = ±42 mm;
+- Schraubachse Z = 31 mm;
+- zwei **echte Durchgangsbohrungen**;
+- Journal Ø6.0 mm;
+- Plattenloch ca. Ø6.4–6.5 mm;
+- mindestens 4.0 mm, Ziel 4.5 mm Öffnungsweg;
+- Untergriff ca. 4 mm;
+- keine T-Schlitze;
+- keine offenen Montageschlitze durch tragende Bereiche;
+- kein Gewinde in der Platte.
 
-Die Platte läuft in externen Führungen der Base. Führungsnasen sind zusätzliches Material und schwächen den Hauptkörper nicht.
-
-Öffnungsweg: 4.5 mm Ziel, mindestens 4.0 mm zwingend kollisionsfrei.
+Die Platte darf nicht nur nach innen gedrückt werden: sie wird auf der Spindel axial gefangen und beim Lösen aktiv nach außen zurückgezogen.
 
 ## 7. Spindelkinematik
 
-Die Spindel ist normal rechtsgängig.
+Die Hauptspindel ist normal **rechtsgängig**.
 
 Beim Zudrehen:
 
-1. Knob dreht die Spindel;
-2. feststehende Lead-Nut zwingt die Spindel axial nach innen;
-3. eine Schulter auf der Spindel drückt die Platte zur Box;
-4. die Platte selbst rotiert nicht.
+1. Knob dreht Spindel über einen formschlüssigen Sechskant;
+2. feststehende Lead-Nut zwingt Spindel axial nach innen;
+3. eine massive Schulter drückt die Platte zur Box;
+4. Platte selbst rotiert nicht.
 
 Beim Aufdrehen:
 
-1. die Spindel wandert nach außen;
-2. ein axial gefangener Retainer hinter der Platte zieht die Platte mit;
-3. die Platte öffnet aktiv.
+1. Spindel läuft nach außen;
+2. der innere Retainer zieht die Platte mit;
+3. der Untergriff gibt den Boxrand frei.
 
-Der innere Retainer sitzt in einer Senkung und darf die Boxkontaktfläche nicht überragen.
+Für den Drucktest: RH Ø8×2-mm-Leitgewinde. Korrekte Drehung+Translation und falsche Händigkeit/Phase werden in CI geometrisch gegeneinander geprüft.
 
 ## 8. Austauschbare Lead-Nut
 
-Das Testgewinde wird nicht zum festen Bestandteil der Base gemacht.
+Das Testgewinde wird nicht dauerhaft in die Base geschnitten.
 
-Drucktest:
+Die Base erhält einen zugänglichen, gegen Verdrehung gesicherten Nut-/Cartridge-Sitz:
 
-- RH Ø8×2 mm;
-- separate Lead-Nut;
-- Lead-Nut formschlüssig in einem zugänglichen Käfig der Base;
-- Deckel hält die Nut nur im Käfig; Axialkräfte laufen in die Käfigwände.
+- Prototyp: gedruckte RH-Ø8×2-Lead-Nut;
+- später: Einsatz mit M4-Heat-Set oder Metallmutter;
+- Außeninterface des Einsatzes bleibt gleich;
+- Axialkraft geht in den massiven Käfig/Flansch der Base, nicht in einen dünnen Deckel.
 
-Später kann derselbe Bauraum einen M4-/Heat-Set-/Metallgewinde-Einsatz aufnehmen. Base, Plattenführung und Kinematik bleiben unverändert.
+Damit bleiben Base, Platte und Kinematik beim Wechsel auf Metall erhalten.
 
-## 9. Separate Spindel und separater Knob
+## 9. Platte ↔ Spindel
 
-Die integrierte `screw_with_knob`-Geometrie ist verworfen.
+Mechanisch einfache Schulter-/Journal-Lösung:
+
+- glatter Ø6-mm-Journal durch das Plattenloch;
+- massive Druckschulter außen, etwa Ø11 mm;
+- flache Sicherungsnut auf der Innenseite;
+- separater Horseshoe-/C-Clip zieht die Platte nur beim Öffnen zurück;
+- die eigentliche Klemmkraft läuft über die Schulter, nicht über den Clip.
+
+Dadurch entfällt die komplizierte und strukturell ungünstige T-Nut-/Retainer-Taschen-Geometrie aus früheren Versuchen.
+
+## 10. Separate Spindel und separater Knob
+
+Die frühere integrierte `screw_with_knob`-Geometrie bleibt verworfen.
 
 v50:
 
 - Spindel separat;
 - Knob separat;
-- Drehmomentübertragung formschlüssig über AF10-Sechskant;
-- axiale Sicherung über separaten Retainer und separate Mutter/Kappe;
-- Sicherung überträgt nicht das Hauptdrehmoment.
+- Drehmoment über AF10-Sechskant;
+- Knob-Socket ca. AF10.3 mm;
+- axiale Knob-Sicherung separat;
+- die Knob-Sicherung überträgt nicht das Hauptdrehmoment.
 
-Dadurch wird zuerst die Spindel durch Base/Lead-Nut montiert und der Knob anschließend außen aufgesetzt.
+Damit kann die Spindel zuerst durch Base/Lead-Nut montiert und der Knob anschließend außen befestigt werden.
 
-## 10. Lastgrenze
+## 11. Lastannahme
 
-Das Zielrad ist das FOCUS THRON² 6.8 EQP Modelljahr 2023. FOCUS nennt für dieses Modell einen Massload-3-leg-Gepäckträger mit 16 kg maximaler Zuladung. Diese 16 kg bleiben die harte obere Zielgröße des originalen Gepäckträgers; der 3×-Rechenfall ist nur ein Sanity-Check des gedruckten Adapters und erhöht die Herstellerfreigabe nicht.
+Die Quellenlage zum MY23 Massload 3-leg ist widersprüchlich: Händlerdaten nennen häufig 25 kg, die aktuelle FOCUS-Archiv-FAQ dieser Generation 16 kg. Deshalb gilt für v50 **16 kg konservative Rack-Gesamtlast**, bis der konkrete Rack-Aufkleber verifiziert ist.
 
-## 11. Dateistruktur
+Ein 3×-Dynamikfall in vereinfachten Balkenrechnungen ist ausschließlich ein Sanity-Check der Adaptergeometrie. Er erhöht keine Herstellerfreigabe.
 
-Der GitHub-Build soll erzeugen:
+## 12. Druckziel
 
-- `eurobox_v50_base.FCStd/STEP/STL`
-- `eurobox_v50_clamp_plate.FCStd/STEP/STL`
-- `eurobox_v50_rack_lower.FCStd/STEP/STL`
-- `eurobox_v50_lead_screw_print.FCStd/STEP/STL`
-- `eurobox_v50_lead_nut_print.FCStd/STEP/STL`
-- `eurobox_v50_lead_nut_cap.FCStd/STEP/STL`
-- `eurobox_v50_knob.FCStd/STEP/STL`
-- `eurobox_v50_knob_retainer.FCStd/STEP/STL`
-- `eurobox_v50_plate_retainer_clip.FCStd/STEP/STL`
-- `eurobox_v50_pin.FCStd/STEP/STL`
-- `eurobox_v50_pin_clip.FCStd/STEP/STL`
-- Assembly-FCStd
-- JSON-Validierungsberichte
-- vollständiges ZIP-Artefakt.
+- Prusa CORE One L
+- PETG für den ersten Funktionstest
+- 0.4-mm-Düse
+- 0.20-mm-Layer als Standard
+- mindestens 3 Perimeter für den strukturellen Prototyp
+- möglichst keine Supports an den langen Tragprofilen und den Hauptkontaktflächen
+
+## 13. Pflichtprüfungen in GitHub Actions
+
+Ein v50-Build darf erst als druckbar bezeichnet werden, wenn mindestens Folgendes bestanden ist:
+
+1. alle Hauptteile `Shape.isValid()` und erwartete Solid-Anzahl;
+2. STEP-Reimport gültig;
+3. STL watertight, winding consistent, eine Komponente;
+4. Base gegen reales Ø12.42-Rohr ohne Kollision;
+5. `rack_lower` mit definierter Vorspannung;
+6. vollständiger Öffnungssweep ohne Base-Kollision;
+7. Pin/Bohrung/Clip geometrisch montierbar;
+8. Platte bei 0/1/2/3/4 mm kollisionsfrei;
+9. beide Plattenbohrungen wirklich durchgängig;
+10. Lead-Nut sitzt kollisionsfrei im Cartridge-Sitz;
+11. korrekte Gewindebewegung kollisionsfrei, falsche Phase/Händigkeit kollidiert;
+12. Spindel/Schulter/Retainer haben nur beabsichtigte Kontakte;
+13. bekannte Schutzblech-Keep-outs bleiben frei;
+14. Gesamtbreite/Knob-Überstand wird im Report ausgegeben.
+
+## 14. Noch offene Messwerte
+
+Für die nächste Präzisionsstufe werden nur noch wenige echte Fahrradmaße benötigt:
+
+- Ø der diagonalen 3-leg-Strebe;
+- deren Winkel/Position relativ zum oberen Rackrohr;
+- exakte Fender-Querkontur;
+- genaue Wandstärke des verwendeten Eurobox-Unterrandes;
+- Typenschild/Artikelnummer und Lastwert des tatsächlich montierten Massload-Trägers.
+
+Diese Werte sind bewusst als offen dokumentiert und werden nicht aus Fotos in Millimeter geschätzt.
