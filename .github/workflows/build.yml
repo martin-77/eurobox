@@ -41,7 +41,6 @@ jobs:
       - name: Verify and extract FreeCAD
         run: |
           set -euo pipefail
-          echo "3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb80a765926981d8ff68903cefee4dfb03a8f5ef  FreeCAD.AppImage" >/tmp/ignore || true
           echo "3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb03a8f5ef  FreeCAD.AppImage" | sha256sum -c -
           chmod +x FreeCAD.AppImage
           rm -rf squashfs-root
@@ -58,7 +57,7 @@ jobs:
           "$FREECADCMD" scripts/build_v50.py | tee build_v50.log
           END=$(date +%s)
           echo $((END-START)) > build_v50/build_seconds.txt
-          test -s build_v50/VALIDATION_v50.json
+          test -s build_v50/VALIDATION_v50_source.json
           test -s build_v50/eurobox_v50_assembly.FCStd
 
       - name: Validate STL meshes
@@ -87,7 +86,7 @@ jobs:
         with:
           name: eurobox-v50-validation
           path: |
-            build_v50/VALIDATION_v50.json
+            build_v50/VALIDATION_v50_source.json
             build_v50/MESH_VALIDATION.json
             build_v50/build_seconds.txt
             build_v50.log
