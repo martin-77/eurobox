@@ -38,13 +38,22 @@ jobs:
           echo "3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb03a8f5ef  FreeCAD.AppImage" | sha256sum -c -
           chmod +x FreeCAD.AppImage
           ./FreeCAD.AppImage --appimage-extract >/dev/null
+          CMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) -perm -111 | head -n1)
+          test -n "$CMD"
+          echo "FREECAD_CMD=$CMD" >> "$GITHUB_ENV"
+          "$CMD" -c 'import FreeCAD, Part; print(FreeCAD.Version()); print(Part.makeBox(2,3,4).Volume)'
 
       - name: Run representative CAD benchmark
+        shell: bash
         run: |
-          START=$(date +%s)
-          ./squashfs-root/usr/bin/FreeCADCmd scripts/benchmark.py | tee benchmark.log
-          END=$(date +%s)
-          echo "wall_seconds=$((END-START))" | tee walltime.txt
+          set -euo pipefail
+          START=$(date +%s%3N)
+          "$FREECAD_CMD" scripts/benchmark.py | tee benchmark.log
+          END=$(date +%s%3N)
+          python3 - <<PY | tee walltime.txt
+          print(f"wall_seconds={(int('$END')-int('$START'))/1000:.3f}")
+          PY
+          test -s benchmark_out/benchmark.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -53,4 +62,5 @@ jobs:
             benchmark_out/benchmark.json
             benchmark.log
             walltime.txt
+          if-no-files-found: error
           retention-days: 7
