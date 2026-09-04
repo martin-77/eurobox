@@ -1,9 +1,13 @@
-import glob, json, os, trimesh
+import glob, json, os, sys, trimesh
 root=os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-out=os.path.join(root,'build')
+out_arg=sys.argv[1] if len(sys.argv)>1 else 'build'
+out=os.path.join(root,out_arg)
 results={}
 failed=[]
-for p in sorted(glob.glob(os.path.join(out,'*.stl'))):
+paths=sorted(glob.glob(os.path.join(out,'*.stl')))
+if not paths:
+    raise SystemExit('No STL files found in '+out)
+for p in paths:
     m=trimesh.load(p, force='mesh')
     name=os.path.basename(p)
     info={
@@ -15,10 +19,10 @@ for p in sorted(glob.glob(os.path.join(out,'*.stl'))):
         'bounds_mm': [[float(x) for x in row] for row in m.bounds.tolist()],
     }
     results[name]=info
-    if not info['watertight'] or not info['winding_consistent'] or info['components'] != 1:
+    if not info['watertight'] or not info['winding_consistent'] or info['components'] != 1 or info['volume_mm3'] <= 0:
         failed.append(name)
 with open(os.path.join(out,'MESH_VALIDATION.json'),'w') as f:
     json.dump({'meshes':results,'failed':failed},f,indent=2)
-print(json.dumps({'count':len(results),'failed':failed},indent=2))
+print(json.dumps({'directory':out_arg,'count':len(results),'failed':failed},indent=2))
 if failed:
     raise SystemExit('Mesh validation failed: '+', '.join(failed))
