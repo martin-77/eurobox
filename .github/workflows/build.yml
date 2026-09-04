@@ -9,6 +9,7 @@ on:
       - "scripts/apply_v50_fixups.py"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
+      - "scripts/preview_v50.scad"
       - "docs/V50_**"
       - "docs/MEASUREMENTS.md"
       - "docs/FOCUS_THRON2_EQP_2023.md"
@@ -21,10 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install OpenSCAD and mesh checks
+      - name: Install OpenSCAD, preview and mesh checks
         run: |
           sudo apt-get update
-          sudo apt-get install -y openscad libfuse2
+          sudo apt-get install -y openscad libfuse2 xvfb
           python3 -m pip install --break-system-packages trimesh networkx
 
       - name: Cache FreeCAD AppImage
@@ -78,7 +79,7 @@ jobs:
           p='build_v50/VALIDATION_v50_source.json'
           v=json.load(open(p))
           print('V50_FAILURES='+json.dumps(v.get('failures', []), ensure_ascii=False))
-          keys=['tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','anti_rotation','beam_sanity','system_width_estimate_mm']
+          keys=['frozen_interface_assertions','tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','anti_rotation','beam_sanity','system_width_estimate_mm']
           print('V50_DIAGNOSTIC='+json.dumps({k:v.get(k) for k in keys}, ensure_ascii=False))
           PY
           else
@@ -109,12 +110,42 @@ jobs:
         if: steps.cadbuild.outcome == 'success'
         run: python3 scripts/validate_meshes.py build_v50
 
+      - name: Render v50 preview
+        if: steps.cadbuild.outcome == 'success'
+        run: |
+          set -euo pipefail
+          xvfb-run -a openscad \
+            --imgsize=1800,1200 \
+            --projection=p \
+            --viewall \
+            --autocenter \
+            -o build_v50/PREVIEW_v50.png \
+            scripts/preview_v50.scad
+          test -s build_v50/PREVIEW_v50.png
+          cp scripts/preview_v50.scad build_v50/PREVIEW_v50.scad
+
       - name: Copy design documentation into artifact
         if: steps.cadbuild.outcome == 'success'
         run: |
           mkdir -p build_v50/docs
           cp docs/V50_DESIGN.md docs/V50_DIMENSIONS.json docs/MEASUREMENTS.md docs/FOCUS_THRON2_EQP_2023.md docs/VALIDATION_V50.md docs/DESIGN_V50.md build_v50/docs/
           cp build_v50.log build_v50/
+
+      - name: Verify deliverables
+        if: steps.cadbuild.outcome == 'success'
+        run: |
+          set -euo pipefail
+          test -s build_v50/eurobox_v50_assembly.FCStd
+          test -s build_v50/eurobox_v50_base.step
+          test -s build_v50/eurobox_v50_base.stl
+          test -s build_v50/eurobox_v50_clamp_plate.step
+          test -s build_v50/eurobox_v50_clamp_plate.stl
+          test -s build_v50/eurobox_v50_rack_lower.step
+          test -s build_v50/eurobox_v50_rack_lower.stl
+          test -s build_v50/eurobox_v50_lead_screw_print.stl
+          test -s build_v50/PREVIEW_v50.png
+          test -s build_v50/VALIDATION_v50_source.json
+          test -s build_v50/MESH_VALIDATION.json
 
       - name: Package output
         if: steps.cadbuild.outcome == 'success'
@@ -127,6 +158,17 @@ jobs:
         with:
           name: eurobox-v50
           path: eurobox-v50.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload v50 preview
+        if: steps.cadbuild.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eurobox-v50-preview
+          path: |
+            build_v50/PREVIEW_v50.png
+            build_v50/PREVIEW_v50.scad
           if-no-files-found: error
           retention-days: 14
 
