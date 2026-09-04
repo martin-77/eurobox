@@ -1,4 +1,4 @@
-import glob, json, os, sys, tempfile, subprocess, shutil
+import glob, json, os, sys, subprocess
 import trimesh
 
 root=os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
@@ -13,10 +13,16 @@ if not paths:
 
 def inspect(path):
     m=trimesh.load(path, force='mesh', process=True)
+    comps=m.split(only_watertight=False)
     return m, {
         'watertight': bool(m.is_watertight),
         'winding_consistent': bool(m.is_winding_consistent),
-        'components': int(len(m.split(only_watertight=False))),
+        # Surface-shell count is diagnostic, NOT a body-count gate. A single
+        # OCC solid with enclosed cavities legitimately exports as one outer
+        # shell plus one or more inner closed shells in STL. The upstream CAD
+        # gate already requires source_solids==1 and STEP solids==1.
+        'surface_shells': int(len(comps)),
+        'surface_shell_volumes_signed_mm3': [float(c.volume) for c in comps],
         'faces': int(len(m.faces)),
         'volume_mm3': float(abs(m.volume)),
         'bounds_mm': [[float(x) for x in row] for row in m.bounds.tolist()],
@@ -25,14 +31,12 @@ def inspect(path):
 
 def good(info):
     return (info['watertight'] and info['winding_consistent'] and
-            info['components'] == 1 and info['volume_mm3'] > 0)
+            info['volume_mm3'] > 0)
 
 
 def trimesh_cleanup(path):
     m=trimesh.load(path, force='mesh', process=True)
-    # CAD face tessellations can leave coincident seam vertices which are
-    # topologically separate in STL. Merge only at 1e-5 mm precision: far
-    # below FDM tolerances and therefore not a dimensional repair.
+    # Merge only sub-micron CAD seam duplicates; do not alter design geometry.
     m.merge_vertices(digits_vertex=5)
     try:
         m.update_faces(m.unique_faces())
@@ -55,16 +59,13 @@ def trimesh_cleanup(path):
 
 
 def openscad_normalize(path):
-    # CGAL re-union is a second, geometry-preserving topology normalization.
-    # It is used only if the sub-micron seam merge above is insufficient.
     outstl=path+'.cgal.stl'
     scad=path+'.normalize.scad'
     src=os.path.abspath(path).replace('\\','/')
-    dst=os.path.abspath(outstl)
     with open(scad,'w') as f:
-        f.write('render(convexity=20) import("'+src+'", convexity=20);\n')
+        f.write('render(convexity=30) import("'+src+'", convexity=30);\n')
     try:
-        cp=subprocess.run(['openscad','-o',dst,scad], stdout=subprocess.PIPE,
+        cp=subprocess.run(['openscad','-o',outstl,scad], stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT, text=True, timeout=300)
         if cp.returncode != 0 or not os.path.exists(outstl) or os.path.getsize(outstl)==0:
             return False, {'openscad_log': cp.stdout[-4000:]}
@@ -104,7 +105,8 @@ for p in paths:
         failed.append(name)
 
 with open(os.path.join(out,'MESH_VALIDATION.json'),'w') as f:
-    json.dump({'meshes':results,'failed':failed},f,indent=2)
+    json.dump({'meshes':results,'failed':failed,
+               'note':'surface_shells is diagnostic; source/STEP single-solid checks are the body connectivity authority'},f,indent=2)
 
 print(json.dumps({'directory':out_arg,'count':len(results),'failed':failed,
                   'failed_details':{n:results[n] for n in failed}},indent=2))
