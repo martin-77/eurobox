@@ -1,14 +1,59 @@
-import faulthandler
 import json
 import os
 import sys
 import traceback
 
-import FreeCAD as App
-import Part
+# Do not derive the build path from FreeCADCmd's argv. FreeCAD owns its command
+# line and may expose launcher/script arguments differently across builds.
+OUT = os.environ.get('EUROBOX_BUILD_DIR', 'build_v50')
+os.makedirs(OUT, exist_ok=True)
 
-faulthandler.enable()
-OUT = sys.argv[1] if len(sys.argv) > 1 else 'build_v50'
+
+def bootstrap(stage, extra=None):
+    payload = {'diagnostic_only': True, 'stage': stage}
+    if extra is not None:
+        payload['extra'] = extra
+    with open(os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json'), 'w') as f:
+        json.dump(payload, f, indent=2)
+    print('[box-clamp] ' + stage, flush=True)
+
+
+# Write a diagnostic before importing any FreeCAD modules. If the runtime dies
+# during import, the Actions artifact still records exactly how far we got.
+bootstrap('bootstrap:stdlib', {'argv': sys.argv, 'out': OUT})
+
+try:
+    import faulthandler
+    try:
+        faulthandler.enable()
+    except Exception as exc:
+        # Some embedded/headless Python streams have no usable fileno(). This is
+        # diagnostic only and must never prevent the actual validator from running.
+        print('[box-clamp] faulthandler unavailable: ' + repr(exc), flush=True)
+except Exception as exc:
+    print('[box-clamp] faulthandler import unavailable: ' + repr(exc), flush=True)
+
+bootstrap('bootstrap:before_freecad_import')
+
+try:
+    import FreeCAD as App
+    import Part
+except BaseException as exc:
+    failure = {
+        'diagnostic_only': True,
+        'stage': 'bootstrap:freecad_import_failed',
+        'exception_type': type(exc).__name__,
+        'exception': str(exc),
+        'traceback': traceback.format_exc(),
+    }
+    with open(os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json'), 'w') as f:
+        json.dump(failure, f, indent=2)
+    with open(os.path.join(OUT, 'BOX_CLAMP_EXCEPTION.json'), 'w') as f:
+        json.dump(failure, f, indent=2)
+    print('[box-clamp] EXCEPTION=' + json.dumps(failure), file=sys.stderr, flush=True)
+    raise
+
+bootstrap('bootstrap:freecad_imported', {'freecad_version': App.Version()})
 
 # Frozen / designed clamp datums.
 BOX_EDGE_Y = 244.665
@@ -34,20 +79,15 @@ def log(message):
 
 
 def checkpoint(stage, extra=None):
-    os.makedirs(OUT, exist_ok=True)
     payload = {'diagnostic_only': True, 'stage': stage}
     if extra is not None:
         payload['extra'] = extra
     with open(os.path.join(OUT, 'BOX_CLAMP_CHECKPOINT.json'), 'w') as f:
         json.dump(payload, f, indent=2)
-    # The workflow already uploads BOX_CLAMP_VALIDATION.json. Until the real
-    # report exists, mirror the latest checkpoint there so a native OCC abort
-    # still leaves a downloadable diagnostic artifact. The final report later
-    # replaces this file and is never overwritten by subsequent checkpoints.
-    validation_path = os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json')
-    if not os.path.exists(validation_path):
-        with open(validation_path, 'w') as f:
-            json.dump(payload, f, indent=2)
+    # Keep the workflow's already-uploaded validation path useful even if OCC
+    # terminates the process natively before Python can handle an exception.
+    with open(os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json'), 'w') as f:
+        json.dump(payload, f, indent=2)
     log(stage)
 
 
@@ -83,7 +123,7 @@ def common_volume(a, b, name):
 
 
 def run_validation():
-    checkpoint('validator:start', {'argv': sys.argv, 'freecad_version': App.Version()})
+    checkpoint('validator:start', {'freecad_version': App.Version(), 'out': OUT})
 
     base = read_step('eurobox_v50_base')
     plate = read_step('eurobox_v50_clamp_plate')
@@ -102,20 +142,17 @@ def run_validation():
         'failed': [],
     }
 
-    # 1) Hole / shaft / shoulder fit: explicit diametral clearances.
     report['measurements']['plate_journal_diametral_clearance_mm'] = round(PLATE_HOLE_D - JOURNAL_D, 3)
     report['measurements']['shoulder_counterbore_diametral_clearance_mm'] = round(PLATE_COUNTERBORE_D - SHOULDER_D, 3)
     report['checks']['plate_journal_clearance_positive'] = (PLATE_HOLE_D - JOURNAL_D) >= 0.4
     report['checks']['shoulder_counterbore_clearance_positive'] = (PLATE_COUNTERBORE_D - SHOULDER_D) >= 0.8
 
-    # 2) Closed geometry: hook is under the box and exactly reaches the measured outer face.
     closed_hook_inner_y = BOX_EDGE_Y - UNDERHOOK
     report['measurements']['closed_underhook_inner_y_mm'] = round(closed_hook_inner_y, 3)
     report['measurements']['closed_underhook_capture_depth_mm'] = round(BOX_EDGE_Y - closed_hook_inner_y, 3)
     report['checks']['closed_hook_captures_box_edge'] = closed_hook_inner_y < BOX_EDGE_Y
     report['checks']['closed_plate_does_not_interpenetrate_rim'] = common_volume(plate, rim, 'closed_plate_vs_rim') < 1e-4
 
-    # 3) Full opening: the hook must clear the measured outer box face with >=1.0 mm real allowance.
     open_hook_inner_y = closed_hook_inner_y + PLATE_OPEN
     open_clearance = open_hook_inner_y - BOX_EDGE_Y
     report['measurements']['open_underhook_inner_y_mm'] = round(open_hook_inner_y, 3)
@@ -126,8 +163,6 @@ def run_validation():
     report['checks']['plate_open_position_clear_of_base'] = common_volume(pl_open, base, 'open_plate_vs_base') < 1e-4
     report['checks']['plate_open_position_clear_of_rim'] = common_volume(pl_open, rim, 'open_plate_vs_rim') < 1e-4
 
-    # 4) Actual clamping action: allow 0.5 mm inward travel beyond nominal contact.
-    # Rigid CAD overlap with the rim here is intentional and represents preload/compression.
     pl_clamp = plate.copy()
     pl_clamp.translate(App.Vector(0, -CLAMP_PRELOAD, 0))
     clamp_rim_overlap = common_volume(pl_clamp, rim, 'preload_plate_vs_rim')
@@ -137,8 +172,6 @@ def run_validation():
     report['checks']['preload_reaches_box_rim'] = clamp_rim_overlap > 1.0
     report['checks']['preload_does_not_hit_base'] = clamp_base_overlap < 1e-4
 
-    # 5) Fixed nut and lead screw: prove actual helical engagement, not merely a clear bore.
-    # Correct RH kinematics: +Y opening requires -rotation around Y.
     def placed_spindle(travel_mm, rotate_deg):
         q = spindle.copy()
         q.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), rotate_deg)
@@ -165,14 +198,11 @@ def run_validation():
         x['nut_common_mm3'] < 0.5 and x['base_common_mm3'] < 0.5 for x in thread_states
     )
 
-    # A threaded spindle must NOT be able to translate 0.5 mm axially without rotating.
     q_slide = placed_spindle(0.5, 0.0)
     slide_interference = common_volume(placed_nut, q_slide, 'axial_slide_without_rotation')
     report['measurements']['axial_slide_without_rotation_interference_mm3'] = round(slide_interference, 6)
     report['checks']['thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0
 
-    # 6) At nominal position the spindle must pass through the plate without solid overlap,
-    # while the shoulder is geometrically adjacent to the plate rather than floating away.
     q0 = placed_spindle(0.0, 0.0)
     spindle_plate_overlap = common_volume(q0, plate, 'nominal_spindle_vs_plate')
     checkpoint('distance:start:nominal_spindle_vs_plate')
@@ -191,7 +221,6 @@ def run_validation():
     with open(path, 'w') as f:
         json.dump(report, f, indent=2)
 
-    checkpoint('validator:report_written', {'failed': report['failed']})
     print(json.dumps(report, indent=2), flush=True)
     if report['failed']:
         raise RuntimeError('BOX CLAMP VALIDATION FAILED: ' + ' | '.join(report['failed']))
@@ -200,7 +229,6 @@ def run_validation():
 try:
     run_validation()
 except BaseException as exc:
-    os.makedirs(OUT, exist_ok=True)
     failure = {
         'exception_type': type(exc).__name__,
         'exception': str(exc),
