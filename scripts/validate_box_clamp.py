@@ -1,10 +1,13 @@
+import faulthandler
 import json
 import os
 import sys
+import traceback
 
 import FreeCAD as App
 import Part
 
+faulthandler.enable()
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'build_v50'
 
 # Frozen / designed clamp datums.
@@ -26,14 +29,36 @@ SHOULDER_D = 11.0
 PLATE_COUNTERBORE_D = 12.0
 
 
+def log(message):
+    print('[box-clamp] ' + message, flush=True)
+
+
+def checkpoint(stage, extra=None):
+    os.makedirs(OUT, exist_ok=True)
+    payload = {'stage': stage}
+    if extra is not None:
+        payload['extra'] = extra
+    with open(os.path.join(OUT, 'BOX_CLAMP_CHECKPOINT.json'), 'w') as f:
+        json.dump(payload, f, indent=2)
+    log(stage)
+
+
 def read_step(name):
     p = os.path.join(OUT, name + '.step')
+    checkpoint('read_step:start:' + name, {'path': p})
     if not os.path.exists(p):
-        raise SystemExit('Missing STEP: ' + p)
+        raise RuntimeError('Missing STEP: ' + p)
     s = Part.Shape()
     s.read(p)
+    info = {
+        'is_null': s.isNull(),
+        'is_valid': s.isValid() if not s.isNull() else False,
+        'solids': len(s.Solids) if not s.isNull() else 0,
+        'volume_mm3': round(s.Volume, 6) if not s.isNull() else 0.0,
+    }
+    checkpoint('read_step:done:' + name, info)
     if s.isNull() or not s.isValid() or len(s.Solids) != 1:
-        raise SystemExit('Invalid STEP solid: ' + p)
+        raise RuntimeError('Invalid STEP solid: ' + p + ' ' + repr(info))
     return s
 
 
@@ -41,104 +66,141 @@ def box(x0, y0, z0, dx, dy, dz):
     return Part.makeBox(dx, dy, dz, App.Vector(x0, y0, z0))
 
 
-base = read_step('eurobox_v50_base')
-plate = read_step('eurobox_v50_clamp_plate')
-spindle = read_step('eurobox_v50_lead_screw_print')
-nut = read_step('eurobox_v50_lead_nut_print')
+def common_volume(a, b, name):
+    checkpoint('common:start:' + name)
+    result = a.common(b)
+    volume = result.Volume
+    checkpoint('common:done:' + name, {'volume_mm3': round(volume, 6)})
+    return volume
 
-rim = box(-200.0, BOX_RIM_INNER_Y, RIM_BOTTOM_Z, 400.0, RIM_Y, RIM_H)
 
-report = {
-    'version': 'v50',
-    'plate_open_mm': PLATE_OPEN,
-    'clamp_preload_mm': CLAMP_PRELOAD,
-    'checks': {},
-    'measurements': {},
-    'failed': [],
-}
+def run_validation():
+    checkpoint('validator:start', {'argv': sys.argv, 'freecad_version': App.Version()})
 
-# 1) Hole / shaft / shoulder fit: explicit diametral clearances.
-report['measurements']['plate_journal_diametral_clearance_mm'] = round(PLATE_HOLE_D - JOURNAL_D, 3)
-report['measurements']['shoulder_counterbore_diametral_clearance_mm'] = round(PLATE_COUNTERBORE_D - SHOULDER_D, 3)
-report['checks']['plate_journal_clearance_positive'] = (PLATE_HOLE_D - JOURNAL_D) >= 0.4
-report['checks']['shoulder_counterbore_clearance_positive'] = (PLATE_COUNTERBORE_D - SHOULDER_D) >= 0.8
+    base = read_step('eurobox_v50_base')
+    plate = read_step('eurobox_v50_clamp_plate')
+    spindle = read_step('eurobox_v50_lead_screw_print')
+    nut = read_step('eurobox_v50_lead_nut_print')
 
-# 2) Closed geometry: hook is under the box and exactly reaches the measured outer face.
-closed_hook_inner_y = BOX_EDGE_Y - UNDERHOOK
-report['measurements']['closed_underhook_inner_y_mm'] = round(closed_hook_inner_y, 3)
-report['measurements']['closed_underhook_capture_depth_mm'] = round(BOX_EDGE_Y - closed_hook_inner_y, 3)
-report['checks']['closed_hook_captures_box_edge'] = closed_hook_inner_y < BOX_EDGE_Y
-report['checks']['closed_plate_does_not_interpenetrate_rim'] = plate.common(rim).Volume < 1e-4
+    checkpoint('inputs:loaded')
+    rim = box(-200.0, BOX_RIM_INNER_Y, RIM_BOTTOM_Z, 400.0, RIM_Y, RIM_H)
 
-# 3) Full opening: the hook must clear the measured outer box face with >=1.0 mm real allowance.
-open_hook_inner_y = closed_hook_inner_y + PLATE_OPEN
-open_clearance = open_hook_inner_y - BOX_EDGE_Y
-report['measurements']['open_underhook_inner_y_mm'] = round(open_hook_inner_y, 3)
-report['measurements']['open_box_edge_clearance_mm'] = round(open_clearance, 3)
-report['checks']['open_clearance_at_least_1mm'] = open_clearance >= 1.0
-pl_open = plate.copy(); pl_open.translate(App.Vector(0, PLATE_OPEN, 0))
-report['checks']['plate_open_position_clear_of_base'] = pl_open.common(base).Volume < 1e-4
-report['checks']['plate_open_position_clear_of_rim'] = pl_open.common(rim).Volume < 1e-4
+    report = {
+        'version': 'v50',
+        'plate_open_mm': PLATE_OPEN,
+        'clamp_preload_mm': CLAMP_PRELOAD,
+        'checks': {},
+        'measurements': {},
+        'failed': [],
+    }
 
-# 4) Actual clamping action: allow 0.5 mm inward travel beyond nominal contact.
-# Rigid CAD overlap with the rim here is intentional and represents preload/compression.
-pl_clamp = plate.copy(); pl_clamp.translate(App.Vector(0, -CLAMP_PRELOAD, 0))
-clamp_rim_overlap = pl_clamp.common(rim).Volume
-clamp_base_overlap = pl_clamp.common(base).Volume
-report['measurements']['preload_rim_overlap_mm3'] = round(clamp_rim_overlap, 6)
-report['measurements']['preload_base_overlap_mm3'] = round(clamp_base_overlap, 6)
-report['checks']['preload_reaches_box_rim'] = clamp_rim_overlap > 1.0
-report['checks']['preload_does_not_hit_base'] = clamp_base_overlap < 1e-4
+    # 1) Hole / shaft / shoulder fit: explicit diametral clearances.
+    report['measurements']['plate_journal_diametral_clearance_mm'] = round(PLATE_HOLE_D - JOURNAL_D, 3)
+    report['measurements']['shoulder_counterbore_diametral_clearance_mm'] = round(PLATE_COUNTERBORE_D - SHOULDER_D, 3)
+    report['checks']['plate_journal_clearance_positive'] = (PLATE_HOLE_D - JOURNAL_D) >= 0.4
+    report['checks']['shoulder_counterbore_clearance_positive'] = (PLATE_COUNTERBORE_D - SHOULDER_D) >= 0.8
 
-# 5) Fixed nut and lead screw: prove actual helical engagement, not merely a clear bore.
-# Correct RH kinematics: +Y opening requires -rotation around Y.
-def placed_spindle(travel_mm, rotate_deg):
-    q = spindle.copy()
-    q.rotate(App.Vector(0,0,0), App.Vector(0,1,0), rotate_deg)
-    q.translate(App.Vector(SPINDLE_X, BOX_EDGE_Y + travel_mm, SPINDLE_Z))
-    return q
+    # 2) Closed geometry: hook is under the box and exactly reaches the measured outer face.
+    closed_hook_inner_y = BOX_EDGE_Y - UNDERHOOK
+    report['measurements']['closed_underhook_inner_y_mm'] = round(closed_hook_inner_y, 3)
+    report['measurements']['closed_underhook_capture_depth_mm'] = round(BOX_EDGE_Y - closed_hook_inner_y, 3)
+    report['checks']['closed_hook_captures_box_edge'] = closed_hook_inner_y < BOX_EDGE_Y
+    report['checks']['closed_plate_does_not_interpenetrate_rim'] = common_volume(plate, rim, 'closed_plate_vs_rim') < 1e-4
 
-placed_nut = nut.copy(); placed_nut.translate(App.Vector(SPINDLE_X, 260.465, SPINDLE_Z))
+    # 3) Full opening: the hook must clear the measured outer box face with >=1.0 mm real allowance.
+    open_hook_inner_y = closed_hook_inner_y + PLATE_OPEN
+    open_clearance = open_hook_inner_y - BOX_EDGE_Y
+    report['measurements']['open_underhook_inner_y_mm'] = round(open_hook_inner_y, 3)
+    report['measurements']['open_box_edge_clearance_mm'] = round(open_clearance, 3)
+    report['checks']['open_clearance_at_least_1mm'] = open_clearance >= 1.0
+    pl_open = plate.copy()
+    pl_open.translate(App.Vector(0, PLATE_OPEN, 0))
+    report['checks']['plate_open_position_clear_of_base'] = common_volume(pl_open, base, 'open_plate_vs_base') < 1e-4
+    report['checks']['plate_open_position_clear_of_rim'] = common_volume(pl_open, rim, 'open_plate_vs_rim') < 1e-4
 
-thread_states = []
-for travel in (-CLAMP_PRELOAD, 0.0, 0.5, 1.0, 2.0, 4.0, PLATE_OPEN):
-    rot = -360.0 * travel / THREAD_PITCH
-    q = placed_spindle(travel, rot)
-    n_common = placed_nut.common(q).Volume
-    b_common = base.common(q).Volume
-    thread_states.append({
-        'travel_mm': travel,
-        'rotation_deg': rot,
-        'nut_common_mm3': round(n_common, 6),
-        'base_common_mm3': round(b_common, 6),
-    })
-report['thread_states'] = thread_states
-report['checks']['correct_thread_phase_collision_free'] = all(x['nut_common_mm3'] < 0.5 and x['base_common_mm3'] < 0.5 for x in thread_states)
+    # 4) Actual clamping action: allow 0.5 mm inward travel beyond nominal contact.
+    # Rigid CAD overlap with the rim here is intentional and represents preload/compression.
+    pl_clamp = plate.copy()
+    pl_clamp.translate(App.Vector(0, -CLAMP_PRELOAD, 0))
+    clamp_rim_overlap = common_volume(pl_clamp, rim, 'preload_plate_vs_rim')
+    clamp_base_overlap = common_volume(pl_clamp, base, 'preload_plate_vs_base')
+    report['measurements']['preload_rim_overlap_mm3'] = round(clamp_rim_overlap, 6)
+    report['measurements']['preload_base_overlap_mm3'] = round(clamp_base_overlap, 6)
+    report['checks']['preload_reaches_box_rim'] = clamp_rim_overlap > 1.0
+    report['checks']['preload_does_not_hit_base'] = clamp_base_overlap < 1e-4
 
-# A threaded spindle must NOT be able to translate 0.5 mm axially without rotating.
-q_slide = placed_spindle(0.5, 0.0)
-slide_interference = placed_nut.common(q_slide).Volume
-report['measurements']['axial_slide_without_rotation_interference_mm3'] = round(slide_interference, 6)
-report['checks']['thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0
+    # 5) Fixed nut and lead screw: prove actual helical engagement, not merely a clear bore.
+    # Correct RH kinematics: +Y opening requires -rotation around Y.
+    def placed_spindle(travel_mm, rotate_deg):
+        q = spindle.copy()
+        q.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), rotate_deg)
+        q.translate(App.Vector(SPINDLE_X, BOX_EDGE_Y + travel_mm, SPINDLE_Z))
+        return q
 
-# 6) At nominal position the spindle must pass through the plate without solid overlap,
-# while the shoulder is geometrically adjacent to the plate rather than floating away.
-q0 = placed_spindle(0.0, 0.0)
-spindle_plate_overlap = q0.common(plate).Volume
-spindle_plate_distance = q0.distToShape(plate)[0]
-report['measurements']['spindle_plate_overlap_mm3'] = round(spindle_plate_overlap, 6)
-report['measurements']['spindle_plate_min_distance_mm'] = round(spindle_plate_distance, 6)
-report['checks']['spindle_passes_plate_hole'] = spindle_plate_overlap < 1e-4
-report['checks']['spindle_thrust_face_reaches_plate'] = spindle_plate_distance < 0.05
+    placed_nut = nut.copy()
+    placed_nut.translate(App.Vector(SPINDLE_X, 260.465, SPINDLE_Z))
 
-for name, ok in report['checks'].items():
-    if not ok:
-        report['failed'].append(name)
+    thread_states = []
+    for travel in (-CLAMP_PRELOAD, 0.0, 0.5, 1.0, 2.0, 4.0, PLATE_OPEN):
+        rot = -360.0 * travel / THREAD_PITCH
+        q = placed_spindle(travel, rot)
+        n_common = common_volume(placed_nut, q, 'thread_nut_vs_spindle_travel_' + str(travel))
+        b_common = common_volume(base, q, 'thread_base_vs_spindle_travel_' + str(travel))
+        thread_states.append({
+            'travel_mm': travel,
+            'rotation_deg': rot,
+            'nut_common_mm3': round(n_common, 6),
+            'base_common_mm3': round(b_common, 6),
+        })
+    report['thread_states'] = thread_states
+    report['checks']['correct_thread_phase_collision_free'] = all(
+        x['nut_common_mm3'] < 0.5 and x['base_common_mm3'] < 0.5 for x in thread_states
+    )
 
-path = os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json')
-with open(path, 'w') as f:
-    json.dump(report, f, indent=2)
+    # A threaded spindle must NOT be able to translate 0.5 mm axially without rotating.
+    q_slide = placed_spindle(0.5, 0.0)
+    slide_interference = common_volume(placed_nut, q_slide, 'axial_slide_without_rotation')
+    report['measurements']['axial_slide_without_rotation_interference_mm3'] = round(slide_interference, 6)
+    report['checks']['thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0
 
-print(json.dumps(report, indent=2))
-if report['failed']:
-    raise SystemExit('BOX CLAMP VALIDATION FAILED: ' + ' | '.join(report['failed']))
+    # 6) At nominal position the spindle must pass through the plate without solid overlap,
+    # while the shoulder is geometrically adjacent to the plate rather than floating away.
+    q0 = placed_spindle(0.0, 0.0)
+    spindle_plate_overlap = common_volume(q0, plate, 'nominal_spindle_vs_plate')
+    checkpoint('distance:start:nominal_spindle_vs_plate')
+    spindle_plate_distance = q0.distToShape(plate)[0]
+    checkpoint('distance:done:nominal_spindle_vs_plate', {'distance_mm': round(spindle_plate_distance, 6)})
+    report['measurements']['spindle_plate_overlap_mm3'] = round(spindle_plate_overlap, 6)
+    report['measurements']['spindle_plate_min_distance_mm'] = round(spindle_plate_distance, 6)
+    report['checks']['spindle_passes_plate_hole'] = spindle_plate_overlap < 1e-4
+    report['checks']['spindle_thrust_face_reaches_plate'] = spindle_plate_distance < 0.05
+
+    for name, ok in report['checks'].items():
+        if not ok:
+            report['failed'].append(name)
+
+    path = os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json')
+    with open(path, 'w') as f:
+        json.dump(report, f, indent=2)
+
+    checkpoint('validator:report_written', {'failed': report['failed']})
+    print(json.dumps(report, indent=2), flush=True)
+    if report['failed']:
+        raise RuntimeError('BOX CLAMP VALIDATION FAILED: ' + ' | '.join(report['failed']))
+
+
+try:
+    run_validation()
+except BaseException as exc:
+    os.makedirs(OUT, exist_ok=True)
+    failure = {
+        'exception_type': type(exc).__name__,
+        'exception': str(exc),
+        'traceback': traceback.format_exc(),
+    }
+    try:
+        with open(os.path.join(OUT, 'BOX_CLAMP_EXCEPTION.json'), 'w') as f:
+            json.dump(failure, f, indent=2)
+    finally:
+        print('[box-clamp] EXCEPTION=' + json.dumps(failure), file=sys.stderr, flush=True)
+    raise
