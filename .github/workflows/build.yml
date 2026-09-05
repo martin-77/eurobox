@@ -7,9 +7,11 @@ on:
     paths:
       - "scripts/build_v50.py"
       - "scripts/apply_v50_fixups.py"
+      - "scripts/apply_v50_clamp_fixups.py"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
       - "scripts/validate_assembly_layout.py"
+      - "scripts/validate_box_clamp.py"
       - "scripts/preview_v50.scad"
       - "scripts/final_print_meshes.scad"
       - "docs/V50_**"
@@ -62,6 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/apply_v50_fixups.py
+          python3 scripts/apply_v50_clamp_fixups.py
           python3 -m py_compile scripts/build_v50.py
 
       - name: Build and validate v50 CAD
@@ -82,6 +85,13 @@ jobs:
           python3 scripts/validate_assembly_layout.py build_v50
           test -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
 
+      - name: Validate box clamp mechanism
+        if: steps.cadbuild.outcome == 'success'
+        run: |
+          set -euo pipefail
+          "$FREECADCMD" scripts/validate_box_clamp.py build_v50
+          test -s build_v50/BOX_CLAMP_VALIDATION.json
+
       - name: Print hard-check diagnostics
         if: always()
         run: |
@@ -100,6 +110,9 @@ jobs:
           if [ -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json ]; then
             cat build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
           fi
+          if [ -s build_v50/BOX_CLAMP_VALIDATION.json ]; then
+            cat build_v50/BOX_CLAMP_VALIDATION.json
+          fi
 
       - name: Diagnose base topology after CAD failure
         if: failure()
@@ -115,6 +128,7 @@ jobs:
           path: |
             build_v50/VALIDATION_v50_source.json
             build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
+            build_v50/BOX_CLAMP_VALIDATION.json
             build_v50/BASE_DEBUG_v50.json
             build_v50/DEBUG_v50_base.brep
             build_v50.log
@@ -181,13 +195,16 @@ jobs:
           test -s build_v50/PREVIEW_v50.png
           test -s build_v50/VALIDATION_v50_source.json
           test -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
+          test -s build_v50/BOX_CLAMP_VALIDATION.json
           test -s build_v50/MESH_VALIDATION.json
           python3 - <<'PY'
           import json
           m=json.load(open('build_v50/MESH_VALIDATION.json'))
           a=json.load(open('build_v50/ASSEMBLY_LAYOUT_VALIDATION.json'))
+          c=json.load(open('build_v50/BOX_CLAMP_VALIDATION.json'))
           assert not m['failed'], m['failed']
           assert not a['failed'], a['failed']
+          assert not c['failed'], c['failed']
           PY
 
       - name: Publish validated CAD files into repository
@@ -197,20 +214,15 @@ jobs:
           rm -rf cad/v50 preview-stl/v50
           mkdir -p cad/v50/FCStd cad/v50/STEP cad/v50/STL cad/v50/assembly
 
-          # Per-part editable FreeCAD files, exchange STEP files and the exact
-          # validated print STL files from this successful build.
           find build_v50 -maxdepth 1 -type f -name '*.FCStd' ! -name 'eurobox_v50_assembly.FCStd' -exec cp {} cad/v50/FCStd/ \;
-          find build_v50 -maxdepth 1 -type f -name '*.step' -exec cp {} cad/v50/STEP/ \;
-          find build_v50 -maxdepth 1 -type f -name '*.stl' -exec cp {} cad/v50/STL/ \;
+          find build_v50 -maxdepth 1 -type f -name 'eurobox_v50_*.step' -exec cp {} cad/v50/STEP/ \;
+          find build_v50 -maxdepth 1 -type f -name 'eurobox_v50_*.stl' -exec cp {} cad/v50/STL/ \;
 
-          # Full FreeCAD assembly plus an STL visual assembly for GitHub's
-          # interactive viewer. The assembly STL is a viewing aid, not a print part.
           cp build_v50/eurobox_v50_assembly.FCStd cad/v50/assembly/
           cp build_v50/PREVIEW_v50.png cad/v50/assembly/PREVIEW_v50.png
           openscad -o cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl scripts/preview_v50.scad
           test -s cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl
 
-          # GitHub's STL renderer is intended for repository STL files below 10 MB.
           oversize_stl=$(find cad/v50 -type f -name '*.stl' -size +9999999c -print)
           if [ -n "$oversize_stl" ]; then
             echo "STL file(s) too large for GitHub 3D preview:"
@@ -218,7 +230,6 @@ jobs:
             exit 1
           fi
 
-          # GitHub blocks normal repository files at 100 MB. Keep a margin.
           oversize_repo=$(find cad/v50 -type f -size +95000000c -print)
           if [ -n "$oversize_repo" ]; then
             echo "CAD file(s) too large for normal GitHub repository storage:"
@@ -226,7 +237,6 @@ jobs:
             exit 1
           fi
 
-          # Sanity check: every exported part must have all three forms.
           python3 - <<'PY'
           from pathlib import Path
           fc = {p.stem for p in Path('cad/v50/FCStd').glob('*.FCStd')}
@@ -247,7 +257,7 @@ jobs:
           cat > cad/v50/README.md <<'EOF'
           # Eurobox v50 CAD
 
-          This directory is updated automatically only after a successful v50 CAD, assembly-layout and STL-mesh validation run.
+          This directory is updated automatically only after successful CAD, assembly-layout, box-clamp and STL-mesh validation.
 
           - `FCStd/` – one editable FreeCAD file per individual part
           - `STEP/` – the same individual parts as STEP exchange files
@@ -302,6 +312,7 @@ jobs:
           path: |
             build_v50/VALIDATION_v50_source.json
             build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
+            build_v50/BOX_CLAMP_VALIDATION.json
             build_v50/MESH_VALIDATION.json
             build_v50/build_seconds.txt
             build_v50.log
