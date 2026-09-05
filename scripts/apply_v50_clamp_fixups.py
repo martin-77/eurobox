@@ -11,29 +11,28 @@ orig = s
 # with an 8 mm plate still leaves 0.5 mm guide overlap margin at full opening.
 s = s.replace('PLATE_OPEN = 4.5', 'PLATE_OPEN = 5.5', 1)
 
-# The spindle shoulder starts nominally at BOX_EDGE_Y + 8.0, exactly at the
-# outside face of the 8 mm clamp plate. The intended 0.5 mm clamp preload moves
-# both plate and spindle inward by 0.5 mm. The original base bore started only
-# at +8.0 and therefore let the Ø11 shoulder clip the base during that preload.
-# Add a shallow Ø11.6 counterbore from +7.4 to +10.0: 0.6 mm inward allowance
-# plus 0.3 mm radial FDM clearance around the Ø11 shoulder. The normal Ø8.9
-# spindle bore remains unchanged farther outward.
-needle = "    BASE = BASE.cut(cyl_y(4.45, CAGE_Y1-(BOX_EDGE_Y+8.0)+1.0, sx, BOX_EDGE_Y+8.0, SPINDLE_Z))\n"
-replacement = needle + "    BASE = BASE.cut(cyl_y(5.8, 2.6, sx, BOX_EDGE_Y+7.4, SPINDLE_Z))\n"
-if needle not in s:
-    raise SystemExit('Could not locate spindle base bore for preload relief')
-s = s.replace(needle, replacement, 1)
+# The first v50 fixup already creates the Ø11.6 shoulder tunnel needed for the
+# inward clamp motion. The remaining preload collision is at the OUTER end:
+# with LEAD_THREAD_LEN=22.2 the 10 mm hex begins exactly at CAGE_Y1 in the
+# nominal position. At -0.5 mm preload it therefore enters the fixed cage by
+# 0.5 mm. Extend the threaded shank by 0.8 mm before the hex. The thread itself
+# fits the existing Ø8.9 tunnel; at maximum preload the hex now remains 0.3 mm
+# outside the cage. Nut position, pitch and all frozen box/rack datums stay put.
+if 'LEAD_THREAD_LEN = 22.2' not in s:
+    raise SystemExit('Could not locate v50 lead-thread length')
+s = s.replace('LEAD_THREAD_LEN = 22.2', 'LEAD_THREAD_LEN = 23.0', 1)
 
 # Extend plate-motion and thread-kinematics hard checks to the new end position.
 s = s.replace('for d in [0, 1, 2, 3, 4, 4.5]:',
               'for d in [0, 1, 2, 3, 4, 4.5, 5.0, 5.5]:', 1)
-# Also validate the actual -0.5 mm clamp-preload position in the source CAD,
-# not only the opening direction. This prevents this regression from hiding in
-# the separate post-build validator again.
+
+# Validate the real -0.5 mm clamping preload as part of the source CAD gate,
+# not only in the separate post-build clamp validator.
 s = s.replace('for d in [0, 0.5, 1.0, 2.0, 3.0, 4.0, 4.5]:',
               'for d in [-0.5, 0, 0.5, 1.0, 2.0, 3.0, 4.0, 4.5, 5.0, 5.5]:', 1)
 
-# Keep the width diagnostic truthful.
+# Keep the width diagnostic truthful; LEAD_THREAD_LEN is already part of the
+# spindle outer-position formula, so the extra 0.8 mm is included automatically.
 s = s.replace("'open_4_5mm': round(BOX_W + 2*((spindle_outer_local_y+4.5)-BOX_EDGE_Y), 3),",
               "'open_5_5mm': round(BOX_W + 2*((spindle_outer_local_y+5.5)-BOX_EDGE_Y), 3),", 1)
 
@@ -41,10 +40,10 @@ if s == orig:
     raise SystemExit('Clamp travel/preload fixup did not modify build_v50.py')
 if 'PLATE_OPEN = 5.5' not in s:
     raise SystemExit('Clamp travel fixup failed')
-if 'BOX_EDGE_Y+7.4' not in s:
-    raise SystemExit('Spindle shoulder preload relief fixup failed')
+if 'LEAD_THREAD_LEN = 23.0' not in s:
+    raise SystemExit('Spindle preload travel fixup failed')
 if 'for d in [-0.5, 0, 0.5' not in s:
     raise SystemExit('Preload kinematics validation fixup failed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied v50 clamp fixups: 5.5 mm opening + spindle shoulder preload relief')
+print('Applied v50 clamp fixups: 5.5 mm opening + 0.5 mm preload spindle clearance')
