@@ -35,11 +35,19 @@ def log(message):
 
 def checkpoint(stage, extra=None):
     os.makedirs(OUT, exist_ok=True)
-    payload = {'stage': stage}
+    payload = {'diagnostic_only': True, 'stage': stage}
     if extra is not None:
         payload['extra'] = extra
     with open(os.path.join(OUT, 'BOX_CLAMP_CHECKPOINT.json'), 'w') as f:
         json.dump(payload, f, indent=2)
+    # The workflow already uploads BOX_CLAMP_VALIDATION.json. Until the real
+    # report exists, mirror the latest checkpoint there so a native OCC abort
+    # still leaves a downloadable diagnostic artifact. The final report later
+    # replaces this file and is never overwritten by subsequent checkpoints.
+    validation_path = os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json')
+    if not os.path.exists(validation_path):
+        with open(validation_path, 'w') as f:
+            json.dump(payload, f, indent=2)
     log(stage)
 
 
