@@ -89,7 +89,10 @@ jobs:
         if: steps.cadbuild.outcome == 'success'
         run: |
           set -euo pipefail
-          "$FREECADCMD" scripts/validate_box_clamp.py build_v50
+          # Do not pass build_v50 as a second positional argument: FreeCADCmd treats
+          # additional positional arguments as files to open after executing the script.
+          # validate_box_clamp.py already defaults OUT to build_v50.
+          "$FREECADCMD" scripts/validate_box_clamp.py
           test -s build_v50/BOX_CLAMP_VALIDATION.json
 
       - name: Print hard-check diagnostics
@@ -212,7 +215,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf cad/v50 preview-stl/v50
-          mkdir -p cad/v50/FCStd cad/v50/STEP cad/v50/STL cad/v50/assembly
+          mkdir -p cad/v50/FCStd cad/v50/STEP cad/v50/STL cad/v50/assembly preview-stl/v50
 
           find build_v50 -maxdepth 1 -type f -name '*.FCStd' ! -name 'eurobox_v50_assembly.FCStd' -exec cp {} cad/v50/FCStd/ \;
           find build_v50 -maxdepth 1 -type f -name 'eurobox_v50_*.step' -exec cp {} cad/v50/STEP/ \;
@@ -223,14 +226,26 @@ jobs:
           openscad -o cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl scripts/preview_v50.scad
           test -s cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl
 
-          oversize_stl=$(find cad/v50 -type f -name '*.stl' -size +9999999c -print)
+          # Keep the lightweight GitHub-preview tree in sync with the validated STL set.
+          cp cad/v50/STL/*.stl preview-stl/v50/
+          cp cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl preview-stl/v50/
+          cp cad/v50/assembly/PREVIEW_v50.png preview-stl/v50/
+          cat > preview-stl/v50/README.md <<'EOF'
+          # Eurobox v50 preview files
+
+          This directory mirrors the validated printable STL files from `cad/v50/STL/` and also contains the generated assembly preview and PNG overview for convenient GitHub browsing.
+
+          These files are generated automatically after all CAD, clamp, assembly and mesh validation checks pass.
+          EOF
+
+          oversize_stl=$(find cad/v50 preview-stl/v50 -type f -name '*.stl' -size +9999999c -print)
           if [ -n "$oversize_stl" ]; then
             echo "STL file(s) too large for GitHub 3D preview:"
             echo "$oversize_stl"
             exit 1
           fi
 
-          oversize_repo=$(find cad/v50 -type f -size +95000000c -print)
+          oversize_repo=$(find cad/v50 preview-stl/v50 -type f -size +95000000c -print)
           if [ -n "$oversize_repo" ]; then
             echo "CAD file(s) too large for normal GitHub repository storage:"
             echo "$oversize_repo"
@@ -251,6 +266,9 @@ jobs:
           bad = {k:v for k,v in missing.items() if v}
           if bad:
               raise SystemExit('CAD publish set mismatch: '+repr(bad))
+          preview = {p.stem for p in Path('preview-stl/v50').glob('eurobox_v50_*.stl')}
+          if preview != sl:
+              raise SystemExit('Preview STL mirror mismatch: '+repr({'missing': sorted(sl-preview), 'extra': sorted(preview-sl)}))
           print(f'Publishing {len(fc)} parts in FCStd + STEP + STL')
           PY
 
