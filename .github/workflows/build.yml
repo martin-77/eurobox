@@ -91,10 +91,31 @@ jobs:
           EUROBOX_BUILD_DIR: build_v50
         run: |
           set -euo pipefail
-          "$FREECADCMD" scripts/validate_box_clamp.py
-          test -s build_v50/BOX_CLAMP_VALIDATION.json
-          # FreeCADCmd can print a Python exception yet still return exit code 0.
-          # The report is therefore the authoritative pass/fail result.
+          rm -f build_v50/BOX_CLAMP_VALIDATION.json build_v50/BOX_CLAMP_CHECKPOINT.json build_v50/BOX_CLAMP_EXCEPTION.json
+          set +e
+          "$FREECADCMD" -c "import runpy; runpy.run_path('scripts/validate_box_clamp.py', run_name='__main__')"
+          freecad_rc=$?
+          set -e
+          echo "Clamp validator FreeCADCmd exit code: $freecad_rc"
+
+          if [ -s build_v50/BOX_CLAMP_CHECKPOINT.json ]; then
+            echo "---- BOX_CLAMP_CHECKPOINT.json ----"
+            cat build_v50/BOX_CLAMP_CHECKPOINT.json
+          fi
+          if [ -s build_v50/BOX_CLAMP_EXCEPTION.json ]; then
+            echo "---- BOX_CLAMP_EXCEPTION.json ----"
+            cat build_v50/BOX_CLAMP_EXCEPTION.json
+          fi
+          if [ -s build_v50/BOX_CLAMP_VALIDATION.json ]; then
+            echo "---- BOX_CLAMP_VALIDATION.json ----"
+            cat build_v50/BOX_CLAMP_VALIDATION.json
+          else
+            echo "::error::Clamp validator did not create build_v50/BOX_CLAMP_VALIDATION.json"
+            exit 1
+          fi
+
+          # FreeCADCmd can print a Python exception yet still return exit code 0,
+          # so the completed report remains the authoritative mechanical result.
           python3 - <<'PY'
           import json
           p='build_v50/BOX_CLAMP_VALIDATION.json'
@@ -102,6 +123,10 @@ jobs:
           assert not v.get('diagnostic_only'), v
           assert not v.get('failed'), v.get('failed')
           PY
+
+          if [ "$freecad_rc" -ne 0 ]; then
+            exit "$freecad_rc"
+          fi
 
       - name: Print hard-check diagnostics
         if: always()
@@ -124,6 +149,12 @@ jobs:
           if [ -s build_v50/BOX_CLAMP_VALIDATION.json ]; then
             cat build_v50/BOX_CLAMP_VALIDATION.json
           fi
+          if [ -s build_v50/BOX_CLAMP_CHECKPOINT.json ]; then
+            cat build_v50/BOX_CLAMP_CHECKPOINT.json
+          fi
+          if [ -s build_v50/BOX_CLAMP_EXCEPTION.json ]; then
+            cat build_v50/BOX_CLAMP_EXCEPTION.json
+          fi
 
       - name: Diagnose base topology after CAD failure
         if: failure()
@@ -140,6 +171,8 @@ jobs:
             build_v50/VALIDATION_v50_source.json
             build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
             build_v50/BOX_CLAMP_VALIDATION.json
+            build_v50/BOX_CLAMP_CHECKPOINT.json
+            build_v50/BOX_CLAMP_EXCEPTION.json
             build_v50/BASE_DEBUG_v50.json
             build_v50/DEBUG_v50_base.brep
             build_v50.log
