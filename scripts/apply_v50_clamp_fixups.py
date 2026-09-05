@@ -47,3 +47,11 @@ if 'for d in [-0.5, 0, 0.5' not in s:
 
 p.write_text(s, encoding='utf-8')
 print('Applied v50 clamp fixups: 5.5 mm opening + 0.5 mm preload spindle clearance')
+
+# The rack clamp/root carries the primary vertical and torsional load. Apply
+# the dedicated reinforcement after the clevis and clamp-travel fixups so the
+# final generated CAD contains the strengthened load path.
+reinforcement = Path('scripts/apply_v50_rack_root_reinforcement.py')
+if not reinforcement.is_file():
+    raise SystemExit('Missing rack-root reinforcement fixup')
+exec(compile(reinforcement.read_text(encoding='utf-8'), str(reinforcement), 'exec'))
