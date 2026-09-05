@@ -5,27 +5,22 @@ p = Path('scripts/build_v50.py')
 s = p.read_text(encoding='utf-8')
 orig = s
 
-# Strengthen the primary load path from each rack tube clamp into the long
-# longitudinal arm. The clamp/root is the main load input for the complete
-# carrier, so avoid a local neck immediately behind the rack tube.
+# Carry the normal longitudinal I-beam section all the way to the front edge
+# of each fixed rack-clamp station instead of using a large solid root block.
+# The fixed clamp bridge itself provides the local material around the tube;
+# the continuous I-beam provides the main bending load path into the arm.
 #
-# The reinforcement now extends all the way to the front edge of the fixed
-# upper station (Y=-8 mm). The real Ø12.42 mm tube saddle is cut afterwards
-# through the fused station, so the additional material does not reduce tube
-# clearance or change any frozen rack/tube/pivot datum.
+# All measured rack/tube/pivot datums stay unchanged. The Ø12.42 mm upper
+# saddle is cut after the bridge and I-beam have been fused, preserving the
+# exact tube interface while avoiding an abrupt neck behind the clamp.
 pattern = re.compile(r"def make_upper_station\(xc\):\n.*?\n\nbase_parts =", re.S)
 replacement = '''def make_upper_station(xc):
     bridge = box(xc-17.0, -8.0, 0.0, 34.0, 22.0, 16.0)
 
-    # Full-height arm transition reaches the front edge of the fixed station.
-    # It therefore overlaps the bridge across its complete 22 mm Y depth and
-    # still overlaps the I-beam by 12 mm at the rear.
-    transition = box(xc-16.0, -8.0, ARM_BOTTOM_Z, 32.0, 44.0, ARM_H)
-
-    # Lower root shoulder also reaches the front edge. Together with the
-    # transition this forms a continuous 32 mm wide, effectively full-height
-    # load path around the upper tube saddle instead of a short rear shoulder.
-    root_shoulder = box(xc-16.0, -8.0, 0.0, 32.0, 38.0, 20.0)
+    # Same 32 x 30 mm double-web I-beam section as the normal arm, extended
+    # from the fixed-station front edge to Y=36. This overlaps the regular arm
+    # (which starts at Y=24) by 12 mm and removes the former solid root block.
+    root_beam = make_i_beam_y(xc, -8.0, 36.0)
 
     # 4 mm fixed clevis lugs outside the 25.2 mm moving lower jaw.
     lug_l = cyl_x(6.0, 4.0, xc-17.0, PIN_Y, PIN_Z)
@@ -35,10 +30,9 @@ replacement = '''def make_upper_station(xc):
     cheek_l = box(xc-17.0, -8.0, -5.5, 4.0, 8.0, 5.5)
     cheek_r = box(xc+13.0, -8.0, -5.5, 4.0, 8.0, 5.5)
 
-    s = fuse_all([bridge, transition, root_shoulder,
+    s = fuse_all([bridge, root_beam,
                   lug_l, lug_r, web_l, web_r, cheek_l, cheek_r])
-    # Preserve the exact real rack tube envelope by cutting the saddle only
-    # after all reinforcement solids have been fused.
+    # The real rack-tube envelope is cut only after all root solids are fused.
     s = s.cut(cyl_x(UPPER_SADDLE_R, 40.0, xc-20.0, 0.0, 0.0))
     s = s.cut(cyl_x(PIN_HOLE_D/2, 40.0, xc-20.0, PIN_Y, PIN_Z))
     return s.removeSplitter()
@@ -47,29 +41,27 @@ base_parts ='''
 s, n = pattern.subn(replacement, s, count=1)
 assert n == 1, 'upper station block not found'
 
-# Record the strengthened root geometry and a simple section sanity check in
-# the source validation report. This is not an FEA; it makes the design intent
-# and the assumed 16 kg / 3x dynamic beam load explicit and machine-checkable.
+# Record the root design in the source validation report. The root deliberately
+# uses the same section as the normal arm, so its nominal section properties
+# should match beam_sanity. This is a simple beam check, not FEA.
 anchor = "V['beam_sanity'] = {\n"
 assert anchor in s
-insert = '''root_b = 32.0
-root_h = ARM_TOP_Z
-root_Ix = root_b * root_h**3 / 12.0
-root_static_stress = F_arm * L_check * (root_h/2.0) / root_Ix
+insert = '''root_area = 2*ARM_W*FLANGE_T + 2*WEB_T*(ARM_H-2*FLANGE_T)
+root_Ix = 2*(ARM_W*FLANGE_T**3/12.0 + ARM_W*FLANGE_T*(ARM_H/2.0-FLANGE_T/2.0)**2) \\
+          + 2*(WEB_T*(ARM_H-2*FLANGE_T)**3/12.0)
+root_static_stress = F_arm * L_check * (ARM_H/2.0) / root_Ix
 V['rack_root_strengthening'] = {
-    'tube_radius_mm': RACK_R,
+    'design': 'continuous_same_I_beam_as_long_arm',
     'front_edge_y_mm': -8.0,
-    'root_shoulder_start_y_mm': -8.0,
-    'root_shoulder_end_y_mm': 30.0,
+    'root_beam_start_y_mm': -8.0,
+    'root_beam_end_y_mm': 36.0,
+    'regular_arm_start_y_mm': ARM_Y0,
+    'root_to_regular_arm_overlap_y_mm': 36.0-ARM_Y0,
+    'bridge_start_y_mm': -8.0,
     'bridge_end_y_mm': 14.0,
-    'bridge_to_root_overlap_y_mm': 22.0,
-    'transition_start_y_mm': -8.0,
-    'transition_end_y_mm': 36.0,
-    'bridge_to_transition_overlap_y_mm': 22.0,
-    'transition_to_arm_overlap_y_mm': 12.0,
+    'bridge_to_root_beam_overlap_y_mm': 22.0,
     'tube_clearance_preserved_by_post_fuse_saddle_cut': True,
-    'root_effective_width_mm': root_b,
-    'root_effective_height_mm': root_h,
+    'root_section_area_mm2': round(root_area, 3),
     'root_section_Ix_mm4': round(root_Ix, 3),
     'static_root_stress_mpa_at_existing_16kg_assumption': round(root_static_stress, 4),
     'dynamic_3x_root_stress_mpa_at_existing_16kg_assumption': round(3*root_static_stress, 4),
@@ -81,19 +73,19 @@ s = s.replace(anchor, insert + anchor, 1)
 fail_anchor = "failures = []\n"
 assert fail_anchor in s
 fail_insert = '''r = V['rack_root_strengthening']
-if abs(r['root_shoulder_start_y_mm'] - r['front_edge_y_mm']) > 1e-9:
-    failures.append('Rack root shoulder no longer reaches fixed-station front edge')
-if abs(r['transition_start_y_mm'] - r['front_edge_y_mm']) > 1e-9:
-    failures.append('Rack root transition no longer reaches fixed-station front edge')
-if r['bridge_to_root_overlap_y_mm'] < 20.0:
-    failures.append('Rack clamp bridge/root overlap below front-edge reinforced design minimum')
-if r['bridge_to_transition_overlap_y_mm'] < 20.0:
-    failures.append('Rack clamp bridge/transition overlap below front-edge reinforced design minimum')
-if r['transition_to_arm_overlap_y_mm'] < 10.0:
-    failures.append('Rack root transition/arm overlap below strengthened design minimum')
+if abs(r['root_beam_start_y_mm'] - r['front_edge_y_mm']) > 1e-9:
+    failures.append('Rack root I-beam no longer reaches fixed-station front edge')
+if r['bridge_to_root_beam_overlap_y_mm'] < 20.0:
+    failures.append('Rack clamp bridge/root-beam overlap below design minimum')
+if r['root_to_regular_arm_overlap_y_mm'] < 10.0:
+    failures.append('Rack root/regular-arm overlap below design minimum')
+if abs(r['root_section_area_mm2'] - 422.4) > 1e-3:
+    failures.append('Rack root section area no longer matches normal arm')
+if abs(r['root_section_Ix_mm4'] - 52243.2) > 1e-3:
+    failures.append('Rack root section inertia no longer matches normal arm')
 '''
 s = s.replace(fail_anchor, fail_anchor + fail_insert, 1)
 
 assert s != orig
 p.write_text(s, encoding='utf-8')
-print('Applied v50 rack-root reinforcement: full front-edge shoulder + transition')
+print('Applied v50 rack-root reinforcement: continuous normal I-beam to front edge')
