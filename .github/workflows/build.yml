@@ -17,6 +17,9 @@ on:
       - "docs/FOCUS_THRON2_EQP_2023.md"
       - ".github/workflows/build.yml"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -180,6 +183,51 @@ jobs:
           assert not m['failed'], m['failed']
           assert not a['failed'], a['failed']
           PY
+
+      - name: Publish validated STL files for GitHub 3D viewer
+        if: steps.cadbuild.outcome == 'success' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          rm -rf preview-stl/v50
+          mkdir -p preview-stl/v50
+
+          cp build_v50/*.stl preview-stl/v50/
+          cp build_v50/PREVIEW_v50.png preview-stl/v50/PREVIEW_v50.png
+
+          # GitHub's STL viewer only works reliably for repository files below 10 MB.
+          oversize=$(find preview-stl/v50 -type f -name '*.stl' -size +9999999c -print)
+          if [ -n "$oversize" ]; then
+            echo "STL file(s) too large for GitHub 3D preview:"
+            echo "$oversize"
+            exit 1
+          fi
+
+          # A single non-printable visual assembly STL assembled from the same
+          # validated STL outputs. Reference box/rack objects marked with % in
+          # preview_v50.scad are intentionally not exported into this mesh.
+          openscad -o preview-stl/v50/ASSEMBLY_PREVIEW_v50.stl scripts/preview_v50.scad
+          test -s preview-stl/v50/ASSEMBLY_PREVIEW_v50.stl
+
+          cat > preview-stl/v50/README.md <<'EOF'
+          # Eurobox v50 – interactive STL previews
+
+          These STL files are copied automatically from the latest **successful, validated** v50 build.
+          Click any `.stl` file in this folder to open GitHub's interactive 3D viewer.
+
+          `ASSEMBLY_PREVIEW_v50.stl` is for visual inspection only. It combines both mounted modules from the validated part STLs; it is not a printable production part.
+
+          `PREVIEW_v50.png` is the automatically rendered reference image from the same build.
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-stl/v50
+          if git diff --cached --quiet; then
+            echo "Validated STL previews unchanged; nothing to commit."
+          else
+            git commit -m "Update validated v50 STL previews [skip ci]"
+            git push
+          fi
 
       - name: Package output
         if: steps.cadbuild.outcome == 'success'
