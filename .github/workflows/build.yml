@@ -163,14 +163,20 @@ jobs:
         run: |
           set -euo pipefail
           test -s build_v50/eurobox_v50_assembly.FCStd
+          test -s build_v50/eurobox_v50_base.FCStd
           test -s build_v50/eurobox_v50_base.step
           test -s build_v50/eurobox_v50_base.stl
+          test -s build_v50/eurobox_v50_clamp_plate.FCStd
           test -s build_v50/eurobox_v50_clamp_plate.step
           test -s build_v50/eurobox_v50_clamp_plate.stl
+          test -s build_v50/eurobox_v50_rack_lower.FCStd
           test -s build_v50/eurobox_v50_rack_lower.step
           test -s build_v50/eurobox_v50_rack_lower.stl
+          test -s build_v50/eurobox_v50_lead_screw_print.FCStd
           test -s build_v50/eurobox_v50_lead_screw_print.step
           test -s build_v50/eurobox_v50_lead_screw_print.stl
+          test -s build_v50/eurobox_v50_knob.FCStd
+          test -s build_v50/eurobox_v50_knob.step
           test -s build_v50/eurobox_v50_knob.stl
           test -s build_v50/PREVIEW_v50.png
           test -s build_v50/VALIDATION_v50_source.json
@@ -184,48 +190,82 @@ jobs:
           assert not a['failed'], a['failed']
           PY
 
-      - name: Publish validated STL files for GitHub 3D viewer
+      - name: Publish validated CAD files into repository
         if: steps.cadbuild.outcome == 'success' && github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
-          rm -rf preview-stl/v50
-          mkdir -p preview-stl/v50
+          rm -rf cad/v50 preview-stl/v50
+          mkdir -p cad/v50/FCStd cad/v50/STEP cad/v50/STL cad/v50/assembly
 
-          cp build_v50/*.stl preview-stl/v50/
-          cp build_v50/PREVIEW_v50.png preview-stl/v50/PREVIEW_v50.png
+          # Per-part editable FreeCAD files, exchange STEP files and the exact
+          # validated print STL files from this successful build.
+          find build_v50 -maxdepth 1 -type f -name '*.FCStd' ! -name 'eurobox_v50_assembly.FCStd' -exec cp {} cad/v50/FCStd/ \;
+          find build_v50 -maxdepth 1 -type f -name '*.step' -exec cp {} cad/v50/STEP/ \;
+          find build_v50 -maxdepth 1 -type f -name '*.stl' -exec cp {} cad/v50/STL/ \;
 
-          # GitHub's STL viewer only works reliably for repository files below 10 MB.
-          oversize=$(find preview-stl/v50 -type f -name '*.stl' -size +9999999c -print)
-          if [ -n "$oversize" ]; then
+          # Full FreeCAD assembly plus an STL visual assembly for GitHub's
+          # interactive viewer. The assembly STL is a viewing aid, not a print part.
+          cp build_v50/eurobox_v50_assembly.FCStd cad/v50/assembly/
+          cp build_v50/PREVIEW_v50.png cad/v50/assembly/PREVIEW_v50.png
+          openscad -o cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl scripts/preview_v50.scad
+          test -s cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl
+
+          # GitHub's STL renderer is intended for repository STL files below 10 MB.
+          oversize_stl=$(find cad/v50 -type f -name '*.stl' -size +9999999c -print)
+          if [ -n "$oversize_stl" ]; then
             echo "STL file(s) too large for GitHub 3D preview:"
-            echo "$oversize"
+            echo "$oversize_stl"
             exit 1
           fi
 
-          # A single non-printable visual assembly STL assembled from the same
-          # validated STL outputs. Reference box/rack objects marked with % in
-          # preview_v50.scad are intentionally not exported into this mesh.
-          openscad -o preview-stl/v50/ASSEMBLY_PREVIEW_v50.stl scripts/preview_v50.scad
-          test -s preview-stl/v50/ASSEMBLY_PREVIEW_v50.stl
+          # GitHub blocks normal repository files at 100 MB. Keep a margin.
+          oversize_repo=$(find cad/v50 -type f -size +95000000c -print)
+          if [ -n "$oversize_repo" ]; then
+            echo "CAD file(s) too large for normal GitHub repository storage:"
+            echo "$oversize_repo"
+            exit 1
+          fi
 
-          cat > preview-stl/v50/README.md <<'EOF'
-          # Eurobox v50 – interactive STL previews
+          # Sanity check: every exported part must have all three forms.
+          python3 - <<'PY'
+          from pathlib import Path
+          fc = {p.stem for p in Path('cad/v50/FCStd').glob('*.FCStd')}
+          st = {p.stem for p in Path('cad/v50/STEP').glob('*.step')}
+          sl = {p.stem for p in Path('cad/v50/STL').glob('*.stl')}
+          missing = {
+              'FCStd_without_STEP': sorted(fc-st),
+              'FCStd_without_STL': sorted(fc-sl),
+              'STEP_without_FCStd': sorted(st-fc),
+              'STL_without_FCStd': sorted(sl-fc),
+          }
+          bad = {k:v for k,v in missing.items() if v}
+          if bad:
+              raise SystemExit('CAD publish set mismatch: '+repr(bad))
+          print(f'Publishing {len(fc)} parts in FCStd + STEP + STL')
+          PY
 
-          These STL files are copied automatically from the latest **successful, validated** v50 build.
-          Click any `.stl` file in this folder to open GitHub's interactive 3D viewer.
+          cat > cad/v50/README.md <<'EOF'
+          # Eurobox v50 CAD
 
-          `ASSEMBLY_PREVIEW_v50.stl` is for visual inspection only. It combines both mounted modules from the validated part STLs; it is not a printable production part.
+          This directory is updated automatically only after a successful v50 CAD, assembly-layout and STL-mesh validation run.
 
-          `PREVIEW_v50.png` is the automatically rendered reference image from the same build.
+          - `FCStd/` – one editable FreeCAD file per individual part
+          - `STEP/` – the same individual parts as STEP exchange files
+          - `STL/` – the same validated printable meshes; click an STL in GitHub for the interactive 3D viewer
+          - `assembly/eurobox_v50_assembly.FCStd` – the complete FreeCAD assembly
+          - `assembly/ASSEMBLY_PREVIEW_v50.stl` – GitHub-viewable assembly preview only; not a production print part
+          - `assembly/PREVIEW_v50.png` – automatically rendered overview
+
+          Files here are generated outputs. The construction logic remains under `scripts/`.
           EOF
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add preview-stl/v50
+          git add -A cad/v50 preview-stl/v50
           if git diff --cached --quiet; then
-            echo "Validated STL previews unchanged; nothing to commit."
+            echo "Validated CAD repository files unchanged; nothing to commit."
           else
-            git commit -m "Update validated v50 STL previews [skip ci]"
+            git commit -m "Update validated v50 CAD outputs [skip ci]"
             git push
           fi
 
