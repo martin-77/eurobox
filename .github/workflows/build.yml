@@ -65,7 +65,7 @@ jobs:
           set -euo pipefail
           python3 scripts/apply_v50_fixups.py
           python3 scripts/apply_v50_clamp_fixups.py
-          python3 -m py_compile scripts/build_v50.py
+          python3 -m py_compile scripts/build_v50.py scripts/validate_box_clamp.py
 
       - name: Build and validate v50 CAD
         id: cadbuild
@@ -87,13 +87,21 @@ jobs:
 
       - name: Validate box clamp mechanism
         if: steps.cadbuild.outcome == 'success'
+        env:
+          EUROBOX_BUILD_DIR: build_v50
         run: |
           set -euo pipefail
-          # Do not pass build_v50 as a second positional argument: FreeCADCmd treats
-          # additional positional arguments as files to open after executing the script.
-          # validate_box_clamp.py already defaults OUT to build_v50.
           "$FREECADCMD" scripts/validate_box_clamp.py
           test -s build_v50/BOX_CLAMP_VALIDATION.json
+          # FreeCADCmd can print a Python exception yet still return exit code 0.
+          # The report is therefore the authoritative pass/fail result.
+          python3 - <<'PY'
+          import json
+          p='build_v50/BOX_CLAMP_VALIDATION.json'
+          v=json.load(open(p))
+          assert not v.get('diagnostic_only'), v
+          assert not v.get('failed'), v.get('failed')
+          PY
 
       - name: Print hard-check diagnostics
         if: always()
