@@ -9,6 +9,7 @@ on:
       - "scripts/apply_v50_fixups.py"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
+      - "scripts/validate_assembly_layout.py"
       - "scripts/preview_v50.scad"
       - "scripts/final_print_meshes.scad"
       - "docs/V50_**"
@@ -71,6 +72,13 @@ jobs:
           test -s build_v50/VALIDATION_v50_source.json
           test -s build_v50/eurobox_v50_assembly.FCStd
 
+      - name: Validate global assembly orientation
+        if: steps.cadbuild.outcome == 'success'
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_assembly_layout.py build_v50
+          test -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
+
       - name: Print hard-check diagnostics
         if: always()
         run: |
@@ -86,6 +94,9 @@ jobs:
           else
             echo 'VALIDATION_v50_source.json missing'
           fi
+          if [ -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json ]; then
+            cat build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
+          fi
 
       - name: Diagnose base topology after CAD failure
         if: failure()
@@ -100,6 +111,7 @@ jobs:
           name: eurobox-v50-prevalidation
           path: |
             build_v50/VALIDATION_v50_source.json
+            build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
             build_v50/BASE_DEBUG_v50.json
             build_v50/DEBUG_v50_base.brep
             build_v50.log
@@ -111,8 +123,6 @@ jobs:
         if: steps.cadbuild.outcome == 'success'
         run: |
           set -euo pipefail
-          # Preserve the known non-print reference only as a diagnostic file;
-          # it must never be included in the *.stl print-mesh validation set.
           cp build_v50/eurobox_v50_lead_screw_print.stl build_v50/eurobox_v50_lead_screw_BREP_export_reference.mesh-reference
           openscad -D 'part="spindle"' \
             -o build_v50/eurobox_v50_lead_screw_print.stl \
@@ -161,11 +171,14 @@ jobs:
           test -s build_v50/eurobox_v50_knob.stl
           test -s build_v50/PREVIEW_v50.png
           test -s build_v50/VALIDATION_v50_source.json
+          test -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
           test -s build_v50/MESH_VALIDATION.json
           python3 - <<'PY'
           import json
           m=json.load(open('build_v50/MESH_VALIDATION.json'))
+          a=json.load(open('build_v50/ASSEMBLY_LAYOUT_VALIDATION.json'))
           assert not m['failed'], m['failed']
+          assert not a['failed'], a['failed']
           PY
 
       - name: Package output
@@ -200,6 +213,7 @@ jobs:
           name: eurobox-v50-validation
           path: |
             build_v50/VALIDATION_v50_source.json
+            build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
             build_v50/MESH_VALIDATION.json
             build_v50/build_seconds.txt
             build_v50.log
