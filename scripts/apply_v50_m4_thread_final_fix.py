@@ -5,18 +5,14 @@ s = p.read_text(encoding='utf-8')
 orig = s
 
 # Final printable M4 x 0.7 correction.
-#
-# The previous female cutter used root_w=0.66 mm at a 0.70 mm pitch. That left
-# only 0.04 mm of material at the internal-thread crest. It looked helical in
-# CAD and could pass phase/collision checks, but it is physically unprintable
-# with a 0.4 mm nozzle. Replace it with a deliberately truncated FDM profile:
-#   female minor diameter      3.44 mm
-#   female groove major dia.   4.40 mm
-#   radial thread depth        0.48 mm
-#   cutter width at minor dia. 0.40 mm -> 0.30 mm remaining crest material
-#   cutter width at major dia. 0.30 mm -> 0.40 mm remaining root material
-# This preserves M4 x 0.7 pitch and clearance to both the Ø3.90 printed test
-# screw and later nominal Ø4.00 metal M4 hardware.
+# Keep the truncated FDM-friendly profile, but use a true long nut:
+#   pitch                         0.70 mm
+#   female minor diameter         3.44 mm
+#   female groove major diameter  4.40 mm
+#   radial thread depth           0.48 mm
+#   nut body height               5.60 mm = exactly 8 full turns
+#   captive pocket height         6.00 mm = 0.40 mm axial assembly clearance
+# The thread is uninterrupted from face to face; no entry chamfers.
 old = '''write_thread_scad(RACK_M4_FEMALE_SCAD, 1.60, 2.25, RACK_M4_PITCH,
                   RACK_M4_FEMALE_LEN, 0.66, 0.14)'''
 new = '''write_thread_scad(RACK_M4_FEMALE_SCAD, 1.72, 2.20, RACK_M4_PITCH,
@@ -28,14 +24,18 @@ s = s.replace(old, new, 1)
 s = s.replace('Part.makeCylinder(2.29, RACK_M4_FEMALE_LEN)',
               'Part.makeCylinder(2.24, RACK_M4_FEMALE_LEN)', 1)
 
-# The service nut must have one uninterrupted helical thread from face to face.
-# Do NOT add entry chamfers here: on a 3.2 mm-high M4 nut a 0.55 mm chamfer at
-# each end removes a substantial part of the first and last turns and makes the
-# thread look and behave like separated rings. The female cutter already extends
-# beyond both faces, so the helix opens cleanly at each end without a skin.
+# Increase the captive pocket before make_upper_station is evaluated. The nut
+# remains AF7.0, while the pocket keeps the existing AF7.4 lateral clearance.
+if 'RACK_M4_NUT_H = 3.6' not in s:
+    raise SystemExit('Could not locate rack M4 captive-pocket height')
+s = s.replace('RACK_M4_NUT_H = 3.6', 'RACK_M4_NUT_H = 6.0', 1)
+
+# Replace the short DIN-like printed nut with a 5.6 mm long FDM nut. At 0.7 mm
+# pitch this gives exactly eight complete helical turns and substantially more
+# PETG thread engagement without changing the screw standard.
 old_nut = '''RACK_M4_NUT = hex_z(7.0, 3.2, 0.0)
 RACK_M4_NUT = RACK_M4_NUT.cut(RACK_M4_FEMALE).removeSplitter()'''
-new_nut = '''RACK_M4_NUT = hex_z(7.0, 3.2, 0.0)
+new_nut = '''RACK_M4_NUT = hex_z(7.0, 5.6, 0.0)
 RACK_M4_NUT = RACK_M4_NUT.cut(RACK_M4_FEMALE).removeSplitter()'''
 if old_nut not in s:
     raise SystemExit('Could not locate rack M4 nut construction')
@@ -53,6 +53,10 @@ s = s.replace(
     witness_anchor,
     witness_anchor
     + "    'pitch_mm': RACK_M4_PITCH,\n"
+    + "    'nut_body_height_mm': 5.6,\n"
+    + "    'full_thread_turns': round(5.6/RACK_M4_PITCH, 3),\n"
+    + "    'nut_pocket_height_mm': RACK_M4_NUT_H,\n"
+    + "    'nut_pocket_axial_clearance_mm': round(RACK_M4_NUT_H-5.6, 3),\n"
     + "    'cutter_width_at_minor_mm': 0.40,\n"
     + "    'cutter_width_at_major_mm': 0.30,\n"
     + "    'remaining_thread_crest_width_mm': round(RACK_M4_PITCH-0.40, 3),\n"
@@ -61,12 +65,11 @@ s = s.replace(
     1,
 )
 
-# The smooth witness bore must match the new 3.44 mm minor diameter.
+# Smooth-bore witness must use the same 5.6 mm body height.
 s = s.replace("hex_z(7.0, 3.2, 0.0).cut(Part.makeCylinder(1.60, 3.2))",
-              "hex_z(7.0, 3.2, 0.0).cut(Part.makeCylinder(1.72, 3.2))", 1)
+              "hex_z(7.0, 5.6, 0.0).cut(Part.makeCylinder(1.72, 5.6))", 1)
 
-# Hard gate the feature the old validation missed: actual material width at the
-# internal thread crest/root. A phase-sensitive helix alone is not sufficient.
+# Hard-gate both profile substance and engagement length.
 fail_anchor = "if V.get('lead_nut_mode') != 'separate_RH_8x2_printed_cartridge':\n"
 if fail_anchor not in s:
     raise SystemExit('Could not locate final failure-gate anchor')
@@ -76,6 +79,10 @@ if V['rack_m4_female_thread_witness']['remaining_thread_root_width_mm'] < 0.35:
     failures.append('Rack M4 female thread root is too thin for 0.4 mm FDM')
 if not V['rack_m4_female_thread_witness'].get('continuous_full_height_thread'):
     failures.append('Rack M4 nut thread must run continuously through full nut height')
+if V['rack_m4_female_thread_witness'].get('full_thread_turns', 0) < 8.0:
+    failures.append('Rack M4 printed nut must provide at least eight full thread turns')
+if V['rack_m4_female_thread_witness'].get('nut_pocket_axial_clearance_mm', -1) < 0.3:
+    failures.append('Rack M4 captive pocket needs at least 0.3 mm axial print clearance')
 '''
 s = s.replace(fail_anchor, extra + fail_anchor, 1)
 
@@ -83,4 +90,4 @@ if s == orig:
     raise SystemExit('Final rack M4 printable-thread fix made no changes')
 
 p.write_text(s, encoding='utf-8')
-print('Applied final rack M4 thread fix: continuous full-height printable nut thread; AF7 knobs unchanged')
+print('Applied final rack M4 thread fix: 5.6 mm long nut, eight full M4x0.7 turns, 6.0 mm captive pocket')
