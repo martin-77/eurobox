@@ -3,8 +3,6 @@ import os
 import sys
 import traceback
 
-# Do not derive the build path from FreeCADCmd's argv. FreeCAD owns its command
-# line and may expose launcher/script arguments differently across builds.
 OUT = os.environ.get('EUROBOX_BUILD_DIR', 'build_v50')
 os.makedirs(OUT, exist_ok=True)
 
@@ -18,8 +16,6 @@ def bootstrap(stage, extra=None):
     print('[box-clamp] ' + stage, flush=True)
 
 
-# Write a diagnostic before importing any FreeCAD modules. If the runtime dies
-# during import, the Actions artifact still records exactly how far we got.
 bootstrap('bootstrap:stdlib', {'argv': sys.argv, 'out': OUT})
 
 try:
@@ -27,8 +23,6 @@ try:
     try:
         faulthandler.enable()
     except Exception as exc:
-        # Some embedded/headless Python streams have no usable fileno(). This is
-        # diagnostic only and must never prevent the actual validator from running.
         print('[box-clamp] faulthandler unavailable: ' + repr(exc), flush=True)
 except Exception as exc:
     print('[box-clamp] faulthandler import unavailable: ' + repr(exc), flush=True)
@@ -55,10 +49,8 @@ except BaseException as exc:
 
 bootstrap('bootstrap:freecad_imported', {'freecad_version': App.Version()})
 
-# Frozen / designed clamp datums.
 BOX_EDGE_Y = 244.665
 BOX_RIM_INNER_Y = 228.215
-BOX_SUPPORT_Z = 39.54
 RIM_BOTTOM_Z = 23.09
 RIM_Y = 16.45
 RIM_H = 16.45
@@ -84,8 +76,6 @@ def checkpoint(stage, extra=None):
         payload['extra'] = extra
     with open(os.path.join(OUT, 'BOX_CLAMP_CHECKPOINT.json'), 'w') as f:
         json.dump(payload, f, indent=2)
-    # Keep the workflow's already-uploaded validation path useful even if OCC
-    # terminates the process natively before Python can handle an exception.
     with open(os.path.join(OUT, 'BOX_CLAMP_VALIDATION.json'), 'w') as f:
         json.dump(payload, f, indent=2)
     log(stage)
@@ -128,7 +118,13 @@ def run_validation():
     base = read_step('eurobox_v50_base')
     plate = read_step('eurobox_v50_clamp_plate')
     spindle = read_step('eurobox_v50_lead_screw_print')
-    nut = read_step('eurobox_v50_lead_nut_print')
+
+    # The lead nut is intentionally no longer a separate printable part. The
+    # female RH 8x2 thread is machined directly into BASE and validated below by
+    # real spindle/base phase checks.
+    obsolete_nut = os.path.join(OUT, 'eurobox_v50_lead_nut_print.step')
+    obsolete_pin = os.path.join(OUT, 'eurobox_v50_lead_nut_retaining_pin.step')
+    obsolete_clip = os.path.join(OUT, 'eurobox_v50_lead_nut_pin_clip.step')
 
     checkpoint('inputs:loaded')
     rim = box(-200.0, BOX_RIM_INNER_Y, RIM_BOTTOM_Z, 400.0, RIM_Y, RIM_H)
@@ -137,10 +133,15 @@ def run_validation():
         'version': 'v50',
         'plate_open_mm': PLATE_OPEN,
         'clamp_preload_mm': CLAMP_PRELOAD,
+        'lead_nut_mode': 'integral_thread_in_base',
         'checks': {},
         'measurements': {},
         'failed': [],
     }
+
+    report['checks']['obsolete_loose_lead_nut_not_exported'] = not os.path.exists(obsolete_nut)
+    report['checks']['obsolete_lead_nut_pin_not_exported'] = not os.path.exists(obsolete_pin)
+    report['checks']['obsolete_lead_nut_clip_not_exported'] = not os.path.exists(obsolete_clip)
 
     report['measurements']['plate_journal_diametral_clearance_mm'] = round(PLATE_HOLE_D - JOURNAL_D, 3)
     report['measurements']['shoulder_counterbore_diametral_clearance_mm'] = round(PLATE_COUNTERBORE_D - SHOULDER_D, 3)
@@ -178,30 +179,33 @@ def run_validation():
         q.translate(App.Vector(SPINDLE_X, BOX_EDGE_Y + travel_mm, SPINDLE_Z))
         return q
 
-    placed_nut = nut.copy()
-    placed_nut.translate(App.Vector(SPINDLE_X, 260.465, SPINDLE_Z))
-
+    # Correct-phase test of the actual integral female thread in BASE. If the
+    # thread were just a smooth hole these states would also slide axially, so a
+    # second deliberate wrong-phase/axial-slide test below proves engagement.
     thread_states = []
     for travel in (-CLAMP_PRELOAD, 0.0, 0.5, 1.0, 2.0, 4.0, PLATE_OPEN):
         rot = -360.0 * travel / THREAD_PITCH
         q = placed_spindle(travel, rot)
-        n_common = common_volume(placed_nut, q, 'thread_nut_vs_spindle_travel_' + str(travel))
-        b_common = common_volume(base, q, 'thread_base_vs_spindle_travel_' + str(travel))
+        b_common = common_volume(base, q, 'integral_thread_base_vs_spindle_travel_' + str(travel))
         thread_states.append({
             'travel_mm': travel,
             'rotation_deg': rot,
-            'nut_common_mm3': round(n_common, 6),
             'base_common_mm3': round(b_common, 6),
         })
     report['thread_states'] = thread_states
-    report['checks']['correct_thread_phase_collision_free'] = all(
-        x['nut_common_mm3'] < 0.5 and x['base_common_mm3'] < 0.5 for x in thread_states
+    report['checks']['correct_integral_thread_phase_collision_free'] = all(
+        x['base_common_mm3'] < 0.5 for x in thread_states
     )
 
     q_slide = placed_spindle(0.5, 0.0)
-    slide_interference = common_volume(placed_nut, q_slide, 'axial_slide_without_rotation')
+    slide_interference = common_volume(base, q_slide, 'integral_thread_axial_slide_without_rotation')
     report['measurements']['axial_slide_without_rotation_interference_mm3'] = round(slide_interference, 6)
-    report['checks']['thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0
+    report['checks']['integral_thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0
+
+    q_wrong = placed_spindle(0.5, 90.0)
+    wrong_interference = common_volume(base, q_wrong, 'integral_thread_wrong_phase')
+    report['measurements']['wrong_phase_interference_mm3'] = round(wrong_interference, 6)
+    report['checks']['integral_thread_has_phase_sensitive_engagement'] = wrong_interference > 1.0
 
     q0 = placed_spindle(0.0, 0.0)
     spindle_plate_overlap = common_volume(q0, plate, 'nominal_spindle_vs_plate')
