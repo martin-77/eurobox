@@ -71,3 +71,11 @@ massive_closure = Path('scripts/apply_v50_rack_closure_massive.py')
 if not massive_closure.is_file():
     raise SystemExit('Missing continuous rack-closure fixup')
 exec(compile(massive_closure.read_text(encoding='utf-8'), str(massive_closure), 'exec'))
+
+# Make the female M4 thread unmistakable in the printable nut and both hand
+# knobs and verify actual helical material removal rather than just nominal
+# thread dimensions.
+female_threads = Path('scripts/apply_v50_rack_female_threads.py')
+if not female_threads.is_file():
+    raise SystemExit('Missing rack female-thread correction')
+exec(compile(female_threads.read_text(encoding='utf-8'), str(female_threads), 'exec'))
