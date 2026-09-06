@@ -73,8 +73,8 @@ if not massive_closure.is_file():
 exec(compile(massive_closure.read_text(encoding='utf-8'), str(massive_closure), 'exec'))
 
 # Make the female M4 thread unmistakable in the printable nut and both hand
-# knobs and verify actual helical material removal rather than just nominal
-# thread dimensions.
+# knobs. The correction uses deeper grooves and length-normalised hard checks,
+# so the short nut and the longer knobs are validated on the same basis.
 female_threads = Path('scripts/apply_v50_rack_female_threads.py')
 if not female_threads.is_file():
     raise SystemExit('Missing rack female-thread correction')
