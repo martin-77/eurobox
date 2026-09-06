@@ -118,14 +118,11 @@ module rack_m4_female_cutter() {
 }
 
 module rack_m4_nut_z() {
+  // One uninterrupted M4x0.7 helical thread from bottom face to top face.
+  // No entry chamfers: they previously removed part of the first/last turns.
   difference() {
     hex_prism_z(rack_m4_nut_af,rack_m4_nut_h);
     rack_m4_female_cutter();
-    // Symmetric entry chamfers, matching the validated BRep dimensions.
-    translate([0,0,-0.01])
-      cylinder(h=0.55,r1=2.18,r2=1.72,$fn=96);
-    translate([0,0,2.66])
-      cylinder(h=0.55,r1=1.72,r2=2.18,$fn=96);
   }
 }
 
