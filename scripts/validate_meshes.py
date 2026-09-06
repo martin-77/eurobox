@@ -1,4 +1,5 @@
 import glob, json, os, sys, subprocess, shutil
+import numpy as np
 import trimesh
 
 root=os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
@@ -7,12 +8,9 @@ out=os.path.join(root,out_arg)
 results={}
 failed=[]
 
-# The rack M4 nut is a valid single OCC/STEP solid, but FreeCAD's STL
-# tessellation can leave open seams on this very short helical internal thread.
-# Preserve that BRep-exported STL as a diagnostic reference, then create the
-# canonical printable mesh directly from the exact same dimensions using
-# OpenSCAD/CGAL. The mesh validated below is therefore the mesh that is later
-# published and printed; no validation gate is weakened or bypassed.
+# Regenerate the canonical printable rack M4 nut with CGAL after the editable
+# FreeCAD/STEP geometry has passed its upstream checks. The same STL is then
+# inspected below and later published.
 rack_nut=os.path.join(out,'eurobox_v50_rack_m4_nut_print.stl')
 if os.path.exists(rack_nut):
     rack_nut_ref=os.path.join(out,'eurobox_v50_rack_m4_nut_BREP_export_reference.mesh-reference')
@@ -39,10 +37,6 @@ def inspect(path):
     return m, {
         'watertight': bool(m.is_watertight),
         'winding_consistent': bool(m.is_winding_consistent),
-        # Surface-shell count is diagnostic, NOT a body-count gate. A single
-        # OCC solid with enclosed cavities legitimately exports as one outer
-        # shell plus one or more inner closed shells in STL. The upstream CAD
-        # gate already requires source_solids==1 and STEP solids==1.
         'surface_shells': int(len(comps)),
         'surface_shell_volumes_signed_mm3': [float(c.volume) for c in comps],
         'faces': int(len(m.faces)),
@@ -56,9 +50,43 @@ def good(info):
             info['volume_mm3'] > 0)
 
 
+def rack_m4_thread_sections(mesh):
+    """Prove on the final STL that the bore wall itself is threaded.
+
+    A smooth cylindrical bore has essentially one radius in every horizontal
+    section. A real internal helical groove must make the inner contour vary
+    strongly in radius at the same Z plane. Check three planes through the
+    service region so metadata/source claims cannot hide a smooth-wall STL.
+    """
+    checks=[]
+    for z in (1.4, 2.8, 4.2):
+        sec=mesh.section(plane_origin=[0.0,0.0,z], plane_normal=[0.0,0.0,1.0])
+        if sec is None or len(sec.vertices) == 0:
+            checks.append({'z_mm':z,'ok':False,'reason':'no section'})
+            continue
+        v=np.asarray(sec.vertices)
+        r=np.sqrt(v[:,0]**2 + v[:,1]**2)
+        # Outer AF7 hex has an inradius of 3.5 mm, so r<2.6 isolates the bore.
+        inner=r[(r > 1.3) & (r < 2.6)]
+        if len(inner) < 8:
+            checks.append({'z_mm':z,'ok':False,'reason':'too few inner contour samples','samples':int(len(inner))})
+            continue
+        rmin=float(inner.min())
+        rmax=float(inner.max())
+        span=rmax-rmin
+        checks.append({
+            'z_mm':z,
+            'inner_radius_min_mm':round(rmin,5),
+            'inner_radius_max_mm':round(rmax,5),
+            'radial_span_mm':round(span,5),
+            'samples':int(len(inner)),
+            'ok':bool(span >= 0.30),
+        })
+    return checks
+
+
 def trimesh_cleanup(path):
     m=trimesh.load(path, force='mesh', process=True)
-    # Merge only sub-micron CAD seam duplicates; do not alter design geometry.
     m.merge_vertices(digits_vertex=5)
     try:
         m.update_faces(m.unique_faces())
@@ -103,34 +131,43 @@ def openscad_normalize(path):
 
 for p in paths:
     name=os.path.basename(p)
-    _, before=inspect(p)
+    mesh, before=inspect(p)
     info=dict(before)
     info['normalization']='none'
     if name == 'eurobox_v50_rack_m4_nut_print.stl':
-        info['canonical_mesh_source']='OpenSCAD/CGAL from scripts/final_print_meshes.scad after BRep/STEP validation'
+        info['canonical_mesh_source']='OpenSCAD/CGAL true radial-Z helical sweep after BRep/STEP validation'
 
     if not good(before):
         ok, after=trimesh_cleanup(p)
         info['trimesh_cleanup_result']=after
         if ok:
-            _, info2=inspect(p)
+            mesh, info2=inspect(p)
             info.update(info2)
             info['normalization']='trimesh_seam_merge_1e-5mm'
         else:
             ok2, after2=openscad_normalize(p)
             info['openscad_cleanup_result']=after2
             if ok2:
-                _, info2=inspect(p)
+                mesh, info2=inspect(p)
                 info.update(info2)
                 info['normalization']='openscad_cgal_render'
 
+    if name == 'eurobox_v50_rack_m4_nut_print.stl' and good(info):
+        section_checks=rack_m4_thread_sections(mesh)
+        info['internal_thread_section_checks']=section_checks
+        if not section_checks or not all(c.get('ok') for c in section_checks):
+            info['internal_thread_mesh_gate']='FAILED: bore contour is not sufficiently helical/exposed'
+            failed.append(name)
+        else:
+            info['internal_thread_mesh_gate']='PASS: final STL bore radius varies with exposed helical groove'
+
     results[name]=info
-    if not good(info):
+    if not good(info) and name not in failed:
         failed.append(name)
 
 with open(os.path.join(out,'MESH_VALIDATION.json'),'w') as f:
     json.dump({'meshes':results,'failed':failed,
-               'note':'surface_shells is diagnostic; source/STEP single-solid checks are the body connectivity authority'},f,indent=2)
+               'note':'rack M4 nut is also section-tested on the final published STL to reject a hidden thread behind a smooth bore'},f,indent=2)
 
 print(json.dumps({'directory':out_arg,'count':len(results),'failed':failed,
                   'failed_details':{n:results[n] for n in failed}},indent=2))
