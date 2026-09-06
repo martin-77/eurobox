@@ -59,6 +59,15 @@ separate = '''for sx in SPINDLE_X:
     # Side-loaded cartridge pocket. BASE itself remains completely unthreaded.
     pocket = box(sx-8.35, NUT_Y0-0.35, 23.65, 16.7, NUT_THREAD_LEN+0.7, 21.0)
     BASE = BASE.cut(pocket)
+    # Restore the moving spindle shoulder clearance that existed before the
+    # integral-thread experiment. This is a smooth Ø(SHOULDER_D+0.60) tunnel,
+    # not a working thread in BASE. It must remain open up to the removable nut
+    # so the Ø11 mm shoulder stays collision-free over the full 0..5.5 mm plate
+    # travel.
+    BASE = BASE.cut(cyl_y(
+        SHOULDER_D/2 + 0.30,
+        (NUT_Y0-0.50)-(BOX_EDGE_Y+7.50),
+        sx, BOX_EDGE_Y+7.50, SPINDLE_Z))
     # Smooth spindle path through the cage; all working thread is in LEAD_NUT.
     BASE = BASE.cut(cyl_y(4.45, CAGE_Y1-(BOX_EDGE_Y+8.0)+1.0,
                           sx, BOX_EDGE_Y+8.0, SPINDLE_Z))
