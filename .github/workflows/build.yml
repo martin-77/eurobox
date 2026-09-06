@@ -10,6 +10,9 @@ on:
       - "scripts/apply_v50_clamp_fixups.py"
       - "scripts/apply_v50_rack_root_reinforcement.py"
       - "scripts/apply_v50_rack_lock.py"
+      - "scripts/apply_v50_rack_closure_massive.py"
+      - "scripts/apply_v50_rack_female_threads.py"
+      - "scripts/apply_v50_hardware_cleanup.py"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
       - "scripts/validate_assembly_layout.py"
@@ -242,16 +245,13 @@ jobs:
           find build_v50 -maxdepth 1 -type f -name 'eurobox_v50_*.stl' -exec cp {} cad/v50/STL/ \;
           cp build_v50/eurobox_v50_assembly.FCStd cad/v50/assembly/
           cp build_v50/PREVIEW_v50.png cad/v50/assembly/PREVIEW_v50.png
-          openscad -o cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl scripts/preview_v50.scad
-          test -s cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl
           cp cad/v50/STL/*.stl preview-stl/v50/
-          cp cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl preview-stl/v50/
           cp cad/v50/assembly/PREVIEW_v50.png preview-stl/v50/
           cat > preview-stl/v50/README.md <<'EOF'
           # Eurobox v50 preview files
-          This directory mirrors the validated printable STL files from `cad/v50/STL/` and also contains the generated assembly preview and PNG overview for convenient GitHub browsing.
+          This directory mirrors the validated printable STL files from `cad/v50/STL/` and contains the PNG assembly overview. The editable full assembly is kept as `cad/v50/assembly/eurobox_v50_assembly.FCStd` instead of a redundant oversized assembly STL.
           EOF
-          oversize_stl=$(find cad/v50 preview-stl/v50 -type f -name '*.stl' -size +9999999c -print)
+          oversize_stl=$(find cad/v50/STL preview-stl/v50 -type f -name '*.stl' -size +9999999c -print)
           if [ -n "$oversize_stl" ]; then echo "$oversize_stl"; exit 1; fi
           oversize_repo=$(find cad/v50 preview-stl/v50 -type f -size +95000000c -print)
           if [ -n "$oversize_repo" ]; then echo "$oversize_repo"; exit 1; fi
