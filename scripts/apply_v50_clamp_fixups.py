@@ -55,3 +55,10 @@ reinforcement = Path('scripts/apply_v50_rack_root_reinforcement.py')
 if not reinforcement.is_file():
     raise SystemExit('Missing rack-root reinforcement fixup')
 exec(compile(reinforcement.read_text(encoding='utf-8'), str(reinforcement), 'exec'))
+
+# Positive secondary lock for the hinged lower rack jaw. This runs after the
+# root geometry so it can add the matching fixed lock lugs to the final station.
+rack_lock = Path('scripts/apply_v50_rack_lock.py')
+if not rack_lock.is_file():
+    raise SystemExit('Missing rack-lock fixup')
+exec(compile(rack_lock.read_text(encoding='utf-8'), str(rack_lock), 'exec'))
