@@ -94,3 +94,11 @@ nut_thread_fix = Path('scripts/apply_v50_nut_thread_fix.py')
 if not nut_thread_fix.is_file():
     raise SystemExit('Missing v50 nut/thread correction')
 exec(compile(nut_thread_fix.read_text(encoding='utf-8'), str(nut_thread_fix), 'exec'))
+
+# The previous final M4 pass still left a razor-thin 0.04 mm internal-thread
+# crest at 0.70 mm pitch. Replace that mathematically valid but unprintable
+# geometry with a deliberately truncated FDM profile and real lead-in chamfers.
+m4_thread_final = Path('scripts/apply_v50_m4_thread_final_fix.py')
+if not m4_thread_final.is_file():
+    raise SystemExit('Missing final printable rack M4 thread correction')
+exec(compile(m4_thread_final.read_text(encoding='utf-8'), str(m4_thread_final), 'exec'))
