@@ -48,11 +48,11 @@ module spindle_z() {
 
     // Main RH 8x2 lead thread. Core overlaps shoulder by 0.02 mm only;
     // outer helical phase still begins at the nominal 9.8 mm datum.
-    translate([0,0,9.78]) cylinder(r=core_r,h=22.24);
+    translate([0,0,9.78]) cylinder(r=core_r,h=23.04);
     translate([0,0,9.8])
-      linear_extrude(height=22.2,
-                     twist=360*22.2/pitch,
-                     slices=ceil(22.2/pitch*28),
+      linear_extrude(height=23.0,
+                     twist=360*23.0/pitch,
+                     slices=ceil(23.0/pitch*28),
                      convexity=30)
         polygon(points=[
           [core_r-0.08,-root_w/2],
@@ -61,15 +61,18 @@ module spindle_z() {
           [core_r-0.08, root_w/2]
         ]);
 
-    // Separate knob is driven by AF10 hex.
-    translate([0,0,31.98]) hex_prism_z(10.0,4.54);
+    // Integral AF10 DRIVE BOSS for eurobox_v50_knob.stl. This is deliberately
+    // part of the screw and is not a nut; the separate threaded retainer nut
+    // sits on the outer RH 8x2 stud after the knob is fitted.
+    translate([0,0,32.78]) hex_prism_z(10.0,4.54);
 
-    // Outer retainer stud, same RH 8x2 profile.
-    translate([0,0,36.48]) cylinder(r=core_r,h=4.52);
-    translate([0,0,36.5])
-      linear_extrude(height=4.5,
-                     twist=360*4.5/pitch,
-                     slices=ceil(4.5/pitch*28),
+    // Outer retainer stud, extended to 7 mm so the separate retainer nut gets
+    // useful thread engagement after the 7 mm knob.
+    translate([0,0,37.28]) cylinder(r=core_r,h=7.02);
+    translate([0,0,37.30])
+      linear_extrude(height=7.0,
+                     twist=360*7.0/pitch,
+                     slices=ceil(7.0/pitch*28),
                      convexity=30)
         polygon(points=[
           [core_r-0.08,-root_w/2],
