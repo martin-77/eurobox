@@ -72,11 +72,12 @@ module spindle_z() {
 }
 
 // Canonical printable rack nut: M4x0.7 RH, eight full turns over 5.6 mm.
-// No entry chamfers; the helix runs continuously from face to face.
+// The helical thread forms the actual bore wall. The old Ø3.44 smooth core
+// hid the thread behind a cylindrical wall; this is corrected to Ø3.32.
 rack_m4_pitch=0.7;
 rack_m4_nut_af=7.0;
 rack_m4_nut_h=5.6;
-rack_m4_minor_r=1.72;
+rack_m4_crest_r=1.66;
 rack_m4_groove_major_r=2.20;
 rack_m4_minor_width=0.40;
 rack_m4_major_width=0.30;
@@ -85,16 +86,19 @@ rack_m4_thread_len=rack_m4_nut_h+2*rack_m4_pitch;
 module rack_m4_female_cutter() {
   translate([0,0,-rack_m4_pitch])
     union() {
-      cylinder(r=rack_m4_minor_r,h=rack_m4_thread_len,$fn=96);
+      // Only open the bore to the female thread crest diameter. The helix then
+      // cuts outward from this wall, so the remaining crest is exposed inside
+      // the hole instead of sitting behind a larger smooth cylinder.
+      cylinder(r=rack_m4_crest_r,h=rack_m4_thread_len,$fn=96);
       linear_extrude(height=rack_m4_thread_len,
                      twist=360*rack_m4_thread_len/rack_m4_pitch,
                      slices=ceil(rack_m4_thread_len/rack_m4_pitch*40),
                      convexity=40)
         polygon(points=[
-          [rack_m4_minor_r-0.08,-rack_m4_minor_width/2],
+          [rack_m4_crest_r-0.08,-rack_m4_minor_width/2],
           [rack_m4_groove_major_r,-rack_m4_major_width/2],
           [rack_m4_groove_major_r, rack_m4_major_width/2],
-          [rack_m4_minor_r-0.08, rack_m4_minor_width/2]
+          [rack_m4_crest_r-0.08, rack_m4_minor_width/2]
         ]);
     }
 }
