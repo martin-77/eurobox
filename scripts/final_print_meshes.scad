@@ -2,11 +2,6 @@
 // Use:
 //   openscad -D 'part="spindle"' -o <output.stl> final_print_meshes.scad
 //   openscad -D 'part="rack_m4_nut"' -o <output.stl> final_print_meshes.scad
-//
-// The editable FreeCAD model remains the dimensional BRep/STEP authority.
-// Selected helical printable meshes are emitted directly by OpenSCAD/CGAL
-// because converting the helical mesh to BRep and tessellating it again can
-// create open STL seams despite a valid OCC solid.
 
 $fn=96;
 part="spindle";
@@ -71,36 +66,56 @@ module spindle_z() {
   }
 }
 
-// Canonical printable rack nut: M4x0.7 RH, eight full turns over 5.6 mm.
-// The helical thread forms the actual bore wall. The old Ø3.44 smooth core
-// hid the thread behind a cylindrical wall; this is corrected to Ø3.32.
+// Rack M4 nut: true radial-Z helical groove, not a twisted XY ribbon.
 rack_m4_pitch=0.7;
 rack_m4_nut_af=7.0;
 rack_m4_nut_h=5.6;
-rack_m4_crest_r=1.66;
-rack_m4_groove_major_r=2.20;
-rack_m4_minor_width=0.40;
-rack_m4_major_width=0.30;
-rack_m4_thread_len=rack_m4_nut_h+2*rack_m4_pitch;
+rack_m4_bore_r=1.66;          // Ø3.32 crest/open bore
+rack_m4_groove_inner_r=1.58;  // 0.08 mm overlap into bore -> guaranteed open groove
+rack_m4_groove_outer_r=2.20;  // Ø4.40 groove root
+rack_m4_inner_half_z=0.14;    // ~0.28 mm groove width at bore
+rack_m4_outer_half_z=0.08;
+rack_m4_ext=0.7;
+rack_m4_total_h=rack_m4_nut_h+2*rack_m4_ext;
+rack_m4_turns=rack_m4_total_h/rack_m4_pitch;
+rack_m4_steps=ceil(rack_m4_turns*48);
+rack_m4_a0=-360;
+rack_m4_a1=360*(rack_m4_turns-1);
+
+function rack_ang(i)=rack_m4_a0+(rack_m4_a1-rack_m4_a0)*i/rack_m4_steps;
+function rack_zc(i)=rack_m4_pitch*rack_ang(i)/360;
+function rack_pt(r,a,z)=[r*cos(a),r*sin(a),z];
+
+rack_thread_pts=[
+  for(i=[0:rack_m4_steps])
+    let(a=rack_ang(i),z=rack_zc(i))
+      each [
+        rack_pt(rack_m4_groove_inner_r,a,z-rack_m4_inner_half_z),
+        rack_pt(rack_m4_groove_outer_r,a,z-rack_m4_outer_half_z),
+        rack_pt(rack_m4_groove_outer_r,a,z+rack_m4_outer_half_z),
+        rack_pt(rack_m4_groove_inner_r,a,z+rack_m4_inner_half_z)
+      ]
+];
+rack_thread_sides=[
+  for(i=[0:rack_m4_steps-1]) for(j=[0:3])
+    [4*i+j,4*(i+1)+j,4*(i+1)+((j+1)%4),4*i+((j+1)%4)]
+];
+rack_thread_start=[[0,1,2,3]];
+rack_thread_e=4*rack_m4_steps;
+rack_thread_end=[[rack_thread_e+3,rack_thread_e+2,rack_thread_e+1,rack_thread_e]];
+
+module rack_m4_true_helical_groove() {
+  polyhedron(points=rack_thread_pts,
+             faces=concat(rack_thread_sides,rack_thread_start,rack_thread_end),
+             convexity=60);
+}
 
 module rack_m4_female_cutter() {
-  translate([0,0,-rack_m4_pitch])
-    union() {
-      // Only open the bore to the female thread crest diameter. The helix then
-      // cuts outward from this wall, so the remaining crest is exposed inside
-      // the hole instead of sitting behind a larger smooth cylinder.
-      cylinder(r=rack_m4_crest_r,h=rack_m4_thread_len,$fn=96);
-      linear_extrude(height=rack_m4_thread_len,
-                     twist=360*rack_m4_thread_len/rack_m4_pitch,
-                     slices=ceil(rack_m4_thread_len/rack_m4_pitch*40),
-                     convexity=40)
-        polygon(points=[
-          [rack_m4_crest_r-0.08,-rack_m4_minor_width/2],
-          [rack_m4_groove_major_r,-rack_m4_major_width/2],
-          [rack_m4_groove_major_r, rack_m4_major_width/2],
-          [rack_m4_crest_r-0.08, rack_m4_minor_width/2]
-        ]);
-    }
+  union() {
+    translate([0,0,-rack_m4_ext])
+      cylinder(r=rack_m4_bore_r,h=rack_m4_total_h,$fn=96);
+    rack_m4_true_helical_groove();
+  }
 }
 
 module rack_m4_nut_z() {
@@ -113,4 +128,4 @@ module rack_m4_nut_z() {
 if (part == "spindle")
   rotate([-90,0,0]) render(convexity=40) spindle_z();
 else if (part == "rack_m4_nut")
-  render(convexity=50) rack_m4_nut_z();
+  render(convexity=80) rack_m4_nut_z();
