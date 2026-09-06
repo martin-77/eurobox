@@ -1,4 +1,4 @@
-import glob, json, os, sys, subprocess
+import glob, json, os, sys, subprocess, shutil
 import trimesh
 
 root=os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
@@ -6,6 +6,28 @@ out_arg=sys.argv[1] if len(sys.argv)>1 else 'build'
 out=os.path.join(root,out_arg)
 results={}
 failed=[]
+
+# The rack M4 nut is a valid single OCC/STEP solid, but FreeCAD's STL
+# tessellation can leave open seams on this very short helical internal thread.
+# Preserve that BRep-exported STL as a diagnostic reference, then create the
+# canonical printable mesh directly from the exact same dimensions using
+# OpenSCAD/CGAL. The mesh validated below is therefore the mesh that is later
+# published and printed; no validation gate is weakened or bypassed.
+rack_nut=os.path.join(out,'eurobox_v50_rack_m4_nut_print.stl')
+if os.path.exists(rack_nut):
+    rack_nut_ref=os.path.join(out,'eurobox_v50_rack_m4_nut_BREP_export_reference.mesh-reference')
+    shutil.copyfile(rack_nut, rack_nut_ref)
+    scad=os.path.join(root,'scripts','final_print_meshes.scad')
+    cp=subprocess.run(
+        ['openscad','-D','part="rack_m4_nut"','-o',rack_nut,scad],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=300,
+    )
+    if cp.returncode != 0 or not os.path.exists(rack_nut) or os.path.getsize(rack_nut)==0:
+        raise SystemExit('Could not generate canonical rack M4 nut STL via OpenSCAD/CGAL:\n'+cp.stdout[-4000:])
+
 paths=sorted(glob.glob(os.path.join(out,'*.stl')))
 if not paths:
     raise SystemExit('No STL files found in '+out)
@@ -84,6 +106,8 @@ for p in paths:
     _, before=inspect(p)
     info=dict(before)
     info['normalization']='none'
+    if name == 'eurobox_v50_rack_m4_nut_print.stl':
+        info['canonical_mesh_source']='OpenSCAD/CGAL from scripts/final_print_meshes.scad after BRep/STEP validation'
 
     if not good(before):
         ok, after=trimesh_cleanup(p)
