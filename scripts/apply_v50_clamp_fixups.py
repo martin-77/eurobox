@@ -81,9 +81,16 @@ if not female_threads.is_file():
 exec(compile(female_threads.read_text(encoding='utf-8'), str(female_threads), 'exec'))
 
 # Resolve the remaining real-world hardware issues found by visual inspection:
-# integral lead nuts, no loose lead-nut pin/clip, positive rack-knob drive, and
-# a deeper threaded lead-knob retainer nut.
+# positive rack-knob drive and a deeper threaded lead-knob retainer nut.
 hardware_cleanup = Path('scripts/apply_v50_hardware_cleanup.py')
 if not hardware_cleanup.is_file():
     raise SystemExit('Missing v50 functional hardware cleanup')
 exec(compile(hardware_cleanup.read_text(encoding='utf-8'), str(hardware_cleanup), 'exec'))
+
+# Final source-of-truth nut pass. The BASE must stay unthreaded; separate lead
+# nuts own the RH 8x2 working thread, and all printable female threads must have
+# a visibly and mechanically developed profile suitable for PETG/0.4 mm FDM.
+nut_thread_fix = Path('scripts/apply_v50_nut_thread_fix.py')
+if not nut_thread_fix.is_file():
+    raise SystemExit('Missing v50 nut/thread correction')
+exec(compile(nut_thread_fix.read_text(encoding='utf-8'), str(nut_thread_fix), 'exec'))
