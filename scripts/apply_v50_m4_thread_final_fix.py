@@ -28,9 +28,9 @@ s = s.replace(old, new, 1)
 s = s.replace('Part.makeCylinder(2.29, RACK_M4_FEMALE_LEN)',
               'Part.makeCylinder(2.24, RACK_M4_FEMALE_LEN)', 1)
 
-# Add proper lead-in chamfers. The nut gets a chamfer from both sides because it
-# is symmetric service hardware; hand knobs get a chamfer at the screw-entry
-# face. These are entrance reliefs only and do not replace the helical thread.
+# Add lead-in chamfers to the actual threaded service part. The hand knobs are
+# deliberately NOT threaded at this stage: hardware_cleanup converts them to
+# positive AF7 hex-drive interfaces so they cannot spin on the screw.
 old_nut = '''RACK_M4_NUT = hex_z(7.0, 3.2, 0.0)
 RACK_M4_NUT = RACK_M4_NUT.cut(RACK_M4_FEMALE).removeSplitter()'''
 new_nut = '''RACK_M4_NUT = hex_z(7.0, 3.2, 0.0)
@@ -41,16 +41,6 @@ RACK_M4_NUT = RACK_M4_NUT.cut(rack_m4_nut_entry_bottom).cut(rack_m4_nut_entry_to
 if old_nut not in s:
     raise SystemExit('Could not locate rack M4 nut construction')
 s = s.replace(old_nut, new_nut, 1)
-
-old_knob = '''    k = k.cut(RACK_M4_FEMALE)
-    return k.removeSplitter()'''
-new_knob = '''    k = k.cut(RACK_M4_FEMALE)
-    rack_m4_knob_entry = Part.makeCone(2.18, 1.72, 0.60, App.Vector(0,0,-0.01), App.Vector(0,0,1))
-    k = k.cut(rack_m4_knob_entry)
-    return k.removeSplitter()'''
-if old_knob not in s:
-    raise SystemExit('Could not locate rack knob female-thread cut')
-s = s.replace(old_knob, new_knob, 1)
 
 # Keep the geometric witness truthful and add explicit printability dimensions.
 s = s.replace("'minor_diameter_mm': 3.20,", "'minor_diameter_mm': 3.44,", 1)
@@ -92,4 +82,4 @@ if s == orig:
     raise SystemExit('Final rack M4 printable-thread fix made no changes')
 
 p.write_text(s, encoding='utf-8')
-print('Applied final rack M4 thread fix: truncated printable female profile + entry chamfers')
+print('Applied final rack M4 thread fix: printable captive-nut profile; AF7 knobs unchanged')
