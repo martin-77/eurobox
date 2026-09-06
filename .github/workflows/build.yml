@@ -9,6 +9,7 @@ on:
       - "scripts/apply_v50_fixups.py"
       - "scripts/apply_v50_clamp_fixups.py"
       - "scripts/apply_v50_rack_root_reinforcement.py"
+      - "scripts/apply_v50_rack_lock.py"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
       - "scripts/validate_assembly_layout.py"
@@ -116,8 +117,6 @@ jobs:
             exit 1
           fi
 
-          # FreeCADCmd can print a Python exception yet still return exit code 0,
-          # so the completed report remains the authoritative mechanical result.
           python3 - <<'PY'
           import json
           p='build_v50/BOX_CLAMP_VALIDATION.json'
@@ -139,24 +138,16 @@ jobs:
           p='build_v50/VALIDATION_v50_source.json'
           v=json.load(open(p))
           print('V50_FAILURES='+json.dumps(v.get('failures', []), ensure_ascii=False))
-          keys=['frozen_interface_assertions','tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','anti_rotation','beam_sanity','system_width_estimate_mm']
+          keys=['frozen_interface_assertions','tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','rack_lock','rack_lock_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','anti_rotation','beam_sanity','system_width_estimate_mm']
           print('V50_DIAGNOSTIC='+json.dumps({k:v.get(k) for k in keys}, ensure_ascii=False))
           PY
           else
             echo 'VALIDATION_v50_source.json missing'
           fi
-          if [ -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json ]; then
-            cat build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
-          fi
-          if [ -s build_v50/BOX_CLAMP_VALIDATION.json ]; then
-            cat build_v50/BOX_CLAMP_VALIDATION.json
-          fi
-          if [ -s build_v50/BOX_CLAMP_CHECKPOINT.json ]; then
-            cat build_v50/BOX_CLAMP_CHECKPOINT.json
-          fi
-          if [ -s build_v50/BOX_CLAMP_EXCEPTION.json ]; then
-            cat build_v50/BOX_CLAMP_EXCEPTION.json
-          fi
+          if [ -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json ]; then cat build_v50/ASSEMBLY_LAYOUT_VALIDATION.json; fi
+          if [ -s build_v50/BOX_CLAMP_VALIDATION.json ]; then cat build_v50/BOX_CLAMP_VALIDATION.json; fi
+          if [ -s build_v50/BOX_CLAMP_CHECKPOINT.json ]; then cat build_v50/BOX_CLAMP_CHECKPOINT.json; fi
+          if [ -s build_v50/BOX_CLAMP_EXCEPTION.json ]; then cat build_v50/BOX_CLAMP_EXCEPTION.json; fi
 
       - name: Diagnose base topology after CAD failure
         if: failure() && steps.cadbuild.outcome == 'failure'
@@ -187,9 +178,7 @@ jobs:
         run: |
           set -euo pipefail
           cp build_v50/eurobox_v50_lead_screw_print.stl build_v50/eurobox_v50_lead_screw_BREP_export_reference.mesh-reference
-          openscad -D 'part="spindle"' \
-            -o build_v50/eurobox_v50_lead_screw_print.stl \
-            scripts/final_print_meshes.scad
+          openscad -D 'part="spindle"' -o build_v50/eurobox_v50_lead_screw_print.stl scripts/final_print_meshes.scad
           test -s build_v50/eurobox_v50_lead_screw_print.stl
           cp scripts/final_print_meshes.scad build_v50/final_print_meshes.scad
 
@@ -199,13 +188,7 @@ jobs:
       - name: Render v50 preview
         run: |
           set -euo pipefail
-          xvfb-run -a openscad \
-            --imgsize=1800,1200 \
-            --projection=p \
-            --viewall \
-            --autocenter \
-            -o build_v50/PREVIEW_v50.png \
-            scripts/preview_v50.scad
+          xvfb-run -a openscad --imgsize=1800,1200 --projection=p --viewall --autocenter -o build_v50/PREVIEW_v50.png scripts/preview_v50.scad
           test -s build_v50/PREVIEW_v50.png
           cp scripts/preview_v50.scad build_v50/PREVIEW_v50.scad
 
@@ -254,96 +237,59 @@ jobs:
           set -euo pipefail
           rm -rf cad/v50 preview-stl/v50
           mkdir -p cad/v50/FCStd cad/v50/STEP cad/v50/STL cad/v50/assembly preview-stl/v50
-
           find build_v50 -maxdepth 1 -type f -name '*.FCStd' ! -name 'eurobox_v50_assembly.FCStd' -exec cp {} cad/v50/FCStd/ \;
           find build_v50 -maxdepth 1 -type f -name 'eurobox_v50_*.step' -exec cp {} cad/v50/STEP/ \;
           find build_v50 -maxdepth 1 -type f -name 'eurobox_v50_*.stl' -exec cp {} cad/v50/STL/ \;
-
           cp build_v50/eurobox_v50_assembly.FCStd cad/v50/assembly/
           cp build_v50/PREVIEW_v50.png cad/v50/assembly/PREVIEW_v50.png
           openscad -o cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl scripts/preview_v50.scad
           test -s cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl
-
-          # Keep the lightweight GitHub-preview tree in sync with the validated STL set.
           cp cad/v50/STL/*.stl preview-stl/v50/
           cp cad/v50/assembly/ASSEMBLY_PREVIEW_v50.stl preview-stl/v50/
           cp cad/v50/assembly/PREVIEW_v50.png preview-stl/v50/
           cat > preview-stl/v50/README.md <<'EOF'
           # Eurobox v50 preview files
-
           This directory mirrors the validated printable STL files from `cad/v50/STL/` and also contains the generated assembly preview and PNG overview for convenient GitHub browsing.
-
-          These files are generated automatically after all CAD, clamp, assembly and mesh validation checks pass.
           EOF
-
           oversize_stl=$(find cad/v50 preview-stl/v50 -type f -name '*.stl' -size +9999999c -print)
-          if [ -n "$oversize_stl" ]; then
-            echo "STL file(s) too large for GitHub 3D preview:"
-            echo "$oversize_stl"
-            exit 1
-          fi
-
+          if [ -n "$oversize_stl" ]; then echo "$oversize_stl"; exit 1; fi
           oversize_repo=$(find cad/v50 preview-stl/v50 -type f -size +95000000c -print)
-          if [ -n "$oversize_repo" ]; then
-            echo "CAD file(s) too large for normal GitHub repository storage:"
-            echo "$oversize_repo"
-            exit 1
-          fi
-
+          if [ -n "$oversize_repo" ]; then echo "$oversize_repo"; exit 1; fi
           python3 - <<'PY'
           from pathlib import Path
-          fc = {p.stem for p in Path('cad/v50/FCStd').glob('*.FCStd')}
-          st = {p.stem for p in Path('cad/v50/STEP').glob('*.step')}
-          sl = {p.stem for p in Path('cad/v50/STL').glob('*.stl')}
-          missing = {
-              'FCStd_without_STEP': sorted(fc-st),
-              'FCStd_without_STL': sorted(fc-sl),
-              'STEP_without_FCStd': sorted(st-fc),
-              'STL_without_FCStd': sorted(sl-fc),
-          }
-          bad = {k:v for k,v in missing.items() if v}
-          if bad:
-              raise SystemExit('CAD publish set mismatch: '+repr(bad))
-          preview = {p.stem for p in Path('preview-stl/v50').glob('eurobox_v50_*.stl')}
-          if preview != sl:
-              raise SystemExit('Preview STL mirror mismatch: '+repr({'missing': sorted(sl-preview), 'extra': sorted(preview-sl)}))
+          fc={p.stem for p in Path('cad/v50/FCStd').glob('*.FCStd')}
+          st={p.stem for p in Path('cad/v50/STEP').glob('*.step')}
+          sl={p.stem for p in Path('cad/v50/STL').glob('*.stl')}
+          bad={k:v for k,v in {'FCStd_without_STEP':sorted(fc-st),'FCStd_without_STL':sorted(fc-sl),'STEP_without_FCStd':sorted(st-fc),'STL_without_FCStd':sorted(sl-fc)}.items() if v}
+          if bad: raise SystemExit('CAD publish set mismatch: '+repr(bad))
+          preview={p.stem for p in Path('preview-stl/v50').glob('eurobox_v50_*.stl')}
+          if preview != sl: raise SystemExit('Preview STL mirror mismatch')
           print(f'Publishing {len(fc)} parts in FCStd + STEP + STL')
           PY
-
           cat > cad/v50/README.md <<'EOF'
           # Eurobox v50 CAD
-
           This directory is updated automatically only after successful CAD, assembly-layout, box-clamp and STL-mesh validation.
-
-          - `FCStd/` – one editable FreeCAD file per individual part
-          - `STEP/` – the same individual parts as STEP exchange files
-          - `STL/` – the same validated printable meshes; click an STL in GitHub for the interactive 3D viewer
-          - `assembly/eurobox_v50_assembly.FCStd` – the complete FreeCAD assembly
-          - `assembly/ASSEMBLY_PREVIEW_v50.stl` – GitHub-viewable assembly preview only; not a production print part
-          - `assembly/PREVIEW_v50.png` – automatically rendered overview
-
-          Files here are generated outputs. The construction logic remains under `scripts/`.
           EOF
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A cad/v50 preview-stl/v50
           if git diff --cached --quiet; then
-            echo "Validated CAD repository files unchanged; nothing to commit."
+            echo "Validated CAD outputs unchanged"
           else
             git commit -m "Update validated v50 CAD outputs [skip ci]"
             git push
           fi
 
       - name: Package output
-        run: (cd build_v50 && zip -9 -r ../eurobox-v50.zip .)
+        run: |
+          cd build_v50
+          zip -r ../eurobox_v50_complete.zip . >/dev/null
 
       - name: Upload complete v50 build
         uses: actions/upload-artifact@v4
         with:
-          name: eurobox-v50
-          path: eurobox-v50.zip
-          if-no-files-found: error
+          name: eurobox-v50-complete
+          path: eurobox_v50_complete.zip
           retention-days: 14
 
       - name: Upload v50 preview
@@ -352,8 +298,7 @@ jobs:
           name: eurobox-v50-preview
           path: |
             build_v50/PREVIEW_v50.png
-            build_v50/PREVIEW_v50.scad
-          if-no-files-found: error
+            build_v50/eurobox_v50_assembly.FCStd
           retention-days: 14
 
       - name: Upload validation reports
@@ -365,7 +310,4 @@ jobs:
             build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
             build_v50/BOX_CLAMP_VALIDATION.json
             build_v50/MESH_VALIDATION.json
-            build_v50/build_seconds.txt
-            build_v50.log
-          if-no-files-found: error
           retention-days: 14
