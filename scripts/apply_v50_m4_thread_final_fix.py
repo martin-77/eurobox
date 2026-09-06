@@ -28,16 +28,15 @@ s = s.replace(old, new, 1)
 s = s.replace('Part.makeCylinder(2.29, RACK_M4_FEMALE_LEN)',
               'Part.makeCylinder(2.24, RACK_M4_FEMALE_LEN)', 1)
 
-# Add lead-in chamfers to the actual threaded service part. The hand knobs are
-# deliberately NOT threaded at this stage: hardware_cleanup converts them to
-# positive AF7 hex-drive interfaces so they cannot spin on the screw.
+# The service nut must have one uninterrupted helical thread from face to face.
+# Do NOT add entry chamfers here: on a 3.2 mm-high M4 nut a 0.55 mm chamfer at
+# each end removes a substantial part of the first and last turns and makes the
+# thread look and behave like separated rings. The female cutter already extends
+# beyond both faces, so the helix opens cleanly at each end without a skin.
 old_nut = '''RACK_M4_NUT = hex_z(7.0, 3.2, 0.0)
 RACK_M4_NUT = RACK_M4_NUT.cut(RACK_M4_FEMALE).removeSplitter()'''
 new_nut = '''RACK_M4_NUT = hex_z(7.0, 3.2, 0.0)
-RACK_M4_NUT = RACK_M4_NUT.cut(RACK_M4_FEMALE)
-rack_m4_nut_entry_bottom = Part.makeCone(2.18, 1.72, 0.55, App.Vector(0,0,-0.01), App.Vector(0,0,1))
-rack_m4_nut_entry_top = Part.makeCone(1.72, 2.18, 0.55, App.Vector(0,0,2.66), App.Vector(0,0,1))
-RACK_M4_NUT = RACK_M4_NUT.cut(rack_m4_nut_entry_bottom).cut(rack_m4_nut_entry_top).removeSplitter()'''
+RACK_M4_NUT = RACK_M4_NUT.cut(RACK_M4_FEMALE).removeSplitter()'''
 if old_nut not in s:
     raise SystemExit('Could not locate rack M4 nut construction')
 s = s.replace(old_nut, new_nut, 1)
@@ -58,7 +57,7 @@ s = s.replace(
     + "    'cutter_width_at_major_mm': 0.30,\n"
     + "    'remaining_thread_crest_width_mm': round(RACK_M4_PITCH-0.40, 3),\n"
     + "    'remaining_thread_root_width_mm': round(RACK_M4_PITCH-0.30, 3),\n"
-    + "    'entry_chamfer_radial_start_mm': 2.18,\n",
+    + "    'continuous_full_height_thread': True,\n",
     1,
 )
 
@@ -75,6 +74,8 @@ extra = '''if V['rack_m4_female_thread_witness']['remaining_thread_crest_width_m
     failures.append('Rack M4 female thread crest is too thin for 0.4 mm FDM')
 if V['rack_m4_female_thread_witness']['remaining_thread_root_width_mm'] < 0.35:
     failures.append('Rack M4 female thread root is too thin for 0.4 mm FDM')
+if not V['rack_m4_female_thread_witness'].get('continuous_full_height_thread'):
+    failures.append('Rack M4 nut thread must run continuously through full nut height')
 '''
 s = s.replace(fail_anchor, extra + fail_anchor, 1)
 
@@ -82,4 +83,4 @@ if s == orig:
     raise SystemExit('Final rack M4 printable-thread fix made no changes')
 
 p.write_text(s, encoding='utf-8')
-print('Applied final rack M4 thread fix: printable captive-nut profile; AF7 knobs unchanged')
+print('Applied final rack M4 thread fix: continuous full-height printable nut thread; AF7 knobs unchanged')
