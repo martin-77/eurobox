@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install OpenSCAD, preview and mesh checks
         run: |
@@ -39,7 +39,7 @@ jobs:
 
       - name: Cache FreeCAD AppImage
         id: freecad-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: FreeCAD.AppImage
           key: freecad-1.1.3-linux-x86_64-py311
@@ -158,7 +158,7 @@ jobs:
 
       - name: Upload pre-mesh validation
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: eurobox-v50-prevalidation
           path: |
@@ -286,14 +286,14 @@ jobs:
           zip -r ../eurobox_v50_complete.zip . >/dev/null
 
       - name: Upload complete v50 build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: eurobox-v50-complete
           path: eurobox_v50_complete.zip
           retention-days: 14
 
       - name: Upload v50 preview
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: eurobox-v50-preview
           path: |
@@ -302,7 +302,7 @@ jobs:
           retention-days: 14
 
       - name: Upload validation reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: eurobox-v50-validation
           path: |
