@@ -57,6 +57,7 @@ RIM_H = 16.45
 SPINDLE_X = -42.0
 SPINDLE_Z = 31.0
 THREAD_PITCH = 2.0
+NUT_Y0 = 260.465
 PLATE_OPEN = 5.5
 CLAMP_PRELOAD = 0.5
 UNDERHOOK = 4.2
@@ -118,13 +119,10 @@ def run_validation():
     base = read_step('eurobox_v50_base')
     plate = read_step('eurobox_v50_clamp_plate')
     spindle = read_step('eurobox_v50_lead_screw_print')
-
-    # The lead nut is intentionally no longer a separate printable part. The
-    # female RH 8x2 thread is machined directly into BASE and validated below by
-    # real spindle/base phase checks.
-    obsolete_nut = os.path.join(OUT, 'eurobox_v50_lead_nut_print.step')
-    obsolete_pin = os.path.join(OUT, 'eurobox_v50_lead_nut_retaining_pin.step')
-    obsolete_clip = os.path.join(OUT, 'eurobox_v50_lead_nut_pin_clip.step')
+    lead_nut = read_step('eurobox_v50_lead_nut_print')
+    # These are required service parts of the current removable-nut architecture.
+    read_step('eurobox_v50_lead_nut_retaining_pin')
+    read_step('eurobox_v50_lead_nut_pin_clip')
 
     checkpoint('inputs:loaded')
     rim = box(-200.0, BOX_RIM_INNER_Y, RIM_BOTTOM_Z, 400.0, RIM_Y, RIM_H)
@@ -133,15 +131,15 @@ def run_validation():
         'version': 'v50',
         'plate_open_mm': PLATE_OPEN,
         'clamp_preload_mm': CLAMP_PRELOAD,
-        'lead_nut_mode': 'integral_thread_in_base',
+        'lead_nut_mode': 'separate_RH_8x2_printed_cartridge',
         'checks': {},
         'measurements': {},
         'failed': [],
     }
 
-    report['checks']['obsolete_loose_lead_nut_not_exported'] = not os.path.exists(obsolete_nut)
-    report['checks']['obsolete_lead_nut_pin_not_exported'] = not os.path.exists(obsolete_pin)
-    report['checks']['obsolete_lead_nut_clip_not_exported'] = not os.path.exists(obsolete_clip)
+    report['checks']['separate_lead_nut_exported_valid'] = True
+    report['checks']['lead_nut_retaining_pin_exported_valid'] = True
+    report['checks']['lead_nut_pin_clip_exported_valid'] = True
 
     report['measurements']['plate_journal_diametral_clearance_mm'] = round(PLATE_HOLE_D - JOURNAL_D, 3)
     report['measurements']['shoulder_counterbore_diametral_clearance_mm'] = round(PLATE_COUNTERBORE_D - SHOULDER_D, 3)
@@ -179,33 +177,51 @@ def run_validation():
         q.translate(App.Vector(SPINDLE_X, BOX_EDGE_Y + travel_mm, SPINDLE_Z))
         return q
 
-    # Correct-phase test of the actual integral female thread in BASE. If the
-    # thread were just a smooth hole these states would also slide axially, so a
-    # second deliberate wrong-phase/axial-slide test below proves engagement.
+    nut = lead_nut.copy()
+    nut.translate(App.Vector(SPINDLE_X, NUT_Y0, SPINDLE_Z))
+    nut_base_common = common_volume(base, nut, 'separate_lead_nut_vs_base')
+    checkpoint('distance:start:separate_lead_nut_vs_base')
+    nut_base_distance = base.distToShape(nut)[0]
+    checkpoint('distance:done:separate_lead_nut_vs_base', {'distance_mm': round(nut_base_distance, 6)})
+    report['measurements']['lead_nut_base_common_mm3'] = round(nut_base_common, 6)
+    report['measurements']['lead_nut_base_distance_mm'] = round(nut_base_distance, 6)
+    report['checks']['separate_lead_nut_fits_base_pocket'] = nut_base_common < 1e-4 and nut_base_distance <= 0.5
+
+    # Correct screw motion is translation plus the matching RH 8x2 rotation.
+    # BASE is intentionally smooth: thread engagement must be exclusively between
+    # the spindle and the removable lead-nut cartridge.
     thread_states = []
     for travel in (-CLAMP_PRELOAD, 0.0, 0.5, 1.0, 2.0, 4.0, PLATE_OPEN):
         rot = -360.0 * travel / THREAD_PITCH
         q = placed_spindle(travel, rot)
-        b_common = common_volume(base, q, 'integral_thread_base_vs_spindle_travel_' + str(travel))
+        n_common = common_volume(nut, q, 'separate_thread_nut_vs_spindle_travel_' + str(travel))
+        b_common = common_volume(base, q, 'smooth_base_vs_spindle_travel_' + str(travel))
         thread_states.append({
             'travel_mm': travel,
             'rotation_deg': rot,
+            'nut_common_mm3': round(n_common, 6),
             'base_common_mm3': round(b_common, 6),
         })
     report['thread_states'] = thread_states
-    report['checks']['correct_integral_thread_phase_collision_free'] = all(
-        x['base_common_mm3'] < 0.5 for x in thread_states
+    report['checks']['correct_separate_thread_phase_collision_free'] = all(
+        x['nut_common_mm3'] < 0.5 for x in thread_states
+    )
+    report['checks']['smooth_base_clear_over_full_spindle_travel'] = all(
+        x['base_common_mm3'] < 1e-4 for x in thread_states
     )
 
+    # A real female thread must reject axial motion if the screw does not rotate.
     q_slide = placed_spindle(0.5, 0.0)
-    slide_interference = common_volume(base, q_slide, 'integral_thread_axial_slide_without_rotation')
+    slide_interference = common_volume(nut, q_slide, 'separate_thread_axial_slide_without_rotation')
     report['measurements']['axial_slide_without_rotation_interference_mm3'] = round(slide_interference, 6)
-    report['checks']['integral_thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0
+    report['checks']['separate_thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0
 
+    # At +0.5 mm travel the correct rotation is -90 deg. +90 deg is 180 deg out
+    # of phase and must visibly intersect a developed RH 8x2 female thread.
     q_wrong = placed_spindle(0.5, 90.0)
-    wrong_interference = common_volume(base, q_wrong, 'integral_thread_wrong_phase')
+    wrong_interference = common_volume(nut, q_wrong, 'separate_thread_wrong_phase')
     report['measurements']['wrong_phase_interference_mm3'] = round(wrong_interference, 6)
-    report['checks']['integral_thread_has_phase_sensitive_engagement'] = wrong_interference > 1.0
+    report['checks']['separate_thread_has_phase_sensitive_engagement'] = wrong_interference > 1.0
 
     q0 = placed_spindle(0.0, 0.0)
     spindle_plate_overlap = common_volume(q0, plate, 'nominal_spindle_vs_plate')
