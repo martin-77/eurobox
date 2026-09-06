@@ -56,9 +56,18 @@ if not reinforcement.is_file():
     raise SystemExit('Missing rack-root reinforcement fixup')
 exec(compile(reinforcement.read_text(encoding='utf-8'), str(reinforcement), 'exec'))
 
-# Positive secondary lock for the hinged lower rack jaw. This runs after the
-# root geometry so it can add the matching fixed lock lugs to the final station.
+# Positive tool-less screw closure for the hinged lower rack jaw. This runs
+# after the root geometry so it can add the matching fixed nut pocket and
+# modular M4 hardware to the final station.
 rack_lock = Path('scripts/apply_v50_rack_lock.py')
 if not rack_lock.is_file():
     raise SystemExit('Missing rack-lock fixup')
 exec(compile(rack_lock.read_text(encoding='utf-8'), str(rack_lock), 'exec'))
+
+# Final rack-closure geometry pass: remove the cantilevered closure ear, carry
+# the lower clamp body continuously through the screw axis, and add hard checks
+# for the printable M4 x 0.7 screw/nut/knob thread pair.
+massive_closure = Path('scripts/apply_v50_rack_closure_massive.py')
+if not massive_closure.is_file():
+    raise SystemExit('Missing continuous rack-closure fixup')
+exec(compile(massive_closure.read_text(encoding='utf-8'), str(massive_closure), 'exec'))
