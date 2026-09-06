@@ -277,7 +277,30 @@ jobs:
             echo "Validated CAD outputs unchanged"
           else
             git commit -m "Update validated v50 CAD outputs [skip ci]"
-            git push
+            output_commit=$(git rev-parse HEAD)
+
+            for attempt in 1 2 3; do
+              git fetch origin main
+              remote_head=$(git rev-parse origin/main)
+
+              if git merge-base --is-ancestor "$remote_head" HEAD; then
+                echo "origin/main is already an ancestor; pushing validated outputs"
+              else
+                echo "main advanced during build; replaying validated outputs on $remote_head (attempt $attempt)"
+                git reset --hard "$remote_head"
+                git cherry-pick "$output_commit"
+                output_commit=$(git rev-parse HEAD)
+              fi
+
+              if git push origin HEAD:main; then
+                break
+              fi
+
+              if [ "$attempt" -eq 3 ]; then
+                echo "::error::Could not publish validated CAD outputs after 3 attempts because main kept advancing"
+                exit 1
+              fi
+            done
           fi
 
       - name: Package output
