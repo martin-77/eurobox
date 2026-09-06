@@ -72,10 +72,18 @@ if not massive_closure.is_file():
     raise SystemExit('Missing continuous rack-closure fixup')
 exec(compile(massive_closure.read_text(encoding='utf-8'), str(massive_closure), 'exec'))
 
-# Make the female M4 thread unmistakable in the printable nut and both hand
-# knobs. The correction uses deeper grooves and length-normalised hard checks,
-# so the short nut and the longer knobs are validated on the same basis.
+# Make the female M4 thread unmistakable in the printable nut. This correction
+# runs before the final hardware pass, which deliberately changes both hand
+# knobs from threaded-on-stud to positive AF7 hex-drive interfaces.
 female_threads = Path('scripts/apply_v50_rack_female_threads.py')
 if not female_threads.is_file():
     raise SystemExit('Missing rack female-thread correction')
 exec(compile(female_threads.read_text(encoding='utf-8'), str(female_threads), 'exec'))
+
+# Resolve the remaining real-world hardware issues found by visual inspection:
+# integral lead nuts, no loose lead-nut pin/clip, positive rack-knob drive, and
+# a deeper threaded lead-knob retainer nut.
+hardware_cleanup = Path('scripts/apply_v50_hardware_cleanup.py')
+if not hardware_cleanup.is_file():
+    raise SystemExit('Missing v50 functional hardware cleanup')
+exec(compile(hardware_cleanup.read_text(encoding='utf-8'), str(hardware_cleanup), 'exec'))
