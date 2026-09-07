@@ -95,6 +95,14 @@ if not nut_thread_fix.is_file():
     raise SystemExit('Missing v50 nut/thread correction')
 exec(compile(nut_thread_fix.read_text(encoding='utf-8'), str(nut_thread_fix), 'exec'))
 
+# Replace the independently tuned 8x2 screw/nut helices with one master profile.
+# The female cutter is derived from the exact male helix plus explicit radial
+# and flank clearance, so pitch/hand/phase can no longer drift independently.
+lead_thread_master = Path('scripts/apply_v50_lead_thread_master.py')
+if not lead_thread_master.is_file():
+    raise SystemExit('Missing single-source RH8x2 lead-thread pass')
+exec(compile(lead_thread_master.read_text(encoding='utf-8'), str(lead_thread_master), 'exec'))
+
 # The previous final M4 pass still left a razor-thin 0.04 mm internal-thread
 # crest at 0.70 mm pitch. Replace that mathematically valid but unprintable
 # geometry with a deliberately truncated FDM profile and real lead-in chamfers.
