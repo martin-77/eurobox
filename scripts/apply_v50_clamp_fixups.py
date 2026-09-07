@@ -78,9 +78,15 @@ if not m4_pair_master.is_file():
 exec(compile(m4_pair_master.read_text(encoding='utf-8'), str(m4_pair_master), 'exec'))
 
 # Final architecture pass: screws stay screws, all threaded nuts stay separate.
-# In particular the RH8x2 lead screw no longer carries the nut-looking AF10
-# collar; it uses an integral square drive with a matching separate knob.
 screw_cleanup = Path('scripts/apply_v50_screw_hardware_cleanup.py')
 if not screw_cleanup.is_file():
     raise SystemExit('Missing final screw hardware cleanup')
 exec(compile(screw_cleanup.read_text(encoding='utf-8'), str(screw_cleanup), 'exec'))
+
+# Absolute final rack-M4 nut pass: discard the accumulated cutter-derived nut
+# and import the standalone root-bore + inward material-helix nut. Nothing later
+# is allowed to rewrite this part.
+rack_m4_nut_rebuild = Path('scripts/apply_v50_rack_m4_nut_rebuild.py')
+if not rack_m4_nut_rebuild.is_file():
+    raise SystemExit('Missing standalone rack M4 nut rebuild')
+exec(compile(rack_m4_nut_rebuild.read_text(encoding='utf-8'), str(rack_m4_nut_rebuild), 'exec'))
