@@ -13,6 +13,13 @@ on:
       - "scripts/apply_v50_rack_closure_massive.py"
       - "scripts/apply_v50_rack_female_threads.py"
       - "scripts/apply_v50_hardware_cleanup.py"
+      - "scripts/apply_v50_nut_thread_fix.py"
+      - "scripts/apply_v50_lead_thread_master.py"
+      - "scripts/apply_v50_m4_thread_final_fix.py"
+      - "scripts/apply_v50_m4_pair_master.py"
+      - "scripts/apply_v50_screw_hardware_cleanup.py"
+      - "scripts/apply_v50_rack_m4_nut_rebuild.py"
+      - "scripts/rack_m4_nut.scad"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
       - "scripts/validate_assembly_layout.py"
@@ -38,7 +45,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y openscad libfuse2 xvfb
-          python3 -m pip install --break-system-packages trimesh networkx
+          python3 -m pip install --break-system-packages trimesh networkx scipy
 
       - name: Cache FreeCAD AppImage
         id: freecad-cache
