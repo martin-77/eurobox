@@ -19,6 +19,7 @@ on:
       - "scripts/apply_v50_m4_pair_master.py"
       - "scripts/apply_v50_screw_hardware_cleanup.py"
       - "scripts/apply_v50_rack_m4_nut_rebuild.py"
+      - "scripts/apply_v50_lead_hardware_final.py"
       - "scripts/rack_m4_nut.scad"
       - "scripts/diagnose_v50_base.py"
       - "scripts/validate_meshes.py"
@@ -78,7 +79,7 @@ jobs:
           set -euo pipefail
           python3 scripts/apply_v50_fixups.py
           python3 scripts/apply_v50_clamp_fixups.py
-          python3 -m py_compile scripts/build_v50.py scripts/validate_box_clamp.py
+          python3 -m py_compile scripts/build_v50.py scripts/validate_box_clamp.py scripts/validate_meshes.py
 
       - name: Build and validate v50 CAD
         id: cadbuild
@@ -148,7 +149,7 @@ jobs:
           p='build_v50/VALIDATION_v50_source.json'
           v=json.load(open(p))
           print('V50_FAILURES='+json.dumps(v.get('failures', []), ensure_ascii=False))
-          keys=['frozen_interface_assertions','tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','rack_lock','rack_lock_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','anti_rotation','beam_sanity','system_width_estimate_mm']
+          keys=['frozen_interface_assertions','tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','rack_lock','rack_lock_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','lead_nut_retainer_hardware','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','knob_retainer_thread','anti_rotation','beam_sanity','system_width_estimate_mm']
           print('V50_DIAGNOSTIC='+json.dumps({k:v.get(k) for k in keys}, ensure_ascii=False))
           PY
           else
@@ -184,13 +185,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Generate final printable spindle mesh
+      - name: Preserve canonical spindle mesh reference
         run: |
           set -euo pipefail
-          cp build_v50/eurobox_v50_lead_screw_print.stl build_v50/eurobox_v50_lead_screw_BREP_export_reference.mesh-reference
-          openscad -D 'part="spindle"' -o build_v50/eurobox_v50_lead_screw_print.stl scripts/final_print_meshes.scad
           test -s build_v50/eurobox_v50_lead_screw_print.stl
-          cp scripts/final_print_meshes.scad build_v50/final_print_meshes.scad
+          cp build_v50/eurobox_v50_lead_screw_print.stl build_v50/eurobox_v50_lead_screw_BREP_export_reference.mesh-reference
 
       - name: Validate STL meshes
         run: python3 scripts/validate_meshes.py build_v50
@@ -224,9 +223,21 @@ jobs:
           test -s build_v50/eurobox_v50_lead_screw_print.FCStd
           test -s build_v50/eurobox_v50_lead_screw_print.step
           test -s build_v50/eurobox_v50_lead_screw_print.stl
+          test -s build_v50/eurobox_v50_lead_nut_print.FCStd
+          test -s build_v50/eurobox_v50_lead_nut_print.step
+          test -s build_v50/eurobox_v50_lead_nut_print.stl
+          test -s build_v50/eurobox_v50_lead_nut_retaining_pin.FCStd
+          test -s build_v50/eurobox_v50_lead_nut_retaining_pin.step
+          test -s build_v50/eurobox_v50_lead_nut_retaining_pin.stl
+          test -s build_v50/eurobox_v50_lead_nut_pin_clip.FCStd
+          test -s build_v50/eurobox_v50_lead_nut_pin_clip.step
+          test -s build_v50/eurobox_v50_lead_nut_pin_clip.stl
           test -s build_v50/eurobox_v50_knob.FCStd
           test -s build_v50/eurobox_v50_knob.step
           test -s build_v50/eurobox_v50_knob.stl
+          test -s build_v50/eurobox_v50_knob_retainer_nut.FCStd
+          test -s build_v50/eurobox_v50_knob_retainer_nut.step
+          test -s build_v50/eurobox_v50_knob_retainer_nut.stl
           test -s build_v50/PREVIEW_v50.png
           test -s build_v50/VALIDATION_v50_source.json
           test -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
