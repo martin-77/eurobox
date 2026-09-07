@@ -76,12 +76,14 @@ if old not in s:
     raise SystemExit('Could not locate lead-nut cartridge/pin/clip block')
 s = s.replace(old, new, 1)
 
-# Match the BASE retaining bore to the strengthened cartridge lug.
+# Match the BASE retaining bore to the strengthened cartridge lug. This BASE
+# block is executed before the named lead-hardware constants are defined in the
+# generated build script, so keep the frozen interface values literal here.
 old = '''    BASE = BASE.cut(cyl_x(1.7, 24.0, sx-12.0,
                           (NUT_Y0+NUT_Y1)/2, 40.0))'''
-new = '''    BASE = BASE.cut(cyl_x(LEAD_NUT_PIN_HOLE_D/2.0, 24.0, sx-12.0,
-                          NUT_Y0+LEAD_NUT_PIN_Y,
-                          SPINDLE_Z+LEAD_NUT_PIN_Z))'''
+new = '''    BASE = BASE.cut(cyl_x(1.7, 24.0, sx-12.0,
+                          NUT_Y0+7.0,
+                          SPINDLE_Z+10.0))'''
 if old not in s:
     raise SystemExit('Could not locate removable lead-nut retaining bore in BASE')
 s = s.replace(old, new, 1)
