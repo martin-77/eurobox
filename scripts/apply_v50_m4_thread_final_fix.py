@@ -105,6 +105,20 @@ s = s.replace(
 s = s.replace("hex_z(7.0, 3.2, 0.0).cut(Part.makeCylinder(1.60, 3.2))",
               "hex_z(7.0, 5.6, 0.0).cut(Part.makeCylinder(1.66, 5.6))", 1)
 
+# hardware_cleanup runs before this pass and historically inserted a failure
+# gate that dereferenced the then-current rack_m4_female_thread_witness dict.
+# Later final passes intentionally replace that dict with the authoritative nut
+# witness, which made the stale gate crash with KeyError before export. Remove
+# only that obsolete intermediate-nut gate here. The final standalone nut gets
+# stronger direct bore/phase checks in apply_v50_rack_m4_nut_rebuild.py.
+stale_gate = '''min_removed_per_mm = V['rack_m4_female_thread_witness']['minimum_required_helical_volume_removed_per_mm']
+if V['rack_m4_female_thread_witness']['nut_helical_volume_removed_per_mm'] < min_removed_per_mm:
+    failures.append('rack M4 nut has no meaningful internal M4 helical groove')
+'''
+if stale_gate not in s:
+    raise SystemExit('Could not locate stale intermediate rack M4 nut gate')
+s = s.replace(stale_gate, '', 1)
+
 fail_anchor = "if V.get('lead_nut_mode') != 'separate_RH_8x2_printed_cartridge':\n"
 if fail_anchor not in s:
     raise SystemExit('Could not locate final failure-gate anchor')
