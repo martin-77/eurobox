@@ -71,17 +71,28 @@ NUT_PIN_CLIP_INNER_R = 1.30
 NUT_PIN_CLIP_T = 1.4
 NUT_PIN_CLIP_OPENING_W = 1.90
 NUT_PIN_CLIP = make_c_clip(NUT_PIN_CLIP_OUTER_R, NUT_PIN_CLIP_INNER_R,
-                           NUT_PIN_CLIP_T, NUT_PIN_CLIP_OPENING_W)'''
+                           NUT_PIN_CLIP_T, NUT_PIN_CLIP_OPENING_W)
+NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0'''
 if old not in s:
     raise SystemExit('Could not locate lead-nut cartridge/pin/clip block')
 s = s.replace(old, new, 1)
 
-# Match the BASE retaining bore to the strengthened cartridge lug. This BASE
-# block is executed before the named lead-hardware constants are defined in the
-# generated build script, so keep the frozen interface values literal here.
+# Match the BASE retaining bore to the strengthened cartridge lug. The global
+# top frame crosses the pin axis, so the old Ø3.4 through-bore alone left the
+# external Ø6.5 head and Ø7.6 clip buried in that rail. Keep the Ø3.4 bearing
+# bore through the cage walls, but open local service pockets only outside the
+# ±11 mm cage faces: Ø7.1 for the head on -X and Ø8.2 for the clip on +X.
+# This BASE block executes before named lead-hardware constants are defined in
+# the generated script, so these frozen interface values stay literal here.
 old = '''    BASE = BASE.cut(cyl_x(1.7, 24.0, sx-12.0,
                           (NUT_Y0+NUT_Y1)/2, 40.0))'''
 new = '''    BASE = BASE.cut(cyl_x(1.7, 24.0, sx-12.0,
+                          NUT_Y0+7.0,
+                          SPINDLE_Z+10.0))
+    BASE = BASE.cut(cyl_x(3.55, 3.0, sx-14.0,
+                          NUT_Y0+7.0,
+                          SPINDLE_Z+10.0))
+    BASE = BASE.cut(cyl_x(4.10, 4.0, sx+11.0,
                           NUT_Y0+7.0,
                           SPINDLE_Z+10.0))'''
 if old not in s:
@@ -181,6 +192,7 @@ proof = '''V['lead_nut_retainer_hardware'] = {
     'clip_thickness_mm': NUT_PIN_CLIP_T,
     'clip_opening_width_mm': NUT_PIN_CLIP_OPENING_W,
     'clip_to_groove_diametral_clearance_mm': round(2.0*NUT_PIN_CLIP_INNER_R-NUT_PIN_GROOVE_D, 3),
+    'clip_axial_clearance_each_side_mm': round((NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0, 3),
     'snap_retention_overlap_mm': round(NUT_PIN_GROOVE_D-NUT_PIN_CLIP_OPENING_W, 3),
 }
 if V['lead_nut_retainer_hardware']['minimum_tab_wall_around_pin_mm'] < 1.0:
@@ -193,6 +205,8 @@ if V['lead_nut_retainer_hardware']['clip_to_groove_diametral_clearance_mm'] < 0.
     failures.append('Lead-nut C-clip is too tight on the retaining-pin groove')
 if V['lead_nut_retainer_hardware']['clip_to_groove_diametral_clearance_mm'] > 0.35:
     failures.append('Lead-nut C-clip is too loose on the retaining-pin groove')
+if V['lead_nut_retainer_hardware']['clip_axial_clearance_each_side_mm'] < 0.08:
+    failures.append('Lead-nut C-clip lacks axial running clearance in the retaining-pin groove')
 if V['lead_nut_retainer_hardware']['snap_retention_overlap_mm'] < 0.35:
     failures.append('Lead-nut C-clip mouth is too wide to retain the pin groove')
 if NUT_PIN_CLIP_T > NUT_PIN_GROOVE_W-0.10:
@@ -215,7 +229,7 @@ right_anchor = "    k = KNOB.copy(); k.translate(App.Vector(sx, RY+BOX_EDGE_Y+he
 right_extra = '''    np = NUT_PIN.copy(); np.translate(App.Vector(sx, RY+NUT_Y0+LEAD_NUT_PIN_Y,
                                                      SPINDLE_Z+LEAD_NUT_PIN_Z)); add_obj('RIGHT_nut_pin_'+str(int(sx)), np)
     nc = NUT_PIN_CLIP.copy(); nc.rotate(App.Vector(0,0,0), App.Vector(0,1,0), 90.0)
-    nc.translate(App.Vector(sx+NUT_PIN_GROOVE_X0, RY+NUT_Y0+LEAD_NUT_PIN_Y,
+    nc.translate(App.Vector(sx+NUT_PIN_CLIP_X, RY+NUT_Y0+LEAD_NUT_PIN_Y,
                             SPINDLE_Z+LEAD_NUT_PIN_Z)); add_obj('RIGHT_nut_pin_clip_'+str(int(sx)), nc)
     cap = CAP_NUT.copy(); cap.rotate(App.Vector(0,0,0), App.Vector(0,1,0), cap_phase_deg)
     cap.translate(App.Vector(sx, RY+BOX_EDGE_Y+cap_y, SPINDLE_Z)); add_obj('RIGHT_knob_retainer_nut_'+str(int(sx)), cap)
@@ -228,7 +242,7 @@ left_anchor = "    sp = SPINDLE.copy(); sp.translate(App.Vector(sx,BOX_EDGE_Y,SP
 left_extra = '''    np = NUT_PIN.copy(); np.translate(App.Vector(sx, NUT_Y0+LEAD_NUT_PIN_Y,
                                                      SPINDLE_Z+LEAD_NUT_PIN_Z)); add_obj('LEFT_nut_pin_'+str(int(sx)), left_transform(np))
     nc = NUT_PIN_CLIP.copy(); nc.rotate(App.Vector(0,0,0), App.Vector(0,1,0), 90.0)
-    nc.translate(App.Vector(sx+NUT_PIN_GROOVE_X0, NUT_Y0+LEAD_NUT_PIN_Y,
+    nc.translate(App.Vector(sx+NUT_PIN_CLIP_X, NUT_Y0+LEAD_NUT_PIN_Y,
                             SPINDLE_Z+LEAD_NUT_PIN_Z)); add_obj('LEFT_nut_pin_clip_'+str(int(sx)), left_transform(nc))
     cap = CAP_NUT.copy(); cap.rotate(App.Vector(0,0,0), App.Vector(0,1,0), cap_phase_deg)
     cap.translate(App.Vector(sx, BOX_EDGE_Y+cap_y, SPINDLE_Z)); add_obj('LEFT_knob_retainer_nut_'+str(int(sx)), left_transform(cap))
