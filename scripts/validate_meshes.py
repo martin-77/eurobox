@@ -84,6 +84,62 @@ def rack_m4_thread_sections(mesh):
     return checks
 
 
+def lead_retainer_thread_sections(mesh):
+    """Verify the published RH8x2 knob-retainer STL has a real internal helix.
+
+    The part axis is Y. With the matched printable pair the female crest radius
+    is about 3.43 mm and the helical groove root about 4.18 mm. A smooth hole,
+    hidden groove, or lost boolean therefore cannot pass these Y-sections.
+    """
+    checks=[]
+    for y in (1.2, 2.9, 4.6):
+        sec=mesh.section(plane_origin=[0.0,y,0.0], plane_normal=[0.0,1.0,0.0])
+        if sec is None or len(sec.vertices) == 0:
+            checks.append({'y_mm':y,'ok':False,'reason':'no section'})
+            continue
+        v=np.asarray(sec.vertices)
+        r=np.sqrt(v[:,0]**2 + v[:,2]**2)
+        inner=r[(r > 3.0) & (r < 4.8)]
+        if len(inner) < 12:
+            checks.append({'y_mm':y,'ok':False,'reason':'too few inner contour samples','samples':int(len(inner))})
+            continue
+        rmin=float(inner.min())
+        rmax=float(inner.max())
+        span=rmax-rmin
+        checks.append({
+            'y_mm':y,
+            'inner_radius_min_mm':round(rmin,5),
+            'inner_radius_max_mm':round(rmax,5),
+            'radial_span_mm':round(span,5),
+            'samples':int(len(inner)),
+            'ok':bool(rmin <= 3.55 and rmax >= 4.05 and span >= 0.45),
+        })
+    return checks
+
+
+def lead_screw_square_drive_section(mesh):
+    """Catch any stale nut-like/hex spindle STL after the CAD build.
+
+    The canonical lead screw has an 8x8 mm integral square drive from Y=32.8 to
+    37.3 mm. A former secondary OpenSCAD export replaced that with an AF10 hex,
+    so sectioning the *final published STL* is the authoritative regression gate.
+    """
+    y=34.5
+    sec=mesh.section(plane_origin=[0.0,y,0.0], plane_normal=[0.0,1.0,0.0])
+    if sec is None or len(sec.vertices) == 0:
+        return {'y_mm':y,'ok':False,'reason':'no section'}
+    v=np.asarray(sec.vertices)
+    xspan=float(v[:,0].max()-v[:,0].min())
+    zspan=float(v[:,2].max()-v[:,2].min())
+    return {
+        'y_mm':y,
+        'x_span_mm':round(xspan,5),
+        'z_span_mm':round(zspan,5),
+        'expected_drive':'8x8 mm square',
+        'ok':bool(7.90 <= xspan <= 8.10 and 7.90 <= zspan <= 8.10),
+    }
+
+
 def trimesh_cleanup(path):
     m=trimesh.load(path, force='mesh', process=True)
     m.merge_vertices(digits_vertex=5)
@@ -160,13 +216,31 @@ for p in paths:
         else:
             info['internal_thread_mesh_gate']='PASS: Ø4.40 root bore contains exposed inward helical thread tooth'
 
+    if name == 'eurobox_v50_knob_retainer_nut.stl' and good(info):
+        section_checks=lead_retainer_thread_sections(mesh)
+        info['internal_RH8x2_thread_section_checks']=section_checks
+        if not section_checks or not all(c.get('ok') for c in section_checks):
+            info['internal_thread_mesh_gate']='FAILED: RH8x2 helix is not exposed on the published retainer-nut bore wall'
+            failed.append(name)
+        else:
+            info['internal_thread_mesh_gate']='PASS: published retainer nut exposes the matched RH8x2 internal helix'
+
+    if name == 'eurobox_v50_lead_screw_print.stl' and good(info):
+        drive_check=lead_screw_square_drive_section(mesh)
+        info['lead_drive_section_check']=drive_check
+        if not drive_check.get('ok'):
+            info['lead_drive_mesh_gate']='FAILED: final STL does not contain the canonical 8x8 square drive'
+            failed.append(name)
+        else:
+            info['lead_drive_mesh_gate']='PASS: final STL contains the canonical 8x8 square drive, not a nut-like hex collar'
+
     results[name]=info
     if not good(info) and name not in failed:
         failed.append(name)
 
 with open(os.path.join(out,'MESH_VALIDATION.json'),'w') as f:
     json.dump({'meshes':results,'failed':failed,
-               'note':'rack M4 nut final STL must expose an inward material helix between ~r1.75 and r2.20; hidden threads are rejected'},f,indent=2)
+               'note':'Final mesh gates verify the rack M4 internal helix, lead retainer RH8x2 helix, and canonical 8x8 lead-screw drive on the actual published STL files.'},f,indent=2)
 
 print(json.dumps({'directory':out_arg,'count':len(results),'failed':failed,
                   'failed_details':{n:results[n] for n in failed}},indent=2))
