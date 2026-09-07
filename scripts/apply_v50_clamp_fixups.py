@@ -83,9 +83,10 @@ if not screw_cleanup.is_file():
     raise SystemExit('Missing final screw hardware cleanup')
 exec(compile(screw_cleanup.read_text(encoding='utf-8'), str(screw_cleanup), 'exec'))
 
-# Absolute final rack-M4 nut pass: discard the accumulated cutter-derived nut
-# and import the standalone root-bore + inward material-helix nut. Nothing later
-# is allowed to rewrite this part.
+# Absolute final rack-M4 nut pass: rebuild the captive nut from its standalone
+# 7 mm AF body and an OPEN SUBTRACTIVE M4x0.7 female groove. This deliberately
+# replaces the old inward-projecting helical ribbon that could sit like a wall
+# in front of the usable thread. Nothing later is allowed to rewrite this part.
 rack_m4_nut_rebuild = Path('scripts/apply_v50_rack_m4_nut_rebuild.py')
 if not rack_m4_nut_rebuild.is_file():
     raise SystemExit('Missing standalone rack M4 nut rebuild')
