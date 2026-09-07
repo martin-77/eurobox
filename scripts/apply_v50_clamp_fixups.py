@@ -110,3 +110,5 @@ m4_thread_final = Path('scripts/apply_v50_m4_thread_final_fix.py')
 if not m4_thread_final.is_file():
     raise SystemExit('Missing final printable rack M4 thread correction')
 exec(compile(m4_thread_final.read_text(encoding='utf-8'), str(m4_thread_final), 'exec'))
+
+# Keep this orchestrator in the workflow trigger set while the RH8x2 master is iterated.
