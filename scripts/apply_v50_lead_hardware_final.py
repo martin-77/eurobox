@@ -112,14 +112,15 @@ s, n = pattern.subn(replacement, s, count=1)
 if n != 1:
     raise SystemExit('Could not replace independent knob-retainer thread cutter')
 
-# The female nut is translated +d along a fixed RH helix. Therefore its own
-# phase must advance +360*d/pitch. This is the opposite sign to translating the
-# male spindle through a fixed nut, where the spindle rotation is negative.
+# z_to_y rotates the OpenSCAD helix into the spindle axis with the same sign
+# already proven by the main RH8x2 kinematics: +0.5 mm axial travel requires
+# -90 degrees screw rotation. A female cutter translated +d along that fixed
+# helix therefore also needs -360*d/pitch to stay in phase with the outer stud.
 old = '''cap_y = hex_y + 7.0
 cn = CAP_NUT.copy(); cn.translate(App.Vector(0, cap_y, 0))'''
 new = '''cap_y = hex_y + 7.0
 cap_thread_start_y = lead_drive_y0 + LEAD_DRIVE_LEN
-cap_phase_deg = +360.0 * (cap_y-cap_thread_start_y) / THREAD_PITCH
+cap_phase_deg = -360.0 * (cap_y-cap_thread_start_y) / THREAD_PITCH
 cn = CAP_NUT.copy()
 cn.rotate(App.Vector(0,0,0), App.Vector(0,1,0), cap_phase_deg)
 cn.translate(App.Vector(0, cap_y, 0))'''
