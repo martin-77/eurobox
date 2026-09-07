@@ -70,6 +70,9 @@ PLATE_COUNTERBORE_D = 12.0
 LEAD_NUT_PIN_Y = 7.0
 LEAD_NUT_PIN_Z = 10.0
 NUT_PIN_GROOVE_X0 = 11.4
+NUT_PIN_GROOVE_W = 1.6
+NUT_PIN_CLIP_T = 1.4
+NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
 SPINDLE_LOCAL_JOURNAL = 8.0
 SPINDLE_LOCAL_SHOULDER = 1.8
 LEAD_THREAD_LEN = 23.0
@@ -223,7 +226,7 @@ def run_validation():
 
     clip = pin_clip.copy()
     clip.rotate(App.Vector(0,0,0), App.Vector(0,1,0), 90.0)
-    clip.translate(App.Vector(SPINDLE_X+NUT_PIN_GROOVE_X0,
+    clip.translate(App.Vector(SPINDLE_X+NUT_PIN_CLIP_X,
                               NUT_Y0+LEAD_NUT_PIN_Y,
                               SPINDLE_Z+LEAD_NUT_PIN_Z))
     clip_base_common = common_volume(base, clip, 'lead_nut_pin_clip_vs_base')
