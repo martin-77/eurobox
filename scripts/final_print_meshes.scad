@@ -1,4 +1,6 @@
-// v50 final printable mesh generator
+// v50 fallback/manual printable mesh generator
+// CI no longer overwrites the canonical FreeCAD/OCC lead-screw STL with this
+// file. Keep this source geometrically aligned for manual OpenSCAD use.
 // Use:
 //   openscad -D 'part="spindle"' -o <output.stl> final_print_meshes.scad
 //   openscad -D 'part="rack_m4_nut"' -o <output.stl> final_print_meshes.scad
@@ -9,8 +11,8 @@ part="spindle";
 pitch=2.0;
 core_r=3.25;
 major_r=4.0;
-root_w=0.58;
-crest_w=0.24;
+root_w=0.72;
+crest_w=0.30;
 
 module rh_thread_z(length) {
   union() {
@@ -50,7 +52,8 @@ module spindle_z() {
           [major_r, crest_w/2],
           [core_r-0.08, root_w/2]
         ]);
-    translate([0,0,32.78]) hex_prism_z(10.0,4.54);
+    // Canonical v50 drive: 8x8 mm square, not a nut-like AF10 hex collar.
+    translate([-4.0,-4.0,32.78]) cube([8.0,8.0,4.54]);
     translate([0,0,37.28]) cylinder(r=core_r,h=7.02);
     translate([0,0,37.30])
       linear_extrude(height=7.0,
