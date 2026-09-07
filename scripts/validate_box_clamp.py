@@ -66,6 +66,21 @@ JOURNAL_D = 6.0
 SHOULDER_D = 11.0
 PLATE_COUNTERBORE_D = 12.0
 
+# Lead-nut service-hardware datums from the final v50 architecture pass.
+LEAD_NUT_PIN_Y = 7.0
+LEAD_NUT_PIN_Z = 10.0
+NUT_PIN_GROOVE_X0 = 11.4
+SPINDLE_LOCAL_JOURNAL = 8.0
+SPINDLE_LOCAL_SHOULDER = 1.8
+LEAD_THREAD_LEN = 23.0
+LEAD_DRIVE_LEN = 4.5
+LEAD_KNOB_LEN = 7.0
+OUTER_STUD_LEN = 7.0
+LEAD_DRIVE_Y0 = SPINDLE_LOCAL_JOURNAL + SPINDLE_LOCAL_SHOULDER + LEAD_THREAD_LEN
+OUTER_STUD_Y0 = LEAD_DRIVE_Y0 + LEAD_DRIVE_LEN
+CAP_NUT_Y0 = LEAD_DRIVE_Y0 + LEAD_KNOB_LEN
+CAP_NUT_PHASE_DEG = -360.0 * (CAP_NUT_Y0-OUTER_STUD_Y0) / THREAD_PITCH
+
 
 def log(message):
     print('[box-clamp] ' + message, flush=True)
@@ -120,9 +135,9 @@ def run_validation():
     plate = read_step('eurobox_v50_clamp_plate')
     spindle = read_step('eurobox_v50_lead_screw_print')
     lead_nut = read_step('eurobox_v50_lead_nut_print')
-    # These are required service parts of the current removable-nut architecture.
-    read_step('eurobox_v50_lead_nut_retaining_pin')
-    read_step('eurobox_v50_lead_nut_pin_clip')
+    retainer_pin = read_step('eurobox_v50_lead_nut_retaining_pin')
+    pin_clip = read_step('eurobox_v50_lead_nut_pin_clip')
+    knob_retainer_nut = read_step('eurobox_v50_knob_retainer_nut')
 
     checkpoint('inputs:loaded')
     rim = box(-200.0, BOX_RIM_INNER_Y, RIM_BOTTOM_Z, 400.0, RIM_Y, RIM_H)
@@ -140,6 +155,7 @@ def run_validation():
     report['checks']['separate_lead_nut_exported_valid'] = True
     report['checks']['lead_nut_retaining_pin_exported_valid'] = True
     report['checks']['lead_nut_pin_clip_exported_valid'] = True
+    report['checks']['knob_retainer_nut_exported_valid'] = True
 
     report['measurements']['plate_journal_diametral_clearance_mm'] = round(PLATE_HOLE_D - JOURNAL_D, 3)
     report['measurements']['shoulder_counterbore_diametral_clearance_mm'] = round(PLATE_COUNTERBORE_D - SHOULDER_D, 3)
@@ -187,6 +203,39 @@ def run_validation():
     report['measurements']['lead_nut_base_distance_mm'] = round(nut_base_distance, 6)
     report['checks']['separate_lead_nut_fits_base_pocket'] = nut_base_common < 1e-4 and nut_base_distance <= 0.5
 
+    # Validate the actual cartridge retention assembly, not just file existence.
+    pin = retainer_pin.copy()
+    pin.translate(App.Vector(SPINDLE_X,
+                             NUT_Y0+LEAD_NUT_PIN_Y,
+                             SPINDLE_Z+LEAD_NUT_PIN_Z))
+    pin_base_common = common_volume(base, pin, 'lead_nut_retainer_pin_vs_base')
+    pin_nut_common = common_volume(nut, pin, 'lead_nut_retainer_pin_vs_nut')
+    report['measurements']['lead_nut_retainer_pin_base_common_mm3'] = round(pin_base_common, 6)
+    report['measurements']['lead_nut_retainer_pin_nut_common_mm3'] = round(pin_nut_common, 6)
+    report['measurements']['lead_nut_retainer_pin_right_protrusion_mm'] = round(
+        pin.BoundBox.XMax-(SPINDLE_X+11.0), 3)
+    report['checks']['lead_nut_retainer_pin_passes_base_bore'] = pin_base_common < 1e-4
+    report['checks']['lead_nut_retainer_pin_passes_cartridge_bore'] = pin_nut_common < 1e-4
+    report['checks']['lead_nut_retainer_pin_protrudes_for_clip'] = (
+        report['measurements']['lead_nut_retainer_pin_right_protrusion_mm'] >= 3.0)
+
+    clip = pin_clip.copy()
+    clip.rotate(App.Vector(0,0,0), App.Vector(0,1,0), 90.0)
+    clip.translate(App.Vector(SPINDLE_X+NUT_PIN_GROOVE_X0,
+                              NUT_Y0+LEAD_NUT_PIN_Y,
+                              SPINDLE_Z+LEAD_NUT_PIN_Z))
+    clip_base_common = common_volume(base, clip, 'lead_nut_pin_clip_vs_base')
+    clip_pin_common = common_volume(pin, clip, 'lead_nut_pin_clip_vs_pin')
+    checkpoint('distance:start:lead_nut_pin_clip_vs_pin')
+    clip_pin_distance = pin.distToShape(clip)[0]
+    checkpoint('distance:done:lead_nut_pin_clip_vs_pin', {'distance_mm': round(clip_pin_distance, 6)})
+    report['measurements']['lead_nut_pin_clip_base_common_mm3'] = round(clip_base_common, 6)
+    report['measurements']['lead_nut_pin_clip_pin_common_mm3'] = round(clip_pin_common, 6)
+    report['measurements']['lead_nut_pin_clip_radial_clearance_mm'] = round(clip_pin_distance, 6)
+    report['checks']['lead_nut_pin_clip_is_outside_base'] = clip_base_common < 1e-4
+    report['checks']['lead_nut_pin_clip_fits_groove_without_collision'] = (
+        clip_pin_common < 1e-4 and 0.04 <= clip_pin_distance <= 0.16)
+
     # Correct screw motion is translation plus the matching RH 8x2 rotation.
     # BASE is intentionally smooth: thread engagement must be exclusively between
     # the spindle and the removable lead-nut cartridge.
@@ -222,6 +271,27 @@ def run_validation():
     wrong_interference = common_volume(nut, q_wrong, 'separate_thread_wrong_phase')
     report['measurements']['wrong_phase_interference_mm3'] = round(wrong_interference, 6)
     report['checks']['separate_thread_has_phase_sensitive_engagement'] = wrong_interference > 1.0
+
+    # The knob-retainer nut must use the same RH8x2 profile as the outer stud.
+    # At its actual axial contact position the nut needs the corresponding phase;
+    # half a pitch out of phase must create interference.
+    cap = knob_retainer_nut.copy()
+    cap.rotate(App.Vector(0,0,0), App.Vector(0,1,0), CAP_NUT_PHASE_DEG)
+    cap.translate(App.Vector(0, CAP_NUT_Y0, 0))
+    cap_common = common_volume(spindle, cap, 'knob_retainer_nut_correct_phase')
+    cap_wrong = knob_retainer_nut.copy()
+    cap_wrong.rotate(App.Vector(0,0,0), App.Vector(0,1,0), CAP_NUT_PHASE_DEG+180.0)
+    cap_wrong.translate(App.Vector(0, CAP_NUT_Y0, 0))
+    cap_wrong_common = common_volume(spindle, cap_wrong, 'knob_retainer_nut_half_pitch_wrong_phase')
+    cap_engagement = max(0.0, min(knob_retainer_nut.BoundBox.YLength,
+                                  OUTER_STUD_Y0+OUTER_STUD_LEN-CAP_NUT_Y0))
+    report['measurements']['knob_retainer_nut_phase_deg'] = round(CAP_NUT_PHASE_DEG, 3)
+    report['measurements']['knob_retainer_nut_correct_phase_common_mm3'] = round(cap_common, 6)
+    report['measurements']['knob_retainer_nut_wrong_phase_common_mm3'] = round(cap_wrong_common, 6)
+    report['measurements']['knob_retainer_nut_actual_engagement_mm'] = round(cap_engagement, 3)
+    report['checks']['knob_retainer_nut_matches_outer_stud'] = cap_common < 0.02
+    report['checks']['knob_retainer_nut_has_phase_sensitive_thread'] = cap_wrong_common > 0.25
+    report['checks']['knob_retainer_nut_engagement_at_least_4mm'] = cap_engagement >= 4.0
 
     q0 = placed_spindle(0.0, 0.0)
     spindle_plate_overlap = common_volume(q0, plate, 'nominal_spindle_vs_plate')
