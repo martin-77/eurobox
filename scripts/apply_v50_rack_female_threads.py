@@ -43,8 +43,10 @@ if anchor not in s:
     raise SystemExit('Could not locate rack knob validation block')
 proof = '''# Direct female-thread witness checks. Compare each actual threaded part to
 # the same body with only a smooth Ø3.30 mm bore. The difference is the material
-# removed specifically by the helical groove. Normalise by threaded length so a
-# short M4 nut is not judged by the same absolute volume as an 8 mm hand knob.
+# removed specifically by the helical groove. Normalise by threaded length.
+# The rack M4 nut itself is rebuilt later from its standalone source and gets
+# its own final authoritative clearance/engagement checks there; this block
+# therefore retains only the intermediate values needed for the hand knobs.
 rack_m4_smooth_nut = hex_z(7.0, 3.2, 0.0).cut(Part.makeCylinder(1.65, 3.2))
 rack_m4_nut_thread_extra_removed = rack_m4_smooth_nut.Volume - RACK_M4_NUT.Volume
 
@@ -85,11 +87,14 @@ s = s.replace(anchor, proof + anchor, 1)
 fail_anchor = "if V['rack_m4_thread_check']['correct_phase_common_mm3'] > 0.02:\n"
 if fail_anchor not in s:
     raise SystemExit('Could not locate rack M4 thread hard gates')
-fail = '''min_removed_per_mm = V['rack_m4_female_thread_witness']['minimum_required_helical_volume_removed_per_mm']
+# Do not dereference V['rack_m4_female_thread_witness'] here. Later final passes
+# intentionally replace that dictionary with the authoritative standalone-nut
+# witness. Using the local knob values avoids a stale-witness KeyError and keeps
+# this intermediate gate scoped to the two hand knobs it still owns.
+fail = '''min_removed_per_mm = 0.10
 for part_name, removed_per_mm in [
-    ('rack M4 nut', V['rack_m4_female_thread_witness']['nut_helical_volume_removed_per_mm']),
-    ('large rack hand knob', V['rack_m4_female_thread_witness']['large_knob_helical_volume_removed_per_mm']),
-    ('compact rack hand knob', V['rack_m4_female_thread_witness']['compact_knob_helical_volume_removed_per_mm']),
+    ('large rack hand knob', rack_m4_large_removed_per_mm),
+    ('compact rack hand knob', rack_m4_compact_removed_per_mm),
 ]:
     if removed_per_mm < min_removed_per_mm:
         failures.append(part_name+' has no meaningful internal M4 helical groove')
