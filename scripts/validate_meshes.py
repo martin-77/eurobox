@@ -8,23 +8,23 @@ out=os.path.join(root,out_arg)
 results={}
 failed=[]
 
-# Regenerate the canonical printable rack M4 nut with CGAL after the editable
-# FreeCAD/STEP geometry has passed its upstream checks. The same STL is then
-# inspected below and later published.
+# Regenerate the canonical printable rack M4 nut from its standalone source of
+# truth. The FreeCAD/STEP part imports this same SCAD geometry, so CAD and STL
+# can no longer drift into two different nut constructions.
 rack_nut=os.path.join(out,'eurobox_v50_rack_m4_nut_print.stl')
 if os.path.exists(rack_nut):
     rack_nut_ref=os.path.join(out,'eurobox_v50_rack_m4_nut_BREP_export_reference.mesh-reference')
     shutil.copyfile(rack_nut, rack_nut_ref)
-    scad=os.path.join(root,'scripts','final_print_meshes.scad')
+    scad=os.path.join(root,'scripts','rack_m4_nut.scad')
     cp=subprocess.run(
-        ['openscad','-D','part="rack_m4_nut"','-o',rack_nut,scad],
+        ['openscad','-o',rack_nut,scad],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         timeout=300,
     )
     if cp.returncode != 0 or not os.path.exists(rack_nut) or os.path.getsize(rack_nut)==0:
-        raise SystemExit('Could not generate canonical rack M4 nut STL via OpenSCAD/CGAL:\n'+cp.stdout[-4000:])
+        raise SystemExit('Could not generate standalone rack M4 nut STL via OpenSCAD/CGAL:\n'+cp.stdout[-4000:])
 
 paths=sorted(glob.glob(os.path.join(out,'*.stl')))
 if not paths:
@@ -53,10 +53,10 @@ def good(info):
 def rack_m4_thread_sections(mesh):
     """Prove on the final STL that the bore wall itself is threaded.
 
-    A smooth cylindrical bore has essentially one radius in every horizontal
-    section. A real internal helical groove must make the inner contour vary
-    strongly in radius at the same Z plane. Check three planes through the
-    service region so metadata/source claims cannot hide a smooth-wall STL.
+    The rebuilt nut has a Ø4.40 root bore and an inward-projecting helical
+    material tooth. Horizontal sections therefore must span from about r=1.75
+    at the thread crest to about r=2.20 at the root. A hidden/recessed thread or
+    smooth bore cannot satisfy this test.
     """
     checks=[]
     for z in (1.4, 2.8, 4.2):
@@ -66,8 +66,7 @@ def rack_m4_thread_sections(mesh):
             continue
         v=np.asarray(sec.vertices)
         r=np.sqrt(v[:,0]**2 + v[:,1]**2)
-        # Outer AF7 hex has an inradius of 3.5 mm, so r<2.6 isolates the bore.
-        inner=r[(r > 1.3) & (r < 2.6)]
+        inner=r[(r > 1.5) & (r < 2.6)]
         if len(inner) < 8:
             checks.append({'z_mm':z,'ok':False,'reason':'too few inner contour samples','samples':int(len(inner))})
             continue
@@ -80,7 +79,7 @@ def rack_m4_thread_sections(mesh):
             'inner_radius_max_mm':round(rmax,5),
             'radial_span_mm':round(span,5),
             'samples':int(len(inner)),
-            'ok':bool(span >= 0.30),
+            'ok':bool(rmin <= 1.82 and rmax >= 2.12 and span >= 0.30),
         })
     return checks
 
@@ -135,7 +134,7 @@ for p in paths:
     info=dict(before)
     info['normalization']='none'
     if name == 'eurobox_v50_rack_m4_nut_print.stl':
-        info['canonical_mesh_source']='OpenSCAD/CGAL true radial-Z helical sweep after BRep/STEP validation'
+        info['canonical_mesh_source']='scripts/rack_m4_nut.scad — Ø4.40 root bore plus inward material helix'
 
     if not good(before):
         ok, after=trimesh_cleanup(p)
@@ -156,10 +155,10 @@ for p in paths:
         section_checks=rack_m4_thread_sections(mesh)
         info['internal_thread_section_checks']=section_checks
         if not section_checks or not all(c.get('ok') for c in section_checks):
-            info['internal_thread_mesh_gate']='FAILED: bore contour is not sufficiently helical/exposed'
+            info['internal_thread_mesh_gate']='FAILED: inward material thread is not exposed on bore wall'
             failed.append(name)
         else:
-            info['internal_thread_mesh_gate']='PASS: final STL bore radius varies with exposed helical groove'
+            info['internal_thread_mesh_gate']='PASS: Ø4.40 root bore contains exposed inward helical thread tooth'
 
     results[name]=info
     if not good(info) and name not in failed:
@@ -167,7 +166,7 @@ for p in paths:
 
 with open(os.path.join(out,'MESH_VALIDATION.json'),'w') as f:
     json.dump({'meshes':results,'failed':failed,
-               'note':'rack M4 nut is also section-tested on the final published STL to reject a hidden thread behind a smooth bore'},f,indent=2)
+               'note':'rack M4 nut final STL must expose an inward material helix between ~r1.75 and r2.20; hidden threads are rejected'},f,indent=2)
 
 print(json.dumps({'directory':out_arg,'count':len(results),'failed':failed,
                   'failed_details':{n:results[n] for n in failed}},indent=2))
