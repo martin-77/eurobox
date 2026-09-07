@@ -91,3 +91,11 @@ rack_m4_nut_rebuild = Path('scripts/apply_v50_rack_m4_nut_rebuild.py')
 if not rack_m4_nut_rebuild.is_file():
     raise SystemExit('Missing standalone rack M4 nut rebuild')
 exec(compile(rack_m4_nut_rebuild.read_text(encoding='utf-8'), str(rack_m4_nut_rebuild), 'exec'))
+
+# Absolute final box-clamp lead-hardware pass. This runs after all earlier
+# architecture experiments so obsolete pin/clip and retainer-thread geometry
+# cannot be reintroduced by a later patch.
+lead_hardware_final = Path('scripts/apply_v50_lead_hardware_final.py')
+if not lead_hardware_final.is_file():
+    raise SystemExit('Missing final v50 lead-hardware correction')
+exec(compile(lead_hardware_final.read_text(encoding='utf-8'), str(lead_hardware_final), 'exec'))
