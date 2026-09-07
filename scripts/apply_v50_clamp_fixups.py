@@ -83,10 +83,10 @@ if not screw_cleanup.is_file():
     raise SystemExit('Missing final screw hardware cleanup')
 exec(compile(screw_cleanup.read_text(encoding='utf-8'), str(screw_cleanup), 'exec'))
 
-# Absolute final rack-M4 nut pass: rebuild the captive nut from its standalone
-# 7 mm AF body and an OPEN SUBTRACTIVE M4x0.7 female groove. This deliberately
-# replaces the old inward-projecting helical ribbon that could sit like a wall
-# in front of the usable thread. Nothing later is allowed to rewrite this part.
+# Absolute final rack-M4 nut pass: keep the final nut as a native FreeCAD/OCC
+# boolean (7 mm AF hex minus the open radial-Z M4x0.7 cutter). The standalone
+# SCAD remains a printable/reference source but is deliberately not imported
+# back through importCSG, which can split the valid mesh into multiple solids.
 rack_m4_nut_rebuild = Path('scripts/apply_v50_rack_m4_nut_rebuild.py')
 if not rack_m4_nut_rebuild.is_file():
     raise SystemExit('Missing standalone rack M4 nut rebuild')
