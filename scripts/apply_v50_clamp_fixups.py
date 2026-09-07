@@ -111,4 +111,10 @@ if not m4_thread_final.is_file():
     raise SystemExit('Missing final printable rack M4 thread correction')
 exec(compile(m4_thread_final.read_text(encoding='utf-8'), str(m4_thread_final), 'exec'))
 
-# Keep this orchestrator in the workflow trigger set while the RH8x2 master is iterated.
+# The final female M4 geometry uses a true radial-Z helix. Generate the male
+# with the same helix convention too; otherwise the old generic XY-polygon
+# screw can intersect an otherwise valid female thread even in correct phase.
+m4_pair_master = Path('scripts/apply_v50_m4_pair_master.py')
+if not m4_pair_master.is_file():
+    raise SystemExit('Missing matched rack M4 pair pass')
+exec(compile(m4_pair_master.read_text(encoding='utf-8'), str(m4_pair_master), 'exec'))
