@@ -79,8 +79,9 @@ OUTER_STUD_LEN = 7.0
 LEAD_DRIVE_Y0 = SPINDLE_LOCAL_JOURNAL + SPINDLE_LOCAL_SHOULDER + LEAD_THREAD_LEN
 OUTER_STUD_Y0 = LEAD_DRIVE_Y0 + LEAD_DRIVE_LEN
 CAP_NUT_Y0 = LEAD_DRIVE_Y0 + LEAD_KNOB_LEN
-# Female nut translated +d along a fixed RH helix advances +360*d/pitch.
-CAP_NUT_PHASE_DEG = +360.0 * (CAP_NUT_Y0-OUTER_STUD_Y0) / THREAD_PITCH
+# z_to_y maps this RH8x2 helix so +0.5 mm travel pairs with -90 degrees.
+# Use that same physical phase convention for the translated retainer nut.
+CAP_NUT_PHASE_DEG = -360.0 * (CAP_NUT_Y0-OUTER_STUD_Y0) / THREAD_PITCH
 
 
 def log(message):
