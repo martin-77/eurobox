@@ -100,6 +100,16 @@ if not lead_hardware_final.is_file():
     raise SystemExit('Missing final v50 lead-hardware correction')
 exec(compile(lead_hardware_final.read_text(encoding='utf-8'), str(lead_hardware_final), 'exec'))
 
+# Rebuild the separate knob retainer one final time with the same open-ended
+# thread strategy that made the rack M4 nut reliable: one full pitch of cutter
+# overrun beyond both faces plus short entry chamfers. This remains matched to
+# the RH8x2 male master and keeps the phase-sensitive collision gates intact.
+knob_retainer_thread_final = Path('scripts/apply_v50_knob_retainer_thread_final.py')
+if not knob_retainer_thread_final.is_file():
+    raise SystemExit('Missing final open RH8x2 knob-retainer thread rebuild')
+exec(compile(knob_retainer_thread_final.read_text(encoding='utf-8'),
+             str(knob_retainer_thread_final), 'exec'))
+
 # Final mounting-aid pass. Keep it last so it sees the final reinforced rack
 # root (front edge Y=-8 mm), fuses the broad 50 mm backstop into that geometry,
 # and leaves all existing clamp/pin collision checks authoritative.
