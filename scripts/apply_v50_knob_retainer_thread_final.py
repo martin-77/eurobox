@@ -34,7 +34,17 @@ cap_span = CAP_NUT_H + 2.0*CAP_THREAD_OVERRUN
 # unthreaded end wall survives the boolean/export operation.
 CAP_FEMALE_EXT_SCAD = os.path.join(
     OUT, 'thread_RH_8x2_knob_retainer_extended_cutter.scad')
-cap_txt = f'''$fn=72;\nmodule thread_solid(){{\n  union(){{\n    translate([0,0,-0.05]) cylinder(r={cap_female_core},h={CAP_NUT_H+0.10});\n    translate([0,0,-{CAP_THREAD_OVERRUN}])\n      linear_extrude(height={cap_span},twist=360*{cap_span}/{THREAD_PITCH},slices=ceil({cap_span}/{THREAD_PITCH}*28),convexity=40)\n        polygon(points=[[{cap_female_core-0.08},-{cap_root_w}/2],[{cap_female_major},-{cap_crest_w}/2],[{cap_female_major},{cap_crest_w}/2],[{cap_female_core-0.08},{cap_root_w}/2]]);\n  }}\n}}\nthread_solid();\n'''
+cap_txt = f"""$fn=72;
+module thread_solid(){{
+  union(){{
+    translate([0,0,-0.05]) cylinder(r={cap_female_core},h={CAP_NUT_H+0.10});
+    translate([0,0,-{CAP_THREAD_OVERRUN}])
+      linear_extrude(height={cap_span},twist=360*{cap_span}/{THREAD_PITCH},slices=ceil({cap_span}/{THREAD_PITCH}*28),convexity=40)
+        polygon(points=[[{cap_female_core-0.08},-{cap_root_w}/2],[{cap_female_major},-{cap_crest_w}/2],[{cap_female_major},{cap_crest_w}/2],[{cap_female_core-0.08},{cap_root_w}/2]]);
+  }}
+}}
+thread_solid();
+"""
 with open(CAP_FEMALE_EXT_SCAD, 'w') as f:
     f.write(cap_txt)
 CAP_FEMALE = import_scad_shape(CAP_FEMALE_EXT_SCAD)
