@@ -107,3 +107,5 @@ mounting_backstop = Path('scripts/apply_v50_mounting_backstop.py')
 if not mounting_backstop.is_file():
     raise SystemExit('Missing integrated v50 mounting-backstop pass')
 exec(compile(mounting_backstop.read_text(encoding='utf-8'), str(mounting_backstop), 'exec'))
+
+# CI trigger anchor: changes to the final mounting-aid geometry must be validated.
