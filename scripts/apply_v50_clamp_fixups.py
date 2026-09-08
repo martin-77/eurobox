@@ -138,4 +138,31 @@ if not printability_final.is_file():
     raise SystemExit('Missing final v50 printability correction')
 exec(compile(printability_final.read_text(encoding='utf-8'), str(printability_final), 'exec'))
 
+# The printability pass moves the lead-nut cross-pin and adds its BASE bores
+# before the lead-nut object itself is defined. Hoist the three pin datums into
+# the design-parameter block so build_v50.py can use them while constructing BASE.
+# The later identical assignments remain as local documentation and are harmless.
+p = Path('scripts/build_v50.py')
+s = p.read_text(encoding='utf-8')
+first_use = s.find('BASE = BASE.cut(cyl_x(LEAD_NUT_PIN_HOLE_D/2.0')
+first_def = s.find('LEAD_NUT_PIN_HOLE_D = 3.4')
+if first_use < 0 or first_def < 0:
+    raise SystemExit('Could not locate lower lead-nut pin use/definition after printability pass')
+if first_def > first_use:
+    anchor = 'CAGE_Y1 = 282.20\n'
+    if anchor not in s:
+        raise SystemExit('Could not locate final cage datum for lead-nut pin hoist')
+    hoisted = (
+        anchor +
+        'LEAD_NUT_PIN_HOLE_D = 3.4\n' +
+        'LEAD_NUT_PIN_Y = NUT_THREAD_LEN + 2.75\n' +
+        'LEAD_NUT_PIN_Z = -7.25\n'
+    )
+    s = s.replace(anchor, hoisted, 1)
+    p.write_text(s, encoding='utf-8')
+    first_def = s.find('LEAD_NUT_PIN_HOLE_D = 3.4')
+if first_def > first_use:
+    raise SystemExit('Lead-nut pin datums are still defined after their first BASE use')
+print('Hoisted lower lead-nut pin datums before BASE construction')
+
 # CI trigger anchor: support-minimised handed v50 BASE + manifold functional hardware.
