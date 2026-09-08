@@ -111,12 +111,13 @@ if not knob_retainer_thread_final.is_file():
 exec(compile(knob_retainer_thread_final.read_text(encoding='utf-8'),
              str(knob_retainer_thread_final), 'exec'))
 
-# Final mounting-aid pass. Keep it last so it sees the final reinforced rack
-# roots and creates the 100 mm lower stop plus tapered full-width upper schott.
-# Existing clamp/pin collision checks therefore remain authoritative.
+# Final mounting-aid pass. It runs last against the finished reinforced BASE.
+# v50 now freezes -X=front and +X=rear and creates exactly one stop behind the
+# rear clamp, with a deep root and gusset into the rear I-beam only. Existing
+# lower-clamp, pin, tube and mesh checks remain authoritative.
 mounting_backstop = Path('scripts/apply_v50_mounting_backstop.py')
 if not mounting_backstop.is_file():
     raise SystemExit('Missing integrated v50 mounting-backstop pass')
 exec(compile(mounting_backstop.read_text(encoding='utf-8'), str(mounting_backstop), 'exec'))
 
-# CI trigger anchor: validate manifold open RH8x2 retainer plus strengthened 100 mm backstop.
+# CI trigger anchor: validate rear-only diagonal-stay backstop and manifold RH8x2 hardware.
