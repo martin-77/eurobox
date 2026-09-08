@@ -1,6 +1,7 @@
 // Eurobox v50 automated preview
 // Generated from the actual STL outputs produced by GitHub Actions.
 // Coordinates: X riding direction, Y transverse, Z up.
+// Frozen riding convention: -X = FRONT / saddle side, +X = REAR / wheel end.
 // Global truth: rack tube centres Y = +/-55.335 mm; Eurobox outer edges Y = +/-300 mm.
 
 $fn = 72;
@@ -20,7 +21,7 @@ module tube_x(y=0, x0=-120, len=240, z=0, d=12.42) {
 
 module right_module() {
   translate([0,RY,0]) {
-    color([0.72,0.72,0.76]) import("../build_v50/eurobox_v50_base.stl", convexity=10);
+    color([0.72,0.72,0.76]) import("../build_v50/eurobox_v50_base_right.stl", convexity=10);
     color([0.20,0.42,0.78]) {
       translate([-90,0,0]) import("../build_v50/eurobox_v50_rack_lower.stl", convexity=10);
       translate([ 90,0,0]) import("../build_v50/eurobox_v50_rack_lower.stl", convexity=10);
@@ -30,10 +31,11 @@ module right_module() {
 }
 
 module left_module() {
-  // Same printable parts; whole local module is rotated 180 degrees around Z,
-  // then placed on the left rack tube. This makes local +Y point outward (-global Y).
+  // The rear-only stop makes BASE handed. The LEFT printable BASE is mirrored
+  // in local X first; the existing proper 180 degree assembly rotation then
+  // maps its local -X stop to the same global +X rear end as RIGHT.
   translate([0,LY,0]) rotate([0,0,180]) {
-    color([0.72,0.72,0.76]) import("../build_v50/eurobox_v50_base.stl", convexity=10);
+    color([0.72,0.72,0.76]) import("../build_v50/eurobox_v50_base_left.stl", convexity=10);
     color([0.20,0.42,0.78]) {
       translate([-90,0,0]) import("../build_v50/eurobox_v50_rack_lower.stl", convexity=10);
       translate([ 90,0,0]) import("../build_v50/eurobox_v50_rack_lower.stl", convexity=10);
@@ -75,10 +77,12 @@ color([0.18,0.18,0.18]) {
 }
 box_reference();
 
-// Orientation markers: arrows always point from rack centre toward the Eurobox side.
+// Orientation markers.
 arrow_y(RY+20, BOX_EDGE_R-28, 58, 0);
 arrow_y(LY-20, BOX_EDGE_L+28, 58, 0);
 label("RIGHT / +Y OUTBOARD", 0, 178, 60, 11);
 label("LEFT / -Y OUTBOARD", 0, -178, 60, 11);
+label("FRONT / -X", -165, 0, 64, 11);
+label("REAR / +X", 165, 0, 64, 11);
 label("BOX EDGE +300", 155, 292, 60, 9);
 label("BOX EDGE -300", -155, -292, 60, 9);
