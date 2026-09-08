@@ -100,9 +100,9 @@ if not lead_hardware_final.is_file():
     raise SystemExit('Missing final v50 lead-hardware correction')
 exec(compile(lead_hardware_final.read_text(encoding='utf-8'), str(lead_hardware_final), 'exec'))
 
-# Final mounting-aid pass. Keep it last so the broad 50 mm backstop is fused to
-# the already-final BASE and all existing clamp/pin collision checks validate
-# the actual delivered geometry.
+# Final mounting-aid pass. Keep it last so it sees the final reinforced rack
+# root (front edge Y=-8 mm), fuses the broad 50 mm backstop into that geometry,
+# and leaves all existing clamp/pin collision checks authoritative.
 mounting_backstop = Path('scripts/apply_v50_mounting_backstop.py')
 if not mounting_backstop.is_file():
     raise SystemExit('Missing integrated v50 mounting-backstop pass')
