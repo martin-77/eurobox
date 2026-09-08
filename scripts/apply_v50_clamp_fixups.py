@@ -102,8 +102,9 @@ exec(compile(lead_hardware_final.read_text(encoding='utf-8'), str(lead_hardware_
 
 # Rebuild the separate knob retainer one final time with the same open-ended
 # thread strategy that made the rack M4 nut reliable: one full pitch of cutter
-# overrun beyond both faces plus short entry chamfers. This remains matched to
-# the RH8x2 male master and keeps the phase-sensitive collision gates intact.
+# overrun beyond both faces. Tangent entry-cone booleans are deliberately
+# omitted because they made the otherwise-valid BRep non-manifold after STL
+# tessellation. The RH8x2 pitch, phase and engagement checks stay unchanged.
 knob_retainer_thread_final = Path('scripts/apply_v50_knob_retainer_thread_final.py')
 if not knob_retainer_thread_final.is_file():
     raise SystemExit('Missing final open RH8x2 knob-retainer thread rebuild')
@@ -118,4 +119,4 @@ if not mounting_backstop.is_file():
     raise SystemExit('Missing integrated v50 mounting-backstop pass')
 exec(compile(mounting_backstop.read_text(encoding='utf-8'), str(mounting_backstop), 'exec'))
 
-# CI trigger anchor: validate open RH8x2 retainer plus strengthened 100 mm backstop.
+# CI trigger anchor: validate manifold open RH8x2 retainer plus strengthened 100 mm backstop.
