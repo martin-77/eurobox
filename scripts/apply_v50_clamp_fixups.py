@@ -108,4 +108,4 @@ if not mounting_backstop.is_file():
     raise SystemExit('Missing integrated v50 mounting-backstop pass')
 exec(compile(mounting_backstop.read_text(encoding='utf-8'), str(mounting_backstop), 'exec'))
 
-# CI trigger anchor: changes to the final mounting-aid geometry must be validated.
+# CI trigger anchor: validate pin-head service clearance in final backstop geometry.
