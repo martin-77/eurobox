@@ -129,4 +129,13 @@ if not handed_base_final.is_file():
     raise SystemExit('Missing final explicit handed-base geometry/export correction')
 exec(compile(handed_base_final.read_text(encoding='utf-8'), str(handed_base_final), 'exec'))
 
-# CI trigger anchor: validate explicit handed rear backstops and manifold RH8x2 hardware.
+# Absolute final manufacturing pass: close the long load paths for slicer infill,
+# make the box-side crosshead/upper clamp transitions self-supporting in the
+# upside-down print orientation, lower the outer guide/cage to the common bed
+# plane and move the lead-nut retaining pin to a lower post-thread tail.
+printability_final = Path('scripts/apply_v50_printability_final.py')
+if not printability_final.is_file():
+    raise SystemExit('Missing final v50 printability correction')
+exec(compile(printability_final.read_text(encoding='utf-8'), str(printability_final), 'exec'))
+
+# CI trigger anchor: support-minimised handed v50 BASE + manifold functional hardware.
