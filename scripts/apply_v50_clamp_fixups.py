@@ -111,11 +111,11 @@ exec(compile(knob_retainer_thread_final.read_text(encoding='utf-8'),
              str(knob_retainer_thread_final), 'exec'))
 
 # Final mounting-aid pass. Keep it last so it sees the final reinforced rack
-# root (front edge Y=-8 mm), fuses the broad 50 mm backstop into that geometry,
-# and leaves all existing clamp/pin collision checks authoritative.
+# roots and creates the 100 mm lower stop plus tapered full-width upper schott.
+# Existing clamp/pin collision checks therefore remain authoritative.
 mounting_backstop = Path('scripts/apply_v50_mounting_backstop.py')
 if not mounting_backstop.is_file():
     raise SystemExit('Missing integrated v50 mounting-backstop pass')
 exec(compile(mounting_backstop.read_text(encoding='utf-8'), str(mounting_backstop), 'exec'))
 
-# CI trigger anchor: validate pin-head service clearance in final backstop geometry.
+# CI trigger anchor: validate open RH8x2 retainer plus strengthened 100 mm backstop.
