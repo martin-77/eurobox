@@ -6,12 +6,11 @@ orig = s
 
 # Absolute final rebuild for the separate RH8x2 knob-retainer nut.
 #
-# The generic matched cutter is geometrically threaded, but because its helix
-# starts and ends exactly on the nut faces it can leave a weak/visually closed
-# thread entrance in the final mesh. Use the same proven strategy as the rack
-# M4 nut: run the helical groove one complete pitch beyond BOTH faces and add
-# short entry chamfers. The profile, pitch and clearance remain derived from the
-# exact same RH8x2 master values as the male outer stud.
+# Keep the matched RH8x2 helical cutter running one complete pitch beyond both
+# nut faces so the printed thread is genuinely open. Do not add tangent entry
+# cone booleans at the end faces: FreeCAD/OCC accepts that BRep, but the tangent
+# intersections produced a non-watertight STL in CI. The extended cutter alone
+# preserves pitch, phase, clearance and the full 4.5 mm stud engagement.
 old = '''CAP_NUT_H = 5.8
 CAP_FEMALE = FEMALE_STUD.common(Part.makeCylinder(
     THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE + 0.06, CAP_NUT_H)).removeSplitter()
@@ -21,7 +20,7 @@ if not CAP_NUT.isValid() or len(CAP_NUT.Solids) != 1:
     raise RuntimeError('Lead knob retainer nut is not one valid threaded solid')'''
 
 new = r'''CAP_NUT_H = 5.8
-CAP_NUT_LEAD = 0.40
+CAP_NUT_LEAD = 0.0
 CAP_THREAD_OVERRUN = THREAD_PITCH
 cap_female_core = THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 cap_female_major = THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE
@@ -51,15 +50,6 @@ CAP_FEMALE = import_scad_shape(CAP_FEMALE_EXT_SCAD)
 
 CAP_NUT = z_to_y(hex_z(13.0, CAP_NUT_H), 0, 0, 0)
 CAP_NUT = CAP_NUT.cut(z_to_y(CAP_FEMALE, 0, 0, 0)).removeSplitter()
-
-# Short entry chamfers improve printed screw pickup while retaining at least
-# 4.0 mm of full-depth engagement on the existing 7 mm outer stud.
-cap_entry_0 = Part.makeCone(4.55, cap_female_core, CAP_NUT_LEAD,
-                            App.Vector(0,0,0), App.Vector(0,1,0))
-cap_entry_1 = Part.makeCone(cap_female_core, 4.55, CAP_NUT_LEAD,
-                            App.Vector(0,CAP_NUT_H-CAP_NUT_LEAD,0),
-                            App.Vector(0,1,0))
-CAP_NUT = CAP_NUT.cut(cap_entry_0).cut(cap_entry_1).removeSplitter()
 if not CAP_NUT.isValid() or len(CAP_NUT.Solids) != 1:
     raise RuntimeError('Lead knob retainer nut is not one valid open-threaded solid')'''
 
@@ -67,8 +57,9 @@ if old not in s:
     raise SystemExit('Could not locate final matched knob-retainer nut block')
 s = s.replace(old, new, 1)
 
-# Keep the existing phase-sensitive fit proof, but make the report state the
-# actual final cutter architecture and effective full-depth thread engagement.
+# Keep the existing phase-sensitive fit proof and report the exact final cutter
+# architecture. CAP_NUT_LEAD intentionally remains zero so the existing report
+# and >=4 mm full-depth engagement gate stay explicit without weakening checks.
 s = s.replace(
     "    'profile_source': 'FEMALE_STUD from write_lead_thread_pair',\n",
     "    'profile_source': 'matched RH8x2 master profile with one-pitch cutter overrun',\n",
@@ -98,6 +89,8 @@ if s == orig:
     raise SystemExit('Final knob-retainer thread rebuild made no changes')
 if 'CAP_THREAD_OVERRUN = THREAD_PITCH' not in s:
     raise SystemExit('Extended RH8x2 retainer cutter was not installed')
+if 'CAP_NUT_LEAD = 0.0' not in s:
+    raise SystemExit('Tangent retainer entry chamfers were not disabled')
 
 p.write_text(s, encoding='utf-8')
-print('Applied final RH8x2 knob-retainer rebuild: open-ended extended cutter + entry chamfers')
+print('Applied final RH8x2 knob-retainer rebuild: open-ended extended cutter, manifold end faces')
