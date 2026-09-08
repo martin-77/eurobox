@@ -120,4 +120,13 @@ if not mounting_backstop.is_file():
     raise SystemExit('Missing integrated v50 mounting-backstop pass')
 exec(compile(mounting_backstop.read_text(encoding='utf-8'), str(mounting_backstop), 'exec'))
 
-# CI trigger anchor: validate rear-only diagonal-stay backstop and manifold RH8x2 hardware.
+# Absolute final handed-base correction. FreeCAD 1.1.3 did not mutate the copied
+# TopoShape via the previous mirror call, which made LEFT/RIGHT STL exports
+# byte-identical. Construct both handed backstops explicitly from the symmetric
+# core and add a final-STL X-mirror regression gate to validate_meshes.py.
+handed_base_final = Path('scripts/apply_v50_handed_base_export_final.py')
+if not handed_base_final.is_file():
+    raise SystemExit('Missing final explicit handed-base geometry/export correction')
+exec(compile(handed_base_final.read_text(encoding='utf-8'), str(handed_base_final), 'exec'))
+
+# CI trigger anchor: validate explicit handed rear backstops and manifold RH8x2 hardware.
