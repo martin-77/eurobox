@@ -18,9 +18,6 @@ def make_upper_station(xc):
     bridge = box(xc-RACK_FIXED_LUG_OUTER_X, -8.0, 0.0,
                  2*RACK_FIXED_LUG_OUTER_X, 22.0, 16.0)
 
-    # Same 32 x 30 mm double-web I-beam section as the normal arm, extended
-    # from the fixed-station front edge to Y=36. This overlaps the regular arm
-    # (which starts at Y=24) by 12 mm and removes the former solid root block.
     root_beam = make_i_beam_y(xc, -8.0, 36.0)
 
     # 6 mm fixed clevis lugs, grown OUTWARD so the proven 26.0 mm inner gap and
@@ -39,14 +36,13 @@ def make_upper_station(xc):
     cheek_r = box(xc+RACK_FIXED_LUG_INNER_X, -8.0, -7.0,
                   RACK_FIXED_LUG_T, 9.0, 7.0)
 
-    q = fuse_all([bridge, root_beam,
+    s = fuse_all([bridge, root_beam,
                   lug_l, lug_r, web_l, web_r, cheek_l, cheek_r])
-    # The real rack-tube envelope and pin bore are cut only after all root
-    # solids are fused. This preserves the exact interfaces while keeping at
-    # least 6 mm material along X around the pivot on each side.
-    q = q.cut(cyl_x(UPPER_SADDLE_R, 44.0, xc-22.0, 0.0, 0.0))
-    q = q.cut(cyl_x(PIN_HOLE_D/2, 44.0, xc-22.0, PIN_Y, PIN_Z))
-    return q.removeSplitter()
+    # Keep these two canonical cut lines compatible with the later rack-lock
+    # pass; the 40 mm cutter fully spans the reinforced +/-19 mm station.
+    s = s.cut(cyl_x(UPPER_SADDLE_R, 40.0, xc-20.0, 0.0, 0.0))
+    s = s.cut(cyl_x(PIN_HOLE_D/2, 40.0, xc-20.0, PIN_Y, PIN_Z))
+    return s.removeSplitter()
 
 base_parts ='''
 s, n = pattern.subn(replacement, s, count=1)
