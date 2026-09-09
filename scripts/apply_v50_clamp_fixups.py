@@ -32,104 +32,30 @@ if 'for d in [-0.5, 0, 0.5' not in s:
 p.write_text(s, encoding='utf-8')
 print('Applied v50 clamp fixups: 5.5 mm opening + 0.5 mm preload spindle clearance')
 
-reinforcement = Path('scripts/apply_v50_rack_root_reinforcement.py')
-if not reinforcement.is_file():
-    raise SystemExit('Missing rack-root reinforcement fixup')
-exec(compile(reinforcement.read_text(encoding='utf-8'), str(reinforcement), 'exec'))
-
-rack_lock = Path('scripts/apply_v50_rack_lock.py')
-if not rack_lock.is_file():
-    raise SystemExit('Missing rack-lock fixup')
-exec(compile(rack_lock.read_text(encoding='utf-8'), str(rack_lock), 'exec'))
-
-massive_closure = Path('scripts/apply_v50_rack_closure_massive.py')
-if not massive_closure.is_file():
-    raise SystemExit('Missing continuous rack-closure fixup')
-exec(compile(massive_closure.read_text(encoding='utf-8'), str(massive_closure), 'exec'))
-
-female_threads = Path('scripts/apply_v50_rack_female_threads.py')
-if not female_threads.is_file():
-    raise SystemExit('Missing rack female-thread correction')
-exec(compile(female_threads.read_text(encoding='utf-8'), str(female_threads), 'exec'))
-
-hardware_cleanup = Path('scripts/apply_v50_hardware_cleanup.py')
-if not hardware_cleanup.is_file():
-    raise SystemExit('Missing v50 functional hardware cleanup')
-exec(compile(hardware_cleanup.read_text(encoding='utf-8'), str(hardware_cleanup), 'exec'))
-
-nut_thread_fix = Path('scripts/apply_v50_nut_thread_fix.py')
-if not nut_thread_fix.is_file():
-    raise SystemExit('Missing v50 nut/thread correction')
-exec(compile(nut_thread_fix.read_text(encoding='utf-8'), str(nut_thread_fix), 'exec'))
-
-lead_thread_master = Path('scripts/apply_v50_lead_thread_master.py')
-if not lead_thread_master.is_file():
-    raise SystemExit('Missing single-source RH8x2 lead-thread pass')
-exec(compile(lead_thread_master.read_text(encoding='utf-8'), str(lead_thread_master), 'exec'))
-
-m4_thread_final = Path('scripts/apply_v50_m4_thread_final_fix.py')
-if not m4_thread_final.is_file():
-    raise SystemExit('Missing final printable rack M4 thread correction')
-exec(compile(m4_thread_final.read_text(encoding='utf-8'), str(m4_thread_final), 'exec'))
-
-m4_pair_master = Path('scripts/apply_v50_m4_pair_master.py')
-if not m4_pair_master.is_file():
-    raise SystemExit('Missing matched rack M4 pair pass')
-exec(compile(m4_pair_master.read_text(encoding='utf-8'), str(m4_pair_master), 'exec'))
-
-# Final architecture pass: screws stay screws, all threaded nuts stay separate.
-screw_cleanup = Path('scripts/apply_v50_screw_hardware_cleanup.py')
-if not screw_cleanup.is_file():
-    raise SystemExit('Missing final screw hardware cleanup')
-exec(compile(screw_cleanup.read_text(encoding='utf-8'), str(screw_cleanup), 'exec'))
-
-# Absolute final rack-M4 nut pass: keep the final nut as a native FreeCAD/OCC
-# boolean (7 mm AF hex minus the open radial-Z M4x0.7 cutter). The standalone
-# SCAD remains a printable/reference source but is deliberately not imported
-# back through importCSG, which can split the valid mesh into multiple solids.
-rack_m4_nut_rebuild = Path('scripts/apply_v50_rack_m4_nut_rebuild.py')
-if not rack_m4_nut_rebuild.is_file():
-    raise SystemExit('Missing standalone rack M4 nut rebuild')
-exec(compile(rack_m4_nut_rebuild.read_text(encoding='utf-8'), str(rack_m4_nut_rebuild), 'exec'))
-
-# Absolute final box-clamp lead-hardware pass. This runs after all earlier
-# architecture experiments so obsolete pin/clip and retainer-thread geometry
-# cannot be reintroduced by a later patch.
-lead_hardware_final = Path('scripts/apply_v50_lead_hardware_final.py')
-if not lead_hardware_final.is_file():
-    raise SystemExit('Missing final v50 lead-hardware correction')
-exec(compile(lead_hardware_final.read_text(encoding='utf-8'), str(lead_hardware_final), 'exec'))
-
-# Rebuild the separate knob retainer one final time with the same open-ended
-# thread strategy that made the rack M4 nut reliable: one full pitch of cutter
-# overrun beyond both faces. Tangent entry-cone booleans are deliberately
-# omitted because they made the otherwise-valid BRep non-manifold after STL
-# tessellation. The RH8x2 pitch, phase and engagement checks stay unchanged.
-knob_retainer_thread_final = Path('scripts/apply_v50_knob_retainer_thread_final.py')
-if not knob_retainer_thread_final.is_file():
-    raise SystemExit('Missing final open RH8x2 knob-retainer thread rebuild')
-exec(compile(knob_retainer_thread_final.read_text(encoding='utf-8'),
-             str(knob_retainer_thread_final), 'exec'))
-
-# Final mounting-aid pass. It runs last against the finished reinforced BASE.
-# v50 now freezes -X=front and +X=rear and creates exactly one stop near the
-# rear clamp, with a deep root and gusset into the rear I-beam only. Existing
-# lower-clamp, pin, tube and mesh checks remain authoritative.
-mounting_backstop = Path('scripts/apply_v50_mounting_backstop.py')
-if not mounting_backstop.is_file():
-    raise SystemExit('Missing integrated v50 mounting-backstop pass')
-exec(compile(mounting_backstop.read_text(encoding='utf-8'), str(mounting_backstop), 'exec'))
-
-# Absolute final handed-base correction. FreeCAD 1.1.3 did not mutate the copied
-# TopoShape via the previous mirror call, which made LEFT/RIGHT STL exports
-# byte-identical. Construct both handed backstops explicitly from the symmetric
-# core and add a final-STL X-mirror regression gate to validate_meshes.py.
-handed_base_final = Path('scripts/apply_v50_handed_base_export_final.py')
-if not handed_base_final.is_file():
-    raise SystemExit('Missing final explicit handed-base geometry/export correction')
-exec(compile(handed_base_final.read_text(encoding='utf-8'), str(handed_base_final), 'exec'))
+for script_name, missing in [
+    ('scripts/apply_v50_rack_root_reinforcement.py','Missing rack-root reinforcement fixup'),
+    ('scripts/apply_v50_rack_lock.py','Missing rack-lock fixup'),
+    ('scripts/apply_v50_rack_closure_massive.py','Missing continuous rack-closure fixup'),
+    ('scripts/apply_v50_rack_female_threads.py','Missing rack female-thread correction'),
+    ('scripts/apply_v50_hardware_cleanup.py','Missing v50 functional hardware cleanup'),
+    ('scripts/apply_v50_nut_thread_fix.py','Missing v50 nut/thread correction'),
+    ('scripts/apply_v50_lead_thread_master.py','Missing single-source RH8x2 lead-thread pass'),
+    ('scripts/apply_v50_m4_thread_final_fix.py','Missing final printable rack M4 thread correction'),
+    ('scripts/apply_v50_m4_pair_master.py','Missing matched rack M4 pair pass'),
+    ('scripts/apply_v50_screw_hardware_cleanup.py','Missing final screw hardware cleanup'),
+    ('scripts/apply_v50_rack_m4_nut_rebuild.py','Missing standalone rack M4 nut rebuild'),
+    ('scripts/apply_v50_lead_hardware_final.py','Missing final v50 lead-hardware correction'),
+    ('scripts/apply_v50_knob_retainer_thread_final.py','Missing final open RH8x2 knob-retainer thread rebuild'),
+    ('scripts/apply_v50_mounting_backstop.py','Missing integrated v50 mounting-backstop pass'),
+    ('scripts/apply_v50_backstop_contact_side.py','Missing corrected backstop contact-side pass'),
+    ('scripts/apply_v50_handed_base_export_final.py','Missing final explicit handed-base geometry/export correction'),
+]:
+    q = Path(script_name)
+    if not q.is_file():
+        raise SystemExit(missing)
+    exec(compile(q.read_text(encoding='utf-8'), str(q), 'exec'))
 
 # Important: no global printability geometry rewrite here. Printability changes
 # must remain local and may not replace proven rack roots, clamp kinematics or
 # threaded hardware.
-print('Restored proven pre-printability v50 mechanics')
+print('Restored proven pre-printability v50 mechanics with corrected stop side')
