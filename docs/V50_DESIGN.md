@@ -1,210 +1,125 @@
-# Eurobox v50 – Konstruktionsidee
+# Eurobox v50 – finaler Konstruktionsstand
 
 ## Ziel
 
-v50 ist ein Neuaufbau für das **FOCUS THRON² EQP Modelljahr 2023** und eine 600×400-mm-Eurobox. Es ist ausdrücklich kein kosmetisches Update von v47/v49.
+Werkzeuglos abnehmbarer PETG-Trägeradapter für eine quer montierte **600×400-mm-Eurobox** auf dem originalen Massload-3-leg-Gepäckträger des FOCUS THRON² EQP MY2023.
 
-Die Konstruktion soll:
+Verbindlich sind die gemessenen Datums aus `MEASUREMENTS.md`, die Parameter in `V50_DIMENSIONS.json` und die automatischen Validierungen. Alte v45/v47/v49-BREP-Geometrie ist keine Quelle für v50.
 
-1. die gemessene Ø12.42-mm-Rackgeometrie respektieren;
-2. die Box ohne Bohrung werkzeuglos halten;
-3. die langen Querarme als echte Tragprofile ausführen;
-4. bei der Montage nicht um das runde Rackrohr nach unten kippen;
-5. mit PETG/0.4-mm-Düse und wenig Support druckbar sein;
-6. für den Test vollständig gedruckte Spindeln verwenden;
-7. später auf M4/Heat-Set/Metallhardware umstellbar sein, ohne die Base neu zu konstruieren;
-8. alle kritischen Maße und Prüfungen reproduzierbar in GitHub Actions halten.
+## Koordinatensystem
 
-Die vollständige Maßherkunft steht in `MEASUREMENTS.md`; der Fahrradkontext und die widersprüchlichen Lastangaben stehen in `FOCUS_THRON2_EQP_2023.md`.
-
-## 1. Koordinatensystem und Seitenmodul
-
-- X = Fahrtrichtung
-- Y = vom jeweiligen oberen Gepäckträgerrohr nach außen zur Boxkante
+- X = Fahrtrichtung, **-X vorne / +X hinten**
+- Y = je Seitenmodul vom Rackrohr nach außen zur Box
 - Z = oben
-- lokale Rohrmitte = Y0/Z0
-- Rohrachse = X
+- Rackrohrmitte je Modul = Y0/Z0
 
-Ein Seitenmodul sitzt auf einem der beiden oberen Rack-Längsrohre und besitzt zwei Klemmpunkte bei X = ±90 mm. Das zweite Modul wird spiegelbildlich montiert; separate linke/rechte Druckteile sind nicht nötig.
+Global liegen die Rackrohrzentren bei Y=±55.335 mm und die äußeren Boxkanten exakt bei Y=±300.000 mm.
 
-## 2. Tragstruktur
+## Handed Bases und hinterer Montageanschlag
 
-Die alten ca. 28×8-mm-Flacharme werden nicht weiterverwendet. Die v50-Arme erhalten eine hohe U-/I-artige Struktur, weil bei PETG die Bauhöhe für die Biegesteifigkeit wesentlich wirksamer ist als zusätzliche Breite.
+Die finale Konstruktion benötigt zwei unterschiedliche Bases:
 
-Der aktuelle CAD-Zielbereich beträgt:
+- RIGHT: hinterer Anschlag lokal X=+150…+190 mm
+- LEFT: gespiegelter Anschlag lokal X=-190…-150 mm
 
-- ca. 28–32 mm Breite je Arm;
-- ca. 22–30 mm strukturelle Bauhöhe außerhalb des Rack-/Fenderbereichs;
-- 4.5–5.0 mm obere Auflage;
-- 3.2 mm vertikale Stege;
-- Auflageoberseite immer Z = 39.54 mm.
+Das linke Modul wird bei der Montage 180° um Z gedreht. Dadurch landen beide Anschläge global am gleichen hinteren (+X) Ende. Vorne gibt es keinen Anschlag.
 
-Die volle Tiefe beginnt erst außerhalb des unmittelbaren Rohrklemmbereichs. An der Klemmenwurzel wird Material **addiert** (Gusset/Transition), nicht durch große Taschen entfernt.
+Der Anschlag ist 50 mm hoch, 4 mm dick und über einen tiefen Root/Gusset in den hinteren Lastpfad eingebunden. Er ist ausschließlich Montage-/Anti-Flop-Hilfe und kein zusätzlicher primärer Lastpfad. Ein separater V-Sattel an der diagonalen Rackstrebe wird nicht mehr exportiert.
 
-Frühere einfache Querschnittsrechnungen zeigten gegenüber der alten 28×8-mm-Platte einen sehr großen Steifigkeitsgewinn. Diese Rechnung ist nur ein Sanity-Check, keine FEA und keine Freigabe der Herstellerlast.
+## Rackbefestigung
 
-## 3. Rohrklemme
+Pro Seitenmodul zwei Klemmstationen bei X=±90 mm auf dem realen Ø12.42-mm-Rackrohr.
 
-Die Hauptbefestigung besteht aus zwei identischen Stationen:
+- obere starre Sattelhälfte in der Base
+- separate flexible `rack_lower`-Hälfte
+- Pivot Y=-12.0 / Z=-5.5 mm
+- Pin Ø4.0 / Loch Ø4.6 mm
+- Öffnungssweep 0…-75°
+- Rohr muss spätestens bei -45° vollständig frei sein
+- positiver Verschluss über M4-Schraube + separate Captive-Nut + Handknob
+- gedruckte M4-Hardware für den Prototyp; Metall-M4 bleibt Drop-in-Option
 
-- starre obere Sattelhälfte ist Teil der Base;
-- separate flexible `rack_lower`-Hälfte;
-- reales Rackrohr Ø12.42 mm ist die harte Kollisionsgeometrie;
-- starre Sattelkontur ca. Ø12.52 mm, also 0.05 mm radialer Freiraum;
-- flexible untere Sattelkontur ca. Ø12.30 mm für kleine definierte PETG-Vorspannung;
-- Pin Ø4.0 mm;
-- Pinbohrung Ø4.6 mm;
-- Pivotzentrum aus dem funktionierenden Vorgängerprinzip: Y = -12.0 mm / Z = -5.5 mm, sofern der v50-Neuaufbau nicht in CI eine bessere kollisionsfreie Lage nachweist.
+## Tragstruktur und Druckorientierung
 
-Die untere Hälfte muss in negativer X-Rotation öffnen. Geprüft werden 0, -15, -30, -45, -60 und -75 Grad. Spätestens ungefähr bei -45 Grad soll das reale Ø12.42-mm-Rohr frei sein.
+Die langen Lastpfade sind keine offenen I-Träger mehr. Final werden **geschlossene, verjüngte Solids** verwendet:
 
-## 4. Anti-Flop am FOCUS-Massload-3-leg
+- 32 mm Breite oben
+- 20 mm Breite unten
+- 30 mm Bauhöhe
+- 7 mm Taper
+- Auflageoberseite Z=39.54 mm
 
-Die MY23-EQP-Bilder und -Explosionszeichnung zeigen den 3-leg-Träger mit diagonalen Streben Richtung Hinterachse. Das ist für die Montage nützlich, aber die Strebe wird **nicht zum Hauptlastpfad**.
+Die komplette Base wird für den Druck 180° um X gedreht, sodass die Z=39.54-mm-Ebene auf dem Druckbett liegt. Crosshead, Guide und Cage sind auf diese Orientierung abgestimmt. Große strukturelle Supports und ein fester Unter-Rim-Bridge sind nicht vorgesehen.
 
-v50 behält deshalb ein kleines separates Anti-Flop-Teil:
+## Boxklemmung – inboard statt außen
 
-- Hauptlast weiterhin ausschließlich über die zwei oberen Rackklemmen pro Seitenmodul;
-- Anti-Flop-Stütze liegt lediglich an einer diagonalen Rackstrebe an bzw. wird dort leicht fixiert;
-- Zweck: das leere Seitenmodul klappt beim Aufsetzen der Box nicht um das runde Längsrohr nach unten;
-- da Durchmesser und Winkel dieser Strebe noch nicht gemessen sind, ist die erste Version ein universeller V-Sattel mit Anpassspiel/Schlitzen, **keine erfundene formschlüssige Klemme**;
-- nach einer einzigen Messung von Streben-Ø und Winkel kann daraus ein definierter Clip werden.
+Die frühere außenliegende Schraub-/Nut-Käfiggeometrie überschritt die 600-mm-Boxbreite und ist verworfen.
 
-Wichtig: Es wird nichts zwischen Hauptrahmen und bewegtem Hinterbau verspannt. Alle Kontaktpunkte bleiben am fahrwerkmitbewegten EQP-Träger.
+Final sitzt die Boxklemmung **innen an der inneren Vertikalfläche des unteren 16.45-mm-Randes**:
 
-## 5. Boxauflage und unterer Rand
+- innere Randfläche lokal Y=228.215 mm
+- Plattenkörper geschlossen Y=220.215…228.215 mm
+- 4.2-mm-Untergriff unter der inneren Randkante
+- 5.5 mm Öffnungsweg nach innen (-Y)
+- 0.5 mm Klemm-Preload nach außen (+Y)
+- zwei echte Durchgangsbohrungen in der Platte
+- Schraubachsen X=±42 mm / Z=31 mm
 
-Harte Werte:
+Die Platte dreht nicht. Eine Spindelschulter überträgt die Klemmkraft; die axiale Retention zieht die Platte beim Öffnen aktiv zurück.
 
-- Eurobox 600×400 mm quer montiert;
-- unterer Rand 16.45 mm horizontal und 16.45 mm vertikal;
-- Rohrmitte → Boxkante 244.665 mm;
-- Boxauflage Z = 39.54 mm;
-- Schutzblechoberkante Z = 34.54 mm;
-- damit nur 5.00 mm nomineller vertikaler Restabstand.
+## Lead-Screw-System
 
-Die Base darf diesen 5-mm-Raum nicht gedankenlos als Strukturvolumen benutzen. Der exakte Querschnitt des Schutzblechs ist noch nicht vermessen; CI darf deshalb nur gegen eindeutig bekannte Keep-outs prüfen und keine erfundene Fenderform als Realität deklarieren.
+Der Prototyp bleibt beim bewährten groben Druckgewinde:
 
-## 6. Klemmplatte
+- RH 8×2
+- Gewindelänge 23 mm
+- separate Lead-Nut-Cartridge
+- Cross-Pin + C-Clip im unteren post-thread Tail
+- Base selbst besitzt kein Arbeitsgewinde
+- separater Knob und separate Retainer-Nut
 
-Eine breite Platte wird von zwei Spindeln geführt.
+Für die inboard-Anordnung werden Spindel, Lead-Nut, Knob und Retainer-Nut als **proper 180° Z rotation** orientiert. Es gibt keine Spiegelung der Thread-Solids; die RH-Chiralität bleibt erhalten. Positive Öffnung bewegt die Spindel nach -Y und verwendet entsprechend das umgekehrte Welt-Y-Rotationsvorzeichen.
 
-Zielwerte:
+## Harte Breitenregel
 
-- Schraubachsen X = ±42 mm;
-- Schraubachse Z = 31 mm;
-- zwei **echte Durchgangsbohrungen**;
-- Journal Ø6.0 mm;
-- Plattenloch ca. Ø6.4–6.5 mm;
-- mindestens 4.0 mm, Ziel 4.5 mm Öffnungsweg;
-- Untergriff ca. 4 mm;
-- keine T-Schlitze;
-- keine offenen Montageschlitze durch tragende Bereiche;
-- kein Gewinde in der Platte.
+**Kein Bauteil der montierten Halterung darf die 600-mm-Eurobox seitlich überragen.**
 
-Die Platte darf nicht nur nach innen gedrückt werden: sie wird auf der Spindel axial gefangen und beim Lösen aktiv nach außen zurückgezogen.
+CI ermittelt die tatsächlichen BoundBoxes von Base, Platte, Spindel, Lead-Nut, Knob, Retainer, Pin und Clip in:
 
-## 7. Spindelkinematik
+- 0.5 mm Preload
+- geschlossen
+- 5.5 mm vollständig geöffnet
 
-Die Hauptspindel ist normal **rechtsgängig**.
+Aus Rack-CTC und dem jeweils größten lokalen Y-Maximum wird die globale Halterbreite berechnet. Obergrenze: 600.00 mm, numerische Toleranz 0.02 mm. Der Build schlägt bei Überschreitung fehl.
 
-Beim Zudrehen:
+## Validierung vor Publish
 
-1. Knob dreht Spindel über einen formschlüssigen Sechskant;
-2. feststehende Lead-Nut zwingt Spindel axial nach innen;
-3. eine massive Schulter drückt die Platte zur Box;
-4. Platte selbst rotiert nicht.
+Publish ist nur erlaubt, wenn gleichzeitig bestanden sind:
 
-Beim Aufdrehen:
+1. FreeCAD-Source-Solids gültig und einteilig;
+2. STEP-Reimport gültig;
+3. reales Ø12.42-mm-Rackrohr kollisionsfrei zur Base;
+4. Rack-Lower-Sweep und Pivot-Hardware funktionsfähig;
+5. hinterer Anschlag korrekt handed und nur hinten;
+6. Box-Rim kollisionsfrei zur Base;
+7. Platte geschlossen/offen kollisionsfrei und bei voller Öffnung freigegeben;
+8. RH8×2 in korrekter Phase kollisionsfrei, falsche Phase mit echter Interferenz;
+9. 0.5-mm-Preload mechanisch möglich;
+10. vollständige Halterbreite ≤600 mm;
+11. LEFT/RIGHT-STL unterschiedlich, physikalisch gespiegelt und watertight;
+12. alle STL einteilig, winding-consistent und positiv volumig;
+13. Assembly-Preview gerendert;
+14. erst danach FCStd/STEP/STL in `cad/v50` publiziert.
 
-1. Spindel läuft nach außen;
-2. der innere Retainer zieht die Platte mit;
-3. der Untergriff gibt den Boxrand frei.
-
-Für den Drucktest: RH Ø8×2-mm-Leitgewinde. Korrekte Drehung+Translation und falsche Händigkeit/Phase werden in CI geometrisch gegeneinander geprüft.
-
-## 8. Austauschbare Lead-Nut
-
-Das Testgewinde wird nicht dauerhaft in die Base geschnitten.
-
-Die Base erhält einen zugänglichen, gegen Verdrehung gesicherten Nut-/Cartridge-Sitz:
-
-- Prototyp: gedruckte RH-Ø8×2-Lead-Nut;
-- später: Einsatz mit M4-Heat-Set oder Metallmutter;
-- Außeninterface des Einsatzes bleibt gleich;
-- Axialkraft geht in den massiven Käfig/Flansch der Base, nicht in einen dünnen Deckel.
-
-Damit bleiben Base, Platte und Kinematik beim Wechsel auf Metall erhalten.
-
-## 9. Platte ↔ Spindel
-
-Mechanisch einfache Schulter-/Journal-Lösung:
-
-- glatter Ø6-mm-Journal durch das Plattenloch;
-- massive Druckschulter außen, etwa Ø11 mm;
-- flache Sicherungsnut auf der Innenseite;
-- separater Horseshoe-/C-Clip zieht die Platte nur beim Öffnen zurück;
-- die eigentliche Klemmkraft läuft über die Schulter, nicht über den Clip.
-
-Dadurch entfällt die komplizierte und strukturell ungünstige T-Nut-/Retainer-Taschen-Geometrie aus früheren Versuchen.
-
-## 10. Separate Spindel und separater Knob
-
-Die frühere integrierte `screw_with_knob`-Geometrie bleibt verworfen.
-
-v50:
-
-- Spindel separat;
-- Knob separat;
-- Drehmoment über AF10-Sechskant;
-- Knob-Socket ca. AF10.3 mm;
-- axiale Knob-Sicherung separat;
-- die Knob-Sicherung überträgt nicht das Hauptdrehmoment.
-
-Damit kann die Spindel zuerst durch Base/Lead-Nut montiert und der Knob anschließend außen befestigt werden.
-
-## 11. Lastannahme
-
-Die Quellenlage zum MY23 Massload 3-leg ist widersprüchlich: Händlerdaten nennen häufig 25 kg, die aktuelle FOCUS-Archiv-FAQ dieser Generation 16 kg. Deshalb gilt für v50 **16 kg konservative Rack-Gesamtlast**, bis der konkrete Rack-Aufkleber verifiziert ist.
-
-Ein 3×-Dynamikfall in vereinfachten Balkenrechnungen ist ausschließlich ein Sanity-Check der Adaptergeometrie. Er erhöht keine Herstellerfreigabe.
-
-## 12. Druckziel
+## Druckziel
 
 - Prusa CORE One L
-- PETG für den ersten Funktionstest
+- PETG
 - 0.4-mm-Düse
-- 0.20-mm-Layer als Standard
+- 0.20-mm-Layer
 - mindestens 3 Perimeter für den strukturellen Prototyp
-- möglichst keine Supports an den langen Tragprofilen und den Hauptkontaktflächen
+- kein großflächiger Support an den langen Lastpfaden oder Boxkontaktflächen
 
-## 13. Pflichtprüfungen in GitHub Actions
+## Lastgrenze
 
-Ein v50-Build darf erst als druckbar bezeichnet werden, wenn mindestens Folgendes bestanden ist:
-
-1. alle Hauptteile `Shape.isValid()` und erwartete Solid-Anzahl;
-2. STEP-Reimport gültig;
-3. STL watertight, winding consistent, eine Komponente;
-4. Base gegen reales Ø12.42-Rohr ohne Kollision;
-5. `rack_lower` mit definierter Vorspannung;
-6. vollständiger Öffnungssweep ohne Base-Kollision;
-7. Pin/Bohrung/Clip geometrisch montierbar;
-8. Platte bei 0/1/2/3/4 mm kollisionsfrei;
-9. beide Plattenbohrungen wirklich durchgängig;
-10. Lead-Nut sitzt kollisionsfrei im Cartridge-Sitz;
-11. korrekte Gewindebewegung kollisionsfrei, falsche Phase/Händigkeit kollidiert;
-12. Spindel/Schulter/Retainer haben nur beabsichtigte Kontakte;
-13. bekannte Schutzblech-Keep-outs bleiben frei;
-14. Gesamtbreite/Knob-Überstand wird im Report ausgegeben.
-
-## 14. Noch offene Messwerte
-
-Für die nächste Präzisionsstufe werden nur noch wenige echte Fahrradmaße benötigt:
-
-- Ø der diagonalen 3-leg-Strebe;
-- deren Winkel/Position relativ zum oberen Rackrohr;
-- exakte Fender-Querkontur;
-- genaue Wandstärke des verwendeten Eurobox-Unterrandes;
-- Typenschild/Artikelnummer und Lastwert des tatsächlich montierten Massload-Trägers.
-
-Diese Werte sind bewusst als offen dokumentiert und werden nicht aus Fotos in Millimeter geschätzt.
+Bis das konkrete Typenschild des montierten Massload-Trägers verifiziert ist, bleibt **16 kg Rack-Gesamtzuladung** die konservative Obergrenze. Vereinfachte 3×-Dynamikrechnungen sind ausschließlich Sanity-Checks und keine FEA oder Herstellerfreigabe.
