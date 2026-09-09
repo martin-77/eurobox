@@ -165,4 +165,24 @@ if first_def > first_use:
     raise SystemExit('Lead-nut pin datums are still defined after their first BASE use')
 print('Hoisted lower lead-nut pin datums before BASE construction')
 
+# Final preload clearance: at d=-0.5 mm the leading face of the 10 mm AF drive
+# moves to Y=276.965 mm. The printability pass originally started the Ø11.8 mm
+# drive tunnel at Y=277.265 mm, leaving a 0.30 mm collision at preload only.
+# Extend that tunnel 0.60 mm inward; spindle axis/thread/travel datums stay frozen.
+p = Path('scripts/build_v50.py')
+s = p.read_text(encoding='utf-8')
+old_drive = '''    drive_y0 = (BOX_EDGE_Y + SPINDLE_LOCAL_JOURNAL +
+                SPINDLE_LOCAL_SHOULDER + LEAD_THREAD_LEN - 0.20)
+'''
+new_drive = '''    drive_y0 = (BOX_EDGE_Y + SPINDLE_LOCAL_JOURNAL +
+                SPINDLE_LOCAL_SHOULDER + LEAD_THREAD_LEN - 0.80)
+'''
+if old_drive not in s:
+    raise SystemExit('Could not locate final square-drive clearance start')
+s = s.replace(old_drive, new_drive, 1)
+p.write_text(s, encoding='utf-8')
+if new_drive not in s:
+    raise SystemExit('Square-drive preload clearance extension failed')
+print('Extended square-drive tunnel 0.60 mm for -0.5 mm preload')
+
 # CI trigger anchor: support-minimised handed v50 BASE + manifold functional hardware.
