@@ -212,10 +212,14 @@ jobs:
           cp build_v50/eurobox_v50_assembly.FCStd cad/v50/assembly/
           cp build_v50/PREVIEW_v50.png cad/v50/assembly/PREVIEW_v50.png
           cp cad/v50/STL/*.stl preview-stl/v50/
-          cp cad/v50/assembly/PREVIEW_v50.png preview-stl/v50/
           cat > preview-stl/v50/README.md <<'EOF'
-          # Eurobox v50 preview files
-          Mirrors the validated printable STL set plus the current assembly preview.
+          # Eurobox v50 STL mirror
+          This directory mirrors the validated STL files only.
+
+          The single canonical assembly preview is:
+          `../../cad/v50/assembly/PREVIEW_v50.png`
+
+          [Open the current validated assembly preview](../../cad/v50/assembly/PREVIEW_v50.png)
           EOF
           python3 - <<'PY'
           from pathlib import Path
@@ -226,10 +230,16 @@ jobs:
           if bad: raise SystemExit('CAD publish set mismatch: '+repr(bad))
           if {p.stem for p in Path('preview-stl/v50').glob('eurobox_v50_*.stl')} != sl:
               raise SystemExit('Preview STL mirror mismatch')
+          if Path('preview-stl/v50/PREVIEW_v50.png').exists():
+              raise SystemExit('Duplicate preview PNG must not exist in preview-stl/v50')
+          if not Path('cad/v50/assembly/PREVIEW_v50.png').is_file():
+              raise SystemExit('Canonical assembly preview missing')
           PY
           cat > cad/v50/README.md <<'EOF'
           # Eurobox v50 CAD
           Updated automatically only after source, assembly, mechanism and STL validation pass.
+
+          Canonical assembly preview: [PREVIEW_v50.png](assembly/PREVIEW_v50.png)
           EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
