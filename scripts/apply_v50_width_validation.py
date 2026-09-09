@@ -1,5 +1,12 @@
 from pathlib import Path
 
+# Close the spindle/plate thrust interface after the inboard reversal before
+# running the independent source and mechanism validations below.
+thrust_fix = Path('scripts/apply_v50_width_thrust_final.py')
+if not thrust_fix.is_file():
+    raise SystemExit('Missing final inboard spindle thrust-face correction')
+exec(compile(thrust_fix.read_text(encoding='utf-8'), str(thrust_fix), 'exec'))
+
 # Final geometry closure for the inboard architecture: the previous BASE core
 # still contains legacy crosshead/guide material inside the new plate sweep.
 # Cut only the actual moving plate envelope (plus 0.20 mm FDM running clearance)
