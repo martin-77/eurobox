@@ -1,5 +1,61 @@
 from pathlib import Path
 
+# Final geometry closure for the inboard architecture: the previous BASE core
+# still contains legacy crosshead/guide material inside the new plate sweep.
+# Cut only the actual moving plate envelope (plus 0.20 mm FDM running clearance)
+# from both handed bases. The side rails remain outside X=+/-70.4 and all frozen
+# rack, spindle-X/Z and rear-backstop datums stay untouched.
+bp = Path('scripts/build_v50.py')
+bs = bp.read_text(encoding='utf-8')
+borig = bs
+marker = '''for xc in CLAMP_X:
+    _pivot = cyl_x(PIN_HOLE_D/2.0, 40.0, xc-20.0, PIN_Y, PIN_Z)
+    BASE_RIGHT = BASE_RIGHT.cut(_pivot)
+    BASE_LEFT = BASE_LEFT.cut(_pivot)
+BASE_RIGHT = BASE_RIGHT.removeSplitter()
+BASE_LEFT = BASE_LEFT.removeSplitter()
+BASE = BASE_RIGHT
+'''
+replacement = '''for xc in CLAMP_X:
+    _pivot = cyl_x(PIN_HOLE_D/2.0, 40.0, xc-20.0, PIN_Y, PIN_Z)
+    BASE_RIGHT = BASE_RIGHT.cut(_pivot)
+    BASE_LEFT = BASE_LEFT.cut(_pivot)
+
+# Plate sweep clearance. The plate body is X +/-70 while the intended side
+# guide rails start at X +/-70.4, leaving 0.20 mm running clearance per side.
+PLATE_TRAVEL_CLEAR = 0.20
+_plate_body_y0 = BOX_RIM_INNER_Y - PLATE_Y
+_plate_hook_y0 = BOX_RIM_INNER_Y - WIDTH_RIM_CLEAR
+_plate_hook_y1 = BOX_RIM_INNER_Y + UNDERHOOK
+_plate_body_sweep = box(
+    -PLATE_X/2.0-PLATE_TRAVEL_CLEAR,
+    _plate_body_y0-PLATE_OPEN-PLATE_TRAVEL_CLEAR,
+    PLATE_Z0-PLATE_TRAVEL_CLEAR,
+    PLATE_X+2.0*PLATE_TRAVEL_CLEAR,
+    PLATE_Y+PLATE_OPEN+2.0*PLATE_TRAVEL_CLEAR,
+    (PLATE_Z1-PLATE_Z0)+2.0*PLATE_TRAVEL_CLEAR,
+)
+_plate_hook_sweep = box(
+    -PLATE_X/2.0-PLATE_TRAVEL_CLEAR,
+    _plate_hook_y0-PLATE_OPEN-PLATE_TRAVEL_CLEAR,
+    RIM_BOTTOM_Z-UNDERHOOK_T-PLATE_TRAVEL_CLEAR,
+    PLATE_X+2.0*PLATE_TRAVEL_CLEAR,
+    (_plate_hook_y1-_plate_hook_y0)+PLATE_OPEN+2.0*PLATE_TRAVEL_CLEAR,
+    UNDERHOOK_T+2.0*PLATE_TRAVEL_CLEAR,
+)
+_plate_sweep_clearance = _plate_body_sweep.fuse(_plate_hook_sweep).removeSplitter()
+BASE_RIGHT = BASE_RIGHT.cut(_plate_sweep_clearance).removeSplitter()
+BASE_LEFT = BASE_LEFT.cut(_plate_sweep_clearance).removeSplitter()
+BASE = BASE_RIGHT
+'''
+if marker not in bs:
+    raise SystemExit('Could not locate final handed BASE closure for plate sweep')
+bs = bs.replace(marker, replacement, 1)
+if bs == borig:
+    raise SystemExit('Plate sweep clearance made no geometry change')
+bp.write_text(bs, encoding='utf-8')
+print('Cleared 5.5 mm inboard plate sweep from both handed bases')
+
 # Align the independent STEP mechanism validator with the final inboard clamp.
 vp = Path('scripts/validate_box_clamp.py')
 vs = vp.read_text(encoding='utf-8')
