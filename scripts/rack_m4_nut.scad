@@ -4,6 +4,7 @@ $fn = 96;
 // Conventional female-thread construction: the smooth core bore and the
 // helical groove are CUT OUT of the nut body. There is no inward-projecting
 // ribbon or wall in front of the thread.
+// CI trigger: revalidate after BASE printability/collision correction.
 pitch = 0.7;
 h = 5.6;
 af = 7.0;
