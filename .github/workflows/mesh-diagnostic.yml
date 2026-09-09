@@ -1,0 +1,100 @@
+name: Diagnose Eurobox v50 meshes
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/mesh-diagnostic.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install OpenSCAD and mesh checks
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y openscad libfuse2
+          python3 -m pip install --break-system-packages trimesh networkx scipy
+
+      - name: Cache FreeCAD AppImage
+        id: freecad-cache
+        uses: actions/cache@v5
+        with:
+          path: FreeCAD.AppImage
+          key: freecad-1.1.3-linux-x86_64-py311
+
+      - name: Download verified FreeCAD 1.1.3
+        if: steps.freecad-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o FreeCAD.AppImage \
+            https://github.com/FreeCAD/FreeCAD/releases/download/1.1.3/FreeCAD_1.1.3-conda-Linux-x86_64-py311.AppImage
+
+      - name: Verify and extract FreeCAD
+        run: |
+          set -euo pipefail
+          echo "3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb03a8f5ef  FreeCAD.AppImage" | sha256sum -c -
+          chmod +x FreeCAD.AppImage
+          rm -rf squashfs-root
+          ./FreeCAD.AppImage --appimage-extract >/dev/null
+          FREECADCMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) | head -n1)
+          test -n "$FREECADCMD"
+          echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
+
+      - name: Apply v50 source fixups
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_v50_fixups.py
+          python3 scripts/apply_v50_clamp_fixups.py
+          python3 -m py_compile scripts/build_v50.py scripts/validate_meshes.py
+
+      - name: Build v50 CAD and STL
+        run: |
+          set -euo pipefail
+          "$FREECADCMD" scripts/build_v50.py | tee build_v50.log
+          test -s build_v50/VALIDATION_v50_source.json
+
+      - name: Preserve canonical spindle mesh reference
+        run: |
+          set -euo pipefail
+          test -s build_v50/eurobox_v50_lead_screw_print.stl
+          cp build_v50/eurobox_v50_lead_screw_print.stl build_v50/eurobox_v50_lead_screw_BREP_export_reference.mesh-reference
+
+      - name: Run exact mesh validator and preserve result
+        id: mesh
+        shell: bash
+        run: |
+          set +e
+          python3 scripts/validate_meshes.py build_v50 2>&1 | tee mesh_validation.log
+          rc=${PIPESTATUS[0]}
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ -s build_v50/MESH_VALIDATION.json ]; then
+            cat build_v50/MESH_VALIDATION.json
+          fi
+          exit 0
+
+      - name: Upload mesh diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: eurobox-v50-mesh-diagnostics
+          path: |
+            build_v50/MESH_VALIDATION.json
+            build_v50/VALIDATION_v50_source.json
+            build_v50/*.stl
+            mesh_validation.log
+            build_v50.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Preserve validator failure status
+        if: steps.mesh.outputs.rc != '0'
+        run: exit 1
