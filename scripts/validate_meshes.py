@@ -51,13 +51,6 @@ def good(info):
 
 
 def rack_m4_thread_sections(mesh):
-    """Prove on the final STL that the bore wall itself is threaded.
-
-    The rebuilt nut has a Ø4.40 root bore and an inward-projecting helical
-    material tooth. Horizontal sections therefore must span from about r=1.75
-    at the thread crest to about r=2.20 at the root. A hidden/recessed thread or
-    smooth bore cannot satisfy this test.
-    """
     checks=[]
     for z in (1.4, 2.8, 4.2):
         sec=mesh.section(plane_origin=[0.0,0.0,z], plane_normal=[0.0,0.0,1.0])
@@ -70,30 +63,18 @@ def rack_m4_thread_sections(mesh):
         if len(inner) < 8:
             checks.append({'z_mm':z,'ok':False,'reason':'too few inner contour samples','samples':int(len(inner))})
             continue
-        rmin=float(inner.min())
-        rmax=float(inner.max())
-        span=rmax-rmin
-        checks.append({
-            'z_mm':z,
-            'inner_radius_min_mm':round(rmin,5),
-            'inner_radius_max_mm':round(rmax,5),
-            'radial_span_mm':round(span,5),
-            'samples':int(len(inner)),
-            'ok':bool(rmin <= 1.82 and rmax >= 2.12 and span >= 0.30),
-        })
+        rmin=float(inner.min()); rmax=float(inner.max()); span=rmax-rmin
+        checks.append({'z_mm':z,'inner_radius_min_mm':round(rmin,5),
+                       'inner_radius_max_mm':round(rmax,5),'radial_span_mm':round(span,5),
+                       'samples':int(len(inner)),
+                       'ok':bool(rmin <= 1.82 and rmax >= 2.12 and span >= 0.30)})
     return checks
 
 
-def lead_retainer_thread_sections(mesh):
-    """Verify the published RH8x2 knob-retainer STL has a real internal helix.
-
-    The printable retainer is exported with its local Y axis running from
-    -5.8 mm at the threaded end to 0 at the outer face. The female crest radius
-    is about 3.43 mm and the helical groove root about 4.18 mm. A smooth hole,
-    hidden groove, or lost boolean therefore cannot pass these Y-sections.
-    """
+def rh8_internal_thread_sections(mesh, ys):
+    """Prove an RH8x2 female bore contains a real exposed helix, not a smooth hole."""
     checks=[]
-    for y in (-1.2, -2.9, -4.6):
+    for y in ys:
         sec=mesh.section(plane_origin=[0.0,y,0.0], plane_normal=[0.0,1.0,0.0])
         if sec is None or len(sec.vertices) == 0:
             checks.append({'y_mm':y,'ok':False,'reason':'no section'})
@@ -104,71 +85,45 @@ def lead_retainer_thread_sections(mesh):
         if len(inner) < 12:
             checks.append({'y_mm':y,'ok':False,'reason':'too few inner contour samples','samples':int(len(inner))})
             continue
-        rmin=float(inner.min())
-        rmax=float(inner.max())
-        span=rmax-rmin
-        checks.append({
-            'y_mm':y,
-            'inner_radius_min_mm':round(rmin,5),
-            'inner_radius_max_mm':round(rmax,5),
-            'radial_span_mm':round(span,5),
-            'samples':int(len(inner)),
-            'ok':bool(rmin <= 3.55 and rmax >= 4.05 and span >= 0.45),
-        })
+        rmin=float(inner.min()); rmax=float(inner.max()); span=rmax-rmin
+        checks.append({'y_mm':y,'inner_radius_min_mm':round(rmin,5),
+                       'inner_radius_max_mm':round(rmax,5),'radial_span_mm':round(span,5),
+                       'samples':int(len(inner)),
+                       'ok':bool(rmin <= 3.55 and rmax >= 4.05 and span >= 0.45)})
     return checks
 
 
 def lead_screw_square_drive_section(mesh):
-    """Catch any stale nut-like/hex spindle STL after the CAD build.
-
-    The canonical lead screw has an 8x8 mm integral square drive. In the final
-    printable STL its local Y direction is reversed, so the drive occupies
-    Y=-37.3..-32.8 mm. A former secondary OpenSCAD export replaced that with an
-    AF10 hex, so sectioning the *final published STL* remains the authoritative
-    regression gate.
-    """
-    y=-34.5
+    y=34.5
     sec=mesh.section(plane_origin=[0.0,y,0.0], plane_normal=[0.0,1.0,0.0])
     if sec is None or len(sec.vertices) == 0:
         return {'y_mm':y,'ok':False,'reason':'no section'}
     v=np.asarray(sec.vertices)
     xspan=float(v[:,0].max()-v[:,0].min())
     zspan=float(v[:,2].max()-v[:,2].min())
-    return {
-        'y_mm':y,
-        'x_span_mm':round(xspan,5),
-        'z_span_mm':round(zspan,5),
-        'expected_drive':'8x8 mm square',
-        'ok':bool(7.90 <= xspan <= 8.10 and 7.90 <= zspan <= 8.10),
-    }
+    return {'y_mm':y,'x_span_mm':round(xspan,5),'z_span_mm':round(zspan,5),
+            'expected_drive':'8x8 mm square',
+            'ok':bool(7.90 <= xspan <= 8.10 and 7.90 <= zspan <= 8.10)}
 
 
 def trimesh_cleanup(path):
     m=trimesh.load(path, force='mesh', process=True)
     m.merge_vertices(digits_vertex=5)
-    try:
-        m.update_faces(m.unique_faces())
-    except Exception:
-        pass
+    try: m.update_faces(m.unique_faces())
+    except Exception: pass
     m.remove_unreferenced_vertices()
-    try:
-        trimesh.repair.fix_normals(m, multibody=True)
-    except TypeError:
-        trimesh.repair.fix_normals(m)
-    tmp=path+'.trimesh.stl'
-    m.export(tmp)
+    try: trimesh.repair.fix_normals(m, multibody=True)
+    except TypeError: trimesh.repair.fix_normals(m)
+    tmp=path+'.trimesh.stl'; m.export(tmp)
     _, info=inspect(tmp)
     if good(info):
-        os.replace(tmp,path)
-        return True, info
-    if os.path.exists(tmp):
-        os.unlink(tmp)
+        os.replace(tmp,path); return True, info
+    if os.path.exists(tmp): os.unlink(tmp)
     return False, info
 
 
 def openscad_normalize(path):
-    outstl=path+'.cgal.stl'
-    scad=path+'.normalize.scad'
+    outstl=path+'.cgal.stl'; scad=path+'.normalize.scad'
     src=os.path.abspath(path).replace('\\','/')
     with open(scad,'w') as f:
         f.write('render(convexity=30) import("'+src+'", convexity=30);\n')
@@ -179,71 +134,65 @@ def openscad_normalize(path):
             return False, {'openscad_log': cp.stdout[-4000:]}
         _, info=inspect(outstl)
         if good(info):
-            os.replace(outstl,path)
-            return True, info
+            os.replace(outstl,path); return True, info
         return False, info
     finally:
         for q in (scad,outstl):
-            if os.path.exists(q):
-                os.unlink(q)
+            if os.path.exists(q): os.unlink(q)
 
 for p in paths:
     name=os.path.basename(p)
     mesh, before=inspect(p)
-    info=dict(before)
-    info['normalization']='none'
+    info=dict(before); info['normalization']='none'
     if name == 'eurobox_v50_rack_m4_nut_print.stl':
         info['canonical_mesh_source']='scripts/rack_m4_nut.scad — Ø4.40 root bore plus inward material helix'
 
     if not good(before):
-        ok, after=trimesh_cleanup(p)
-        info['trimesh_cleanup_result']=after
+        ok, after=trimesh_cleanup(p); info['trimesh_cleanup_result']=after
         if ok:
-            mesh, info2=inspect(p)
-            info.update(info2)
-            info['normalization']='trimesh_seam_merge_1e-5mm'
+            mesh, info2=inspect(p); info.update(info2); info['normalization']='trimesh_seam_merge_1e-5mm'
         else:
-            ok2, after2=openscad_normalize(p)
-            info['openscad_cleanup_result']=after2
+            ok2, after2=openscad_normalize(p); info['openscad_cleanup_result']=after2
             if ok2:
-                mesh, info2=inspect(p)
-                info.update(info2)
-                info['normalization']='openscad_cgal_render'
+                mesh, info2=inspect(p); info.update(info2); info['normalization']='openscad_cgal_render'
 
     if name == 'eurobox_v50_rack_m4_nut_print.stl' and good(info):
-        section_checks=rack_m4_thread_sections(mesh)
-        info['internal_thread_section_checks']=section_checks
-        if not section_checks or not all(c.get('ok') for c in section_checks):
-            info['internal_thread_mesh_gate']='FAILED: inward material thread is not exposed on bore wall'
-            failed.append(name)
+        checks=rack_m4_thread_sections(mesh); info['internal_thread_section_checks']=checks
+        if not checks or not all(c.get('ok') for c in checks):
+            info['internal_thread_mesh_gate']='FAILED: M4x0.7 helix missing on nut bore wall'; failed.append(name)
         else:
-            info['internal_thread_mesh_gate']='PASS: Ø4.40 root bore contains exposed inward helical thread tooth'
+            info['internal_thread_mesh_gate']='PASS: M4x0.7 internal helix exposed'
 
     if name == 'eurobox_v50_knob_retainer_nut.stl' and good(info):
-        section_checks=lead_retainer_thread_sections(mesh)
-        info['internal_RH8x2_thread_section_checks']=section_checks
-        if not section_checks or not all(c.get('ok') for c in section_checks):
-            info['internal_thread_mesh_gate']='FAILED: RH8x2 helix is not exposed on the published retainer-nut bore wall'
-            failed.append(name)
+        checks=rh8_internal_thread_sections(mesh, (1.2,2.9,4.6))
+        info['internal_RH8x2_thread_section_checks']=checks
+        if not checks or not all(c.get('ok') for c in checks):
+            info['internal_thread_mesh_gate']='FAILED: RH8x2 helix missing on knob-retainer nut'; failed.append(name)
         else:
-            info['internal_thread_mesh_gate']='PASS: published retainer nut exposes the matched RH8x2 internal helix'
+            info['internal_thread_mesh_gate']='PASS: knob-retainer nut exposes RH8x2 internal helix'
+
+    if name == 'eurobox_v50_lead_nut_print.stl' and good(info):
+        # Main lead nut thread occupies the positive-Y threaded body before the retaining tab/tail.
+        checks=rh8_internal_thread_sections(mesh, (3.0,8.0,13.0))
+        info['internal_RH8x2_thread_section_checks']=checks
+        if not checks or not all(c.get('ok') for c in checks):
+            info['internal_thread_mesh_gate']='FAILED: RH8x2 helix missing on main lead nut'; failed.append(name)
+        else:
+            info['internal_thread_mesh_gate']='PASS: main lead nut exposes RH8x2 internal helix'
 
     if name == 'eurobox_v50_lead_screw_print.stl' and good(info):
-        drive_check=lead_screw_square_drive_section(mesh)
-        info['lead_drive_section_check']=drive_check
+        drive_check=lead_screw_square_drive_section(mesh); info['lead_drive_section_check']=drive_check
         if not drive_check.get('ok'):
-            info['lead_drive_mesh_gate']='FAILED: final STL does not contain the canonical 8x8 square drive'
-            failed.append(name)
+            info['lead_drive_mesh_gate']='FAILED: final STL does not contain canonical 8x8 square drive'; failed.append(name)
         else:
-            info['lead_drive_mesh_gate']='PASS: final STL contains the canonical 8x8 square drive, not a nut-like hex collar'
+            info['lead_drive_mesh_gate']='PASS: final STL contains canonical 8x8 square drive'
 
     results[name]=info
-    if not good(info) and name not in failed:
-        failed.append(name)
+    if not good(info) and name not in failed: failed.append(name)
 
 with open(os.path.join(out,'MESH_VALIDATION.json'),'w') as f:
     json.dump({'meshes':results,'failed':failed,
-               'note':'Final mesh gates verify the rack M4 internal helix, lead retainer RH8x2 helix, and canonical 8x8 lead-screw drive on the actual published STL files.'},f,indent=2)
+               'note':'Every exported nut is hard-gated for a real exposed internal thread: rack M4x0.7, main lead RH8x2 and knob-retainer RH8x2. Lead screw square drive is also checked.'},f,indent=2)
 
 print(json.dumps({'directory':out_arg,'count':len(results),'failed':failed,
                   'failed_details':{n:results[n] for n in failed}},indent=2))
