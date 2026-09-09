@@ -48,6 +48,31 @@ base_parts ='''
 s, n = pattern.subn(replacement, s, count=1)
 assert n == 1, 'upper station block not found'
 
+# The original pin was sized for the former 4 mm cheeks. Growing both fixed
+# cheeks outward to 6 mm would bury the head by 0.6 mm and leave the C-clip
+# groove inside the right cheek. Keep the frozen pivot and shaft diameter, but
+# lengthen the service pin so the head has 0.8 mm external clearance and the
+# clip groove starts 1.0 mm beyond the reinforced right cheek.
+pin_pattern = re.compile(
+    r"PIN = fuse_all\(\[\n"
+    r"\s*cyl_x\(2\.0, 33\.5, -18\.4, 0, 0\),\n"
+    r"\s*cyl_x\(1\.55, 1\.5, 15\.1, 0, 0\),\n"
+    r"\s*cyl_x\(2\.0, 1\.7, 16\.6, 0, 0\),\n"
+    r"\s*cyl_x\(3\.75, 2\.4, -20\.8, 0, 0\),\n"
+    r"\]\)", re.S)
+pin_replacement = '''PIN = fuse_all([
+    # Main 4.0 mm shaft: from 0.8 mm outside the left 6 mm cheek through to
+    # 1.0 mm outside the right cheek, where the retaining groove begins.
+    cyl_x(2.0, 39.8, -19.8, 0, 0),
+    # C-clip groove and retaining end are fully outside the +19 mm cheek face.
+    cyl_x(1.55, 1.5, 20.0, 0, 0),
+    cyl_x(2.0, 1.7, 21.5, 0, 0),
+    # Head inner face at -19.8 mm -> 0.8 mm clear of the -19 mm cheek face.
+    cyl_x(3.75, 2.4, -22.2, 0, 0),
+])'''
+s, pn = pin_pattern.subn(pin_replacement, s, count=1)
+assert pn == 1, 'rack pin block not found for reinforced-clevis length correction'
+
 anchor = "V['beam_sanity'] = {\n"
 assert anchor in s
 insert = '''root_area = 2*ARM_W*FLANGE_T + 2*WEB_T*(ARM_H-2*FLANGE_T)
@@ -69,6 +94,8 @@ V['rack_root_strengthening'] = {
     'fixed_clevis_inner_gap_mm': 2*RACK_FIXED_LUG_INNER_X,
     'moving_lower_width_mm': 25.2,
     'total_lateral_running_clearance_mm': 2*RACK_FIXED_LUG_INNER_X-25.2,
+    'rack_pin_head_clearance_from_left_cheek_mm': 0.8,
+    'rack_pin_clip_groove_clearance_from_right_cheek_mm': 1.0,
     'root_section_area_mm2': round(root_area, 3),
     'root_section_Ix_mm4': round(root_Ix, 3),
     'static_root_stress_mpa_at_existing_16kg_assumption': round(root_static_stress, 4),
@@ -91,6 +118,10 @@ if r['fixed_clevis_lug_thickness_mm'] < 6.0:
     failures.append('Rack lower fixed clevis support below 6 mm PETG minimum')
 if not (0.6 <= r['total_lateral_running_clearance_mm'] <= 1.2):
     failures.append('Rack lower clevis running clearance outside 0.6..1.2 mm')
+if r['rack_pin_head_clearance_from_left_cheek_mm'] < 0.6:
+    failures.append('Rack pin head clearance is too small for PETG service fit')
+if r['rack_pin_clip_groove_clearance_from_right_cheek_mm'] < 0.8:
+    failures.append('Rack pin C-clip groove is not fully outside reinforced clevis')
 if abs(r['root_section_area_mm2'] - 422.4) > 1e-3:
     failures.append('Rack root section area no longer matches normal arm')
 if abs(r['root_section_Ix_mm4'] - 52243.2) > 1e-3:
@@ -100,4 +131,4 @@ s = s.replace(fail_anchor, fail_anchor + fail_insert, 1)
 
 assert s != orig
 p.write_text(s, encoding='utf-8')
-print('Applied v50 rack-root reinforcement: proven I-beam root + 6 mm fixed clevis cheeks')
+print('Applied v50 rack-root reinforcement: proven I-beam root + 6 mm fixed clevis cheeks + serviceable longer pin')
