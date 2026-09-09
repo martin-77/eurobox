@@ -1,2 +1,2 @@
 # Eurobox v50 CAD
-This directory is updated automatically only after successful CAD, assembly-layout, box-clamp and STL-mesh validation.
+Updated automatically only after source, assembly, mechanism and STL validation pass.
