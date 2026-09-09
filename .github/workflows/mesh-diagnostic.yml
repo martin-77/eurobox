@@ -90,6 +90,8 @@ jobs:
             build_v50/MESH_VALIDATION.json
             build_v50/VALIDATION_v50_source.json
             build_v50/*.stl
+            scripts/build_v50.py
+            scripts/validate_meshes.py
             mesh_validation.log
             build_v50.log
           if-no-files-found: error
