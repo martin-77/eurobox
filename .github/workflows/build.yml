@@ -68,6 +68,7 @@ jobs:
           python3 scripts/apply_v50_fixups.py
           python3 scripts/apply_v50_clamp_fixups.py
           python3 scripts/apply_v50_width_cleanup.py
+          python3 scripts/apply_v50_width_validation.py
           python3 -m py_compile scripts/build_v50.py scripts/validate_box_clamp.py scripts/validate_meshes.py scripts/validate_assembly_layout.py
 
       - name: Build and validate v50 CAD
