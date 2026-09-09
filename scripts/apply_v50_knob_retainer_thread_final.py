@@ -85,12 +85,27 @@ s = s.replace(
     1,
 )
 
+# Later printability logic intentionally adjusts this smooth shoulder tunnel for
+# the -0.5 mm preload state. Earlier nut/thread passes currently leave the same
+# geometry formatted over four source lines. Normalize only the formatting here
+# so the following printability pass can replace the geometry deterministically.
+old_tunnel = '''BASE = BASE.cut(cyl_y(
+        SHOULDER_D/2 + 0.30,
+        (NUT_Y0-0.50)-(BOX_EDGE_Y+7.50),
+        sx, BOX_EDGE_Y+7.50, SPINDLE_Z))'''
+normalized_tunnel = '''BASE = BASE.cut(cyl_y(SHOULDER_D/2 + 0.30, (NUT_Y0-0.50)-(BOX_EDGE_Y+7.50), sx, BOX_EDGE_Y+7.50, SPINDLE_Z))'''
+if old_tunnel not in s:
+    raise SystemExit('Could not locate multiline spindle shoulder tunnel before printability normalization')
+s = s.replace(old_tunnel, normalized_tunnel, 1)
+
 if s == orig:
     raise SystemExit('Final knob-retainer thread rebuild made no changes')
 if 'CAP_THREAD_OVERRUN = THREAD_PITCH' not in s:
     raise SystemExit('Extended RH8x2 retainer cutter was not installed')
 if 'CAP_NUT_LEAD = 0.0' not in s:
     raise SystemExit('Tangent retainer entry chamfers were not disabled')
+if normalized_tunnel not in s:
+    raise SystemExit('Spindle shoulder tunnel normalization failed')
 
 p.write_text(s, encoding='utf-8')
 print('Applied final RH8x2 knob-retainer rebuild: open-ended extended cutter, manifold end faces')
