@@ -112,7 +112,7 @@ exec(compile(knob_retainer_thread_final.read_text(encoding='utf-8'),
              str(knob_retainer_thread_final), 'exec'))
 
 # Final mounting-aid pass. It runs last against the finished reinforced BASE.
-# v50 now freezes -X=front and +X=rear and creates exactly one stop behind the
+# v50 now freezes -X=front and +X=rear and creates exactly one stop near the
 # rear clamp, with a deep root and gusset into the rear I-beam only. Existing
 # lower-clamp, pin, tube and mesh checks remain authoritative.
 mounting_backstop = Path('scripts/apply_v50_mounting_backstop.py')
@@ -129,94 +129,7 @@ if not handed_base_final.is_file():
     raise SystemExit('Missing final explicit handed-base geometry/export correction')
 exec(compile(handed_base_final.read_text(encoding='utf-8'), str(handed_base_final), 'exec'))
 
-# Absolute final manufacturing pass: close the long load paths for slicer infill,
-# make the box-side crosshead/upper clamp transitions self-supporting in the
-# upside-down print orientation, lower the outer guide/cage to the common bed
-# plane and move the lead-nut retaining pin to a lower post-thread tail.
-printability_final = Path('scripts/apply_v50_printability_final.py')
-if not printability_final.is_file():
-    raise SystemExit('Missing final v50 printability correction')
-exec(compile(printability_final.read_text(encoding='utf-8'), str(printability_final), 'exec'))
-
-# The printability pass moves the lead-nut cross-pin and adds its BASE bores
-# before the lead-nut object itself is defined. Hoist the three pin datums into
-# the design-parameter block so build_v50.py can use them while constructing BASE.
-# The later identical assignments remain as local documentation and are harmless.
-p = Path('scripts/build_v50.py')
-s = p.read_text(encoding='utf-8')
-first_use = s.find('BASE = BASE.cut(cyl_x(LEAD_NUT_PIN_HOLE_D/2.0')
-first_def = s.find('LEAD_NUT_PIN_HOLE_D = 3.4')
-if first_use < 0 or first_def < 0:
-    raise SystemExit('Could not locate lower lead-nut pin use/definition after printability pass')
-if first_def > first_use:
-    anchor = 'CAGE_Y1 = 282.20\n'
-    if anchor not in s:
-        raise SystemExit('Could not locate final cage datum for lead-nut pin hoist')
-    hoisted = (
-        anchor +
-        'LEAD_NUT_PIN_HOLE_D = 3.4\n' +
-        'LEAD_NUT_PIN_Y = NUT_THREAD_LEN + 2.75\n' +
-        'LEAD_NUT_PIN_Z = -7.25\n'
-    )
-    s = s.replace(anchor, hoisted, 1)
-    p.write_text(s, encoding='utf-8')
-    first_def = s.find('LEAD_NUT_PIN_HOLE_D = 3.4')
-if first_def > first_use:
-    raise SystemExit('Lead-nut pin datums are still defined after their first BASE use')
-print('Hoisted lower lead-nut pin datums before BASE construction')
-
-# Final preload clearance: at d=-0.5 mm the leading face of the 10 mm AF drive
-# moves to Y=276.965 mm. The printability pass originally started the Ø11.8 mm
-# drive tunnel at Y=277.265 mm, leaving a 0.30 mm collision at preload only.
-# Extend that tunnel 0.60 mm inward; spindle axis/thread/travel datums stay frozen.
-p = Path('scripts/build_v50.py')
-s = p.read_text(encoding='utf-8')
-old_drive = '''    drive_y0 = (BOX_EDGE_Y + SPINDLE_LOCAL_JOURNAL +
-                SPINDLE_LOCAL_SHOULDER + LEAD_THREAD_LEN - 0.20)
-'''
-new_drive = '''    drive_y0 = (BOX_EDGE_Y + SPINDLE_LOCAL_JOURNAL +
-                SPINDLE_LOCAL_SHOULDER + LEAD_THREAD_LEN - 0.80)
-'''
-if old_drive not in s:
-    raise SystemExit('Could not locate final square-drive clearance start')
-s = s.replace(old_drive, new_drive, 1)
-p.write_text(s, encoding='utf-8')
-if new_drive not in s:
-    raise SystemExit('Square-drive preload clearance extension failed')
-print('Extended square-drive tunnel 0.60 mm for -0.5 mm preload')
-
-# The final LEFT/RIGHT OCC solids are exact mirrors, but independent STL
-# tessellation perturbs element-wise inertia terms by about 3e-5 globally. Keep
-# the handed regression strict while making it triangulation-independent: compare
-# the mirrored tensor by Frobenius norm and also its principal moments.
-vp = Path('scripts/validate_meshes.py')
-vs = vp.read_text(encoding='utf-8')
-old_inertia = "    inertia_ok=np.allclose(li,R.dot(ri).dot(R),atol=2.0,rtol=2e-5)\n"
-new_inertia = '''    mirrored_ri=R.dot(ri).dot(R)
-    inertia_delta_fro=float(np.linalg.norm(li-mirrored_ri, ord='fro'))
-    inertia_scale_fro=max(float(np.linalg.norm(mirrored_ri, ord='fro')), 1.0)
-    inertia_relative_fro=inertia_delta_fro/inertia_scale_fro
-    right_principal=np.linalg.eigvalsh(ri)
-    left_principal=np.linalg.eigvalsh(li)
-    principal_relative_max=float(np.max(
-        np.abs(left_principal-right_principal)/np.maximum(np.abs(right_principal), 1.0)))
-    inertia_ok=bool(inertia_relative_fro <= 1.0e-4 and principal_relative_max <= 1.0e-4)
-'''
-if old_inertia not in vs:
-    raise SystemExit('Could not locate final handed inertia gate')
-vs = vs.replace(old_inertia, new_inertia, 1)
-old_meta = "        'inertia_tensor_is_x_mirrored':bool(inertia_ok),\n"
-new_meta = """        'inertia_tensor_is_x_mirrored':bool(inertia_ok),
-        'inertia_relative_frobenius_error':float(inertia_relative_fro),
-        'principal_moment_relative_max_error':float(principal_relative_max),
-        'inertia_relative_tolerance':1.0e-4,
-"""
-if old_meta not in vs:
-    raise SystemExit('Could not locate final handed inertia metadata')
-vs = vs.replace(old_meta, new_meta, 1)
-vp.write_text(vs, encoding='utf-8')
-if new_inertia not in vs or new_meta not in vs:
-    raise SystemExit('Triangulation-robust handed inertia gate update failed')
-print('Updated handed inertia gate: mirrored tensor norm + principal moments, 1e-4 relative tolerance')
-
-# CI trigger anchor: support-minimised handed v50 BASE + manifold functional hardware.
+# Important: no global printability geometry rewrite here. Printability changes
+# must remain local and may not replace proven rack roots, clamp kinematics or
+# threaded hardware.
+print('Restored proven pre-printability v50 mechanics')
