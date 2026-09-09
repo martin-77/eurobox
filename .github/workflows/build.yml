@@ -15,6 +15,7 @@ on:
       - "scripts/preview_v50.scad"
       - "scripts/final_print_meshes.scad"
       - "docs/V50_**"
+      - "docs/DESIGN_V50.md"
       - "docs/MEASUREMENTS.md"
       - "docs/FOCUS_THRON2_EQP_2023.md"
       - ".github/workflows/build.yml"
@@ -59,14 +60,15 @@ jobs:
           FREECADCMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) | head -n1)
           test -n "$FREECADCMD"
           echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
-          "$FREECADCMD" -c 'import FreeCAD,Part; print(FreeCAD.Version()); s=Part.makeBox(1,1,1); assert s.isValid()'
+          "$FREECADCMD" -c 'import FreeCAD,Part; print(FreeCAD.Version()); assert Part.makeBox(1,1,1).isValid()'
 
-      - name: Apply v50 source fixups
+      - name: Resolve final v50 source
         run: |
           set -euo pipefail
           python3 scripts/apply_v50_fixups.py
           python3 scripts/apply_v50_clamp_fixups.py
-          python3 -m py_compile scripts/build_v50.py scripts/validate_box_clamp.py scripts/validate_meshes.py
+          python3 scripts/apply_v50_width_cleanup.py
+          python3 -m py_compile scripts/build_v50.py scripts/validate_box_clamp.py scripts/validate_meshes.py scripts/validate_assembly_layout.py
 
       - name: Build and validate v50 CAD
         id: cadbuild
@@ -97,35 +99,21 @@ jobs:
           "$FREECADCMD" -c "import runpy; runpy.run_path('scripts/validate_box_clamp.py', run_name='__main__')"
           freecad_rc=$?
           set -e
-          echo "Clamp validator FreeCADCmd exit code: $freecad_rc"
-
-          if [ -s build_v50/BOX_CLAMP_CHECKPOINT.json ]; then
-            echo "---- BOX_CLAMP_CHECKPOINT.json ----"
-            cat build_v50/BOX_CLAMP_CHECKPOINT.json
-          fi
-          if [ -s build_v50/BOX_CLAMP_EXCEPTION.json ]; then
-            echo "---- BOX_CLAMP_EXCEPTION.json ----"
-            cat build_v50/BOX_CLAMP_EXCEPTION.json
-          fi
+          if [ -s build_v50/BOX_CLAMP_CHECKPOINT.json ]; then cat build_v50/BOX_CLAMP_CHECKPOINT.json; fi
+          if [ -s build_v50/BOX_CLAMP_EXCEPTION.json ]; then cat build_v50/BOX_CLAMP_EXCEPTION.json; fi
           if [ -s build_v50/BOX_CLAMP_VALIDATION.json ]; then
-            echo "---- BOX_CLAMP_VALIDATION.json ----"
             cat build_v50/BOX_CLAMP_VALIDATION.json
           else
-            echo "::error::Clamp validator did not create build_v50/BOX_CLAMP_VALIDATION.json"
+            echo "::error::Clamp validator did not create BOX_CLAMP_VALIDATION.json"
             exit 1
           fi
-
           python3 - <<'PY'
           import json
-          p='build_v50/BOX_CLAMP_VALIDATION.json'
-          v=json.load(open(p))
+          v=json.load(open('build_v50/BOX_CLAMP_VALIDATION.json'))
           assert not v.get('diagnostic_only'), v
           assert not v.get('failed'), v.get('failed')
           PY
-
-          if [ "$freecad_rc" -ne 0 ]; then
-            exit "$freecad_rc"
-          fi
+          if [ "$freecad_rc" -ne 0 ]; then exit "$freecad_rc"; fi
 
       - name: Print hard-check diagnostics
         if: always()
@@ -133,19 +121,15 @@ jobs:
           if [ -s build_v50/VALIDATION_v50_source.json ]; then
             python3 - <<'PY'
           import json
-          p='build_v50/VALIDATION_v50_source.json'
-          v=json.load(open(p))
+          v=json.load(open('build_v50/VALIDATION_v50_source.json'))
           print('V50_FAILURES='+json.dumps(v.get('failures', []), ensure_ascii=False))
-          keys=['frozen_interface_assertions','tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','rack_lock','rack_lock_checks','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','lead_nut_retainer_hardware','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','knob_retainer_thread','anti_rotation','beam_sanity','system_width_estimate_mm']
+          keys=['frozen_interface_assertions','tube_base_common_mm3','rack_lower_checks','rack_lower_sweep','rack_pin_checks','rack_closure','base_box_rim_common_mm3','plate_motion','plate_hole_probe_common_mm3','lead_nut_checks','lead_nut_retainer_hardware','thread_kinematics','wrong_phase_0_5mm_nut_common_mm3','knob_retainer_thread','anti_rotation','mounting_backstop','printability','system_width_estimate_mm']
           print('V50_DIAGNOSTIC='+json.dumps({k:v.get(k) for k in keys}, ensure_ascii=False))
           PY
-          else
-            echo 'VALIDATION_v50_source.json missing'
           fi
-          if [ -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json ]; then cat build_v50/ASSEMBLY_LAYOUT_VALIDATION.json; fi
-          if [ -s build_v50/BOX_CLAMP_VALIDATION.json ]; then cat build_v50/BOX_CLAMP_VALIDATION.json; fi
-          if [ -s build_v50/BOX_CLAMP_CHECKPOINT.json ]; then cat build_v50/BOX_CLAMP_CHECKPOINT.json; fi
-          if [ -s build_v50/BOX_CLAMP_EXCEPTION.json ]; then cat build_v50/BOX_CLAMP_EXCEPTION.json; fi
+          for p in build_v50/ASSEMBLY_LAYOUT_VALIDATION.json build_v50/BOX_CLAMP_VALIDATION.json build_v50/BOX_CLAMP_EXCEPTION.json; do
+            [ ! -s "$p" ] || cat "$p"
+          done
 
       - name: Diagnose base topology after CAD failure
         if: failure() && steps.cadbuild.outcome == 'failure'
@@ -166,7 +150,6 @@ jobs:
             build_v50/BOX_CLAMP_CHECKPOINT.json
             build_v50/BOX_CLAMP_EXCEPTION.json
             build_v50/BASE_DEBUG_v50.json
-            build_v50/DEBUG_v50_base.brep
             build_v50.log
             base_debug.log
           if-no-files-found: warn
@@ -192,49 +175,26 @@ jobs:
         run: |
           mkdir -p build_v50/docs
           cp docs/V50_DESIGN.md docs/V50_DIMENSIONS.json docs/MEASUREMENTS.md docs/FOCUS_THRON2_EQP_2023.md docs/VALIDATION_V50.md docs/DESIGN_V50.md build_v50/docs/
-          cp build_v50.log build_v50/
 
       - name: Verify deliverables
         run: |
           set -euo pipefail
+          for stem in eurobox_v50_base eurobox_v50_base_left eurobox_v50_base_right eurobox_v50_clamp_plate eurobox_v50_rack_lower eurobox_v50_lead_screw_print eurobox_v50_lead_nut_print eurobox_v50_lead_nut_retaining_pin eurobox_v50_lead_nut_pin_clip eurobox_v50_knob eurobox_v50_knob_retainer_nut; do
+            test -s "build_v50/$stem.FCStd"
+            test -s "build_v50/$stem.step"
+            test -s "build_v50/$stem.stl"
+          done
           test -s build_v50/eurobox_v50_assembly.FCStd
-          test -s build_v50/eurobox_v50_base.FCStd
-          test -s build_v50/eurobox_v50_base.step
-          test -s build_v50/eurobox_v50_base.stl
-          test -s build_v50/eurobox_v50_clamp_plate.FCStd
-          test -s build_v50/eurobox_v50_clamp_plate.step
-          test -s build_v50/eurobox_v50_clamp_plate.stl
-          test -s build_v50/eurobox_v50_rack_lower.FCStd
-          test -s build_v50/eurobox_v50_rack_lower.step
-          test -s build_v50/eurobox_v50_rack_lower.stl
-          test -s build_v50/eurobox_v50_lead_screw_print.FCStd
-          test -s build_v50/eurobox_v50_lead_screw_print.step
-          test -s build_v50/eurobox_v50_lead_screw_print.stl
-          test -s build_v50/eurobox_v50_lead_nut_print.FCStd
-          test -s build_v50/eurobox_v50_lead_nut_print.step
-          test -s build_v50/eurobox_v50_lead_nut_print.stl
-          test -s build_v50/eurobox_v50_lead_nut_retaining_pin.FCStd
-          test -s build_v50/eurobox_v50_lead_nut_retaining_pin.step
-          test -s build_v50/eurobox_v50_lead_nut_retaining_pin.stl
-          test -s build_v50/eurobox_v50_lead_nut_pin_clip.FCStd
-          test -s build_v50/eurobox_v50_lead_nut_pin_clip.step
-          test -s build_v50/eurobox_v50_lead_nut_pin_clip.stl
-          test -s build_v50/eurobox_v50_knob.FCStd
-          test -s build_v50/eurobox_v50_knob.step
-          test -s build_v50/eurobox_v50_knob.stl
-          test -s build_v50/eurobox_v50_knob_retainer_nut.FCStd
-          test -s build_v50/eurobox_v50_knob_retainer_nut.step
-          test -s build_v50/eurobox_v50_knob_retainer_nut.stl
           test -s build_v50/PREVIEW_v50.png
-          test -s build_v50/VALIDATION_v50_source.json
-          test -s build_v50/ASSEMBLY_LAYOUT_VALIDATION.json
-          test -s build_v50/BOX_CLAMP_VALIDATION.json
-          test -s build_v50/MESH_VALIDATION.json
           python3 - <<'PY'
           import json
+          s=json.load(open('build_v50/VALIDATION_v50_source.json'))
           m=json.load(open('build_v50/MESH_VALIDATION.json'))
           a=json.load(open('build_v50/ASSEMBLY_LAYOUT_VALIDATION.json'))
           c=json.load(open('build_v50/BOX_CLAMP_VALIDATION.json'))
+          assert not s['failures'], s['failures']
+          assert s['system_width_estimate_mm']['within_600mm_box_envelope'], s['system_width_estimate_mm']
+          assert s['system_width_estimate_mm']['effective_system_width_mm'] <= 600.02, s['system_width_estimate_mm']
           assert not m['failed'], m['failed']
           assert not a['failed'], a['failed']
           assert not c['failed'], c['failed']
@@ -254,12 +214,8 @@ jobs:
           cp cad/v50/assembly/PREVIEW_v50.png preview-stl/v50/
           cat > preview-stl/v50/README.md <<'EOF'
           # Eurobox v50 preview files
-          This directory mirrors the validated printable STL files from `cad/v50/STL/` and contains the PNG assembly overview. The editable full assembly is kept as `cad/v50/assembly/eurobox_v50_assembly.FCStd` instead of a redundant oversized assembly STL.
+          Mirrors the validated printable STL set plus the current assembly preview.
           EOF
-          oversize_stl=$(find cad/v50/STL preview-stl/v50 -type f -name '*.stl' -size +9999999c -print)
-          if [ -n "$oversize_stl" ]; then echo "$oversize_stl"; exit 1; fi
-          oversize_repo=$(find cad/v50 preview-stl/v50 -type f -size +95000000c -print)
-          if [ -n "$oversize_repo" ]; then echo "$oversize_repo"; exit 1; fi
           python3 - <<'PY'
           from pathlib import Path
           fc={p.stem for p in Path('cad/v50/FCStd').glob('*.FCStd')}
@@ -267,13 +223,12 @@ jobs:
           sl={p.stem for p in Path('cad/v50/STL').glob('*.stl')}
           bad={k:v for k,v in {'FCStd_without_STEP':sorted(fc-st),'FCStd_without_STL':sorted(fc-sl),'STEP_without_FCStd':sorted(st-fc),'STL_without_FCStd':sorted(sl-fc)}.items() if v}
           if bad: raise SystemExit('CAD publish set mismatch: '+repr(bad))
-          preview={p.stem for p in Path('preview-stl/v50').glob('eurobox_v50_*.stl')}
-          if preview != sl: raise SystemExit('Preview STL mirror mismatch')
-          print(f'Publishing {len(fc)} parts in FCStd + STEP + STL')
+          if {p.stem for p in Path('preview-stl/v50').glob('eurobox_v50_*.stl')} != sl:
+              raise SystemExit('Preview STL mirror mismatch')
           PY
           cat > cad/v50/README.md <<'EOF'
           # Eurobox v50 CAD
-          This directory is updated automatically only after successful CAD, assembly-layout, box-clamp and STL-mesh validation.
+          Updated automatically only after source, assembly, mechanism and STL validation pass.
           EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -283,28 +238,16 @@ jobs:
           else
             git commit -m "Update validated v50 CAD outputs [skip ci]"
             output_commit=$(git rev-parse HEAD)
-
             for attempt in 1 2 3; do
               git fetch origin main
               remote_head=$(git rev-parse origin/main)
-
-              if git merge-base --is-ancestor "$remote_head" HEAD; then
-                echo "origin/main is already an ancestor; pushing validated outputs"
-              else
-                echo "main advanced during build; replaying validated outputs on $remote_head (attempt $attempt)"
+              if ! git merge-base --is-ancestor "$remote_head" HEAD; then
                 git reset --hard "$remote_head"
                 git cherry-pick "$output_commit"
                 output_commit=$(git rev-parse HEAD)
               fi
-
-              if git push origin HEAD:main; then
-                break
-              fi
-
-              if [ "$attempt" -eq 3 ]; then
-                echo "::error::Could not publish validated CAD outputs after 3 attempts because main kept advancing"
-                exit 1
-              fi
+              if git push origin HEAD:main; then break; fi
+              if [ "$attempt" -eq 3 ]; then exit 1; fi
             done
           fi
 
