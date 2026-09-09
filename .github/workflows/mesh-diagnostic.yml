@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           python3 scripts/apply_v50_fixups.py
           python3 scripts/apply_v50_clamp_fixups.py
-          python3 -m py_compile scripts/build_v50.py scripts/validate_meshes.py
+          python3 -m py_compile scripts/build_v50.py scripts/validate_meshes.py scripts/validate_box_clamp.py scripts/validate_assembly_layout.py
 
       - name: Build v50 CAD and STL
         run: |
@@ -92,6 +92,8 @@ jobs:
             build_v50/*.stl
             scripts/build_v50.py
             scripts/validate_meshes.py
+            scripts/validate_box_clamp.py
+            scripts/validate_assembly_layout.py
             mesh_validation.log
             build_v50.log
           if-no-files-found: error
