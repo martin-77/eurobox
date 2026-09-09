@@ -87,12 +87,13 @@ def rack_m4_thread_sections(mesh):
 def lead_retainer_thread_sections(mesh):
     """Verify the published RH8x2 knob-retainer STL has a real internal helix.
 
-    The part axis is Y. With the matched printable pair the female crest radius
+    The printable retainer is exported with its local Y axis running from
+    -5.8 mm at the threaded end to 0 at the outer face. The female crest radius
     is about 3.43 mm and the helical groove root about 4.18 mm. A smooth hole,
     hidden groove, or lost boolean therefore cannot pass these Y-sections.
     """
     checks=[]
-    for y in (1.2, 2.9, 4.6):
+    for y in (-1.2, -2.9, -4.6):
         sec=mesh.section(plane_origin=[0.0,y,0.0], plane_normal=[0.0,1.0,0.0])
         if sec is None or len(sec.vertices) == 0:
             checks.append({'y_mm':y,'ok':False,'reason':'no section'})
@@ -120,11 +121,13 @@ def lead_retainer_thread_sections(mesh):
 def lead_screw_square_drive_section(mesh):
     """Catch any stale nut-like/hex spindle STL after the CAD build.
 
-    The canonical lead screw has an 8x8 mm integral square drive from Y=32.8 to
-    37.3 mm. A former secondary OpenSCAD export replaced that with an AF10 hex,
-    so sectioning the *final published STL* is the authoritative regression gate.
+    The canonical lead screw has an 8x8 mm integral square drive. In the final
+    printable STL its local Y direction is reversed, so the drive occupies
+    Y=-37.3..-32.8 mm. A former secondary OpenSCAD export replaced that with an
+    AF10 hex, so sectioning the *final published STL* remains the authoritative
+    regression gate.
     """
-    y=34.5
+    y=-34.5
     sec=mesh.section(plane_origin=[0.0,y,0.0], plane_normal=[0.0,1.0,0.0])
     if sec is None or len(sec.vertices) == 0:
         return {'y_mm':y,'ok':False,'reason':'no section'}
