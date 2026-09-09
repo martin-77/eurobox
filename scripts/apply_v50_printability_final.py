@@ -74,25 +74,47 @@ s, n = pat.subn(rep, s, count=1)
 if n != 1:
     raise SystemExit('Could not replace upper station')
 
-# Closed 45-degree crosshead under the 16.45 x 16.45 mm Eurobox rim.
-# The 0.20 mm offset keeps the wedge clear of the actual rim envelope.
+# Replace the former full-width diagonal wedge. That wedge crossed the real
+# 16.45 x 16.45 mm hanging rim volume and also occupied the moving plate's path.
+# Keep a full-width bed-side tie before the rim, then descend only in two outer
+# connectors. Through the rim/plate corridor those connectors stay below Z=14.5
+# and outside the plate's X envelope. Each low connector overlaps its bed-starting
+# guide rail after the rim, so the final BASE is one solid without a huge bridge.
 pat = re.compile(
     r"# Crosshead stays clear of the hanging 16\.45 x 16\.45 mm box rim\.\n"
     r"base_parts \+= \[\n.*?\n\]\n\n# Plate guide cage, outside the actual box edge\.", re.S)
-rep = '''# Closed self-supporting crosshead under the hanging Eurobox rim.
+rep = '''# Rim-clear, plate-clear self-supporting crosshead.
 CROSSHEAD_Y0 = 216.0
 CROSSHEAD_RIM_CLEAR = 0.20
-CROSSHEAD_TOP_Y1 = BOX_RIM_INNER_Y - CROSSHEAD_RIM_CLEAR
-CROSSHEAD_BOTTOM_Y1 = CROSSHEAD_TOP_Y1 + ARM_H
-cx0 = -106.0
-cpts = [
-    App.Vector(cx0, CROSSHEAD_Y0, ARM_TOP_Z),
-    App.Vector(cx0, CROSSHEAD_TOP_Y1, ARM_TOP_Z),
-    App.Vector(cx0, CROSSHEAD_BOTTOM_Y1, ARM_BOTTOM_Z),
-    App.Vector(cx0, CROSSHEAD_Y0, ARM_BOTTOM_Z),
-]
-cwire = Part.makePolygon(cpts + [cpts[0]])
-CROSSHEAD = Part.Face(cwire).extrude(App.Vector(212.0, 0, 0)).removeSplitter()
+CROSSHEAD_TOP_Y1 = 220.0
+CROSSHEAD_BOTTOM_Y1 = BOX_RIM_INNER_Y - CROSSHEAD_RIM_CLEAR
+CROSSHEAD_LOW_Y1 = BOX_EDGE_Y + 14.0
+CROSSHEAD_LOW_Z1 = 14.50
+CROSSHEAD_SIDE_X0 = 70.0
+CROSSHEAD_SIDE_W = 36.0
+
+# Full-width tie is on the upside-down print bed and stops 0.20 mm before the
+# conservative rim envelope begins.
+CROSSHEAD_TOP_TIE = box(
+    -106.0, CROSSHEAD_Y0, ARM_TOP_Z-FLANGE_T,
+    212.0, CROSSHEAD_BOTTOM_Y1-CROSSHEAD_Y0, FLANGE_T)
+
+def make_crosshead_side(x0):
+    pts = [
+        App.Vector(x0, CROSSHEAD_Y0, ARM_TOP_Z),
+        App.Vector(x0, CROSSHEAD_TOP_Y1, ARM_TOP_Z),
+        App.Vector(x0, CROSSHEAD_BOTTOM_Y1, CROSSHEAD_LOW_Z1),
+        App.Vector(x0, CROSSHEAD_LOW_Y1, CROSSHEAD_LOW_Z1),
+        App.Vector(x0, CROSSHEAD_LOW_Y1, ARM_BOTTOM_Z),
+        App.Vector(x0, CROSSHEAD_Y0, ARM_BOTTOM_Z),
+    ]
+    wire = Part.makePolygon(pts + [pts[0]])
+    return Part.Face(wire).extrude(App.Vector(CROSSHEAD_SIDE_W, 0, 0)).removeSplitter()
+
+CROSSHEAD_SIDE_LEFT = make_crosshead_side(-106.0)
+CROSSHEAD_SIDE_RIGHT = make_crosshead_side(CROSSHEAD_SIDE_X0)
+CROSSHEAD = fuse_all([CROSSHEAD_TOP_TIE,
+                      CROSSHEAD_SIDE_LEFT, CROSSHEAD_SIDE_RIGHT])
 base_parts += [CROSSHEAD]
 
 # Plate guide cage, outside the actual box edge.'''
@@ -165,6 +187,16 @@ s, n = pat.subn(rep, s, count=1)
 if n != 1:
     raise SystemExit('Could not lower/open plate-guide screw frame')
 
+# The preload position moves the 11 mm thrust shoulder 0.5 mm inward. The former
+# clearance tunnel started exactly at that theoretical face and OCC left a tiny
+# 1.96 mm3 seam collision. Give the printed shoulder 0.45 mm radial clearance and
+# start the tunnel 0.30 mm earlier; this changes no frozen spindle/rim datum.
+old_tunnel = "BASE = BASE.cut(cyl_y(SHOULDER_D/2 + 0.30, (NUT_Y0-0.50)-(BOX_EDGE_Y+7.50), sx, BOX_EDGE_Y+7.50, SPINDLE_Z))"
+new_tunnel = "BASE = BASE.cut(cyl_y(SHOULDER_D/2 + 0.45, (NUT_Y0-0.50)-(BOX_EDGE_Y+7.20), sx, BOX_EDGE_Y+7.20, SPINDLE_Z))"
+if old_tunnel not in s:
+    raise SystemExit('Could not locate spindle shoulder clearance tunnel')
+s = s.replace(old_tunnel, new_tunnel, 1)
+
 # Add the lower tail pocket and pin/service bores after all previous BASE cuts.
 # The cage extension overlaps the square-drive Y range; clear it with Ø11.8.
 anchor = '''BASE = BASE.removeSplitter()
@@ -219,7 +251,8 @@ if anchor not in s:
 proof = '''arm_run = (ARM_W-PRINT_ARM_BOTTOM_W)/2.0
 arm_ratio = arm_run/PRINT_ARM_TAPER_H
 cross_run = CROSSHEAD_BOTTOM_Y1-CROSSHEAD_TOP_Y1
-cross_ratio = cross_run/ARM_H
+cross_drop = ARM_TOP_Z-CROSSHEAD_LOW_Z1
+cross_ratio = cross_run/cross_drop
 V['printability'] = {
     'orientation': 'rotate BASE 180deg about X; model Z=39.54 on print bed',
     'model_bed_plane_z_mm': BOX_SUPPORT_Z,
@@ -230,16 +263,17 @@ V['printability'] = {
     'arm_bottom_width_mm': PRINT_ARM_BOTTOM_W,
     'arm_taper_height_mm': PRINT_ARM_TAPER_H,
     'arm_run_per_vertical_ratio': round(arm_ratio, 4),
-    'crosshead': 'closed 45deg rim-following wedge; slicer infill interior',
+    'crosshead': 'bed-side full-width tie plus twin tapered under-rim side connectors',
     'crosshead_run_per_vertical_ratio': round(cross_ratio, 4),
     'crosshead_rim_clearance_mm': CROSSHEAD_RIM_CLEAR,
+    'crosshead_low_bridge_span_mm': round(BOX_EDGE_Y-CROSSHEAD_BOTTOM_Y1, 3),
     'plate_guide': 'side rails only; two lead screws retain plate vertically',
     'outer_frame_lower_bridge_removed': True,
     'lead_nut_retention': 'lower post-thread tail cross-pin; no high cage ear',
     'lead_nut_pin_model_z_mm': round(SPINDLE_Z+LEAD_NUT_PIN_Z, 3),
     'backstop_gusset_on_bed_plane': abs(MOUNT_BACKSTOP_GUSSET_TOP_Z-BOX_SUPPORT_Z) < 1e-9,
     'functional_round_interfaces_preserved': True,
-    'support_policy': 'no large structural support; only optional local support/bridging at functional round bores',
+    'support_policy': 'no large structural support; only two short under-rim bridges plus optional local support at round bores',
 }
 if abs(V['printability']['right_base_zmax_mm']-BOX_SUPPORT_Z) > 0.03:
     failures.append('RIGHT BASE does not share the intended print-bed plane')
@@ -248,7 +282,7 @@ if abs(V['printability']['left_base_zmax_mm']-BOX_SUPPORT_Z) > 0.03:
 if V['printability']['arm_run_per_vertical_ratio'] > 1.0:
     failures.append('Arm taper exceeds 45-degree self-support target')
 if V['printability']['crosshead_run_per_vertical_ratio'] > 1.01:
-    failures.append('Crosshead wedge exceeds 45-degree self-support target')
+    failures.append('Crosshead taper exceeds 45-degree self-support target')
 if not V['printability']['outer_frame_lower_bridge_removed']:
     failures.append('Support-heavy outer frame lower bridge remains')
 if not V['printability']['backstop_gusset_on_bed_plane']:
