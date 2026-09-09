@@ -23,6 +23,7 @@ for old, new in repls.items():
     s = s.replace(old, new, 1)
 
 # Make the intended side explicit in the validation report and hard-gate it.
+# The canonical restored v50 source names the measured rack diameter TUBE_D.
 meta_anchor = "    'panel_y_range_mm': [MOUNT_BACKSTOP_Y0, MOUNT_BACKSTOP_Y0+MOUNT_BACKSTOP_T_Y],\n"
 if meta_anchor not in s:
     raise SystemExit('Could not locate backstop panel metadata')
@@ -30,8 +31,8 @@ s = s.replace(
     meta_anchor,
     meta_anchor +
     "    'contact_side': 'outboard_box_side_in_front_of_rack_tube',\n" +
-    "    'tube_outboard_crown_y_mm': round(TUBE_OD/2.0, 3),\n" +
-    "    'panel_clearance_from_tube_outboard_crown_mm': round(MOUNT_BACKSTOP_Y0-TUBE_OD/2.0, 3),\n",
+    "    'tube_outboard_crown_y_mm': round(TUBE_D/2.0, 3),\n" +
+    "    'panel_clearance_from_tube_outboard_crown_mm': round(MOUNT_BACKSTOP_Y0-TUBE_D/2.0, 3),\n",
     1,
 )
 
