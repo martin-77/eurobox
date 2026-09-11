@@ -49,15 +49,16 @@ pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
              pt(major_r,a,z-crest_half),
              pt(major_r,a,z+crest_half),
              pt(inner_r,a,z+root_half)]];
-// Every side is explicitly triangulated. Non-planar quad faces were accepted
-// by CGAL but reconstructed as an invalid multi-shell solid by FreeCAD/OCC.
+// Explicit triangles with outward winding. The first v54 attempt had inward
+// winding; OpenSCAD displayed it but FreeCAD correctly rejected the resulting
+// reconstructed solid before any CAD could be published.
 side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
-  [4*i+j,4*(i+1)+j,4*(i+1)+((j+1)%4)],
-  [4*i+j,4*(i+1)+((j+1)%4),4*i+((j+1)%4)]
+  [4*(i+1)+((j+1)%4),4*(i+1)+j,4*i+j],
+  [4*i+((j+1)%4),4*(i+1)+((j+1)%4),4*i+j]
 ]];
-start_face=[[0,1,2],[0,2,3]];
+start_face=[[2,1,0],[3,2,0]];
 e=4*steps;
-end_face=[[e+3,e+2,e+1],[e+3,e+1,e]];
+end_face=[[e+1,e+2,e+3],[e,e+1,e+3]];
 module true_helical_tooth(){{
   polyhedron(points=pts,faces=concat(side_faces,start_face,end_face),convexity=80);
 }}
@@ -103,4 +104,4 @@ if 'write_female_thread_cutter_scad' not in s:
     raise SystemExit('v54 female true-thread helper was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied v54 true RH8x2 profiles: triangulated radial/axial trapezoidal helices')
+print('Applied v54 true RH8x2 profiles: outward-wound triangulated radial/axial helices')
