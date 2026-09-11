@@ -77,6 +77,18 @@ for sx in SPINDLE_X:
 if anchor not in bs:
     raise SystemExit('Could not locate inboard cage for plate-sweep clearance')
 bs = bs.replace(anchor, plate_clearance, 1)
+
+# Z180 reverses the spindle through the plate. The narrow retainer groove now
+# sits at the outboard plate face while the Ø11 thrust shoulder bears on the
+# inboard face. Move the Ø12 x 2 mm counterbore with the retainer groove; leaving
+# it on the inboard face removes the shoulder's thrust land and creates exactly
+# the 0.25 mm radial journal/hole clearance seen by the hard clamp validator.
+old = "    PLATE = PLATE.cut(cyl_y(6.0, 2.0, sx, PLATE_BODY_Y0, SPINDLE_Z))\n"
+new = "    PLATE = PLATE.cut(cyl_y(6.0, 2.0, sx, PLATE_SPINDLE_Y-2.0, SPINDLE_Z))\n"
+if old not in bs:
+    raise SystemExit('Could not relocate inboard plate retainer counterbore')
+bs = bs.replace(old, new, 1)
+
 bp.write_text(bs, encoding='utf-8')
 
 # The standalone box-clamp validator predates the restored inboard architecture.
@@ -218,5 +230,3 @@ if old_meta not in vs:
     raise SystemExit('Could not locate handed STL mirror diagnostics')
 vs = vs.replace(old_meta, new_meta, 1)
 vp.write_text(vs, encoding='utf-8')
-
-print('Width validation: current lead-nut cartridge + restored frame datums + plate-sweep clearance + inboard box-clamp/STL gates')
