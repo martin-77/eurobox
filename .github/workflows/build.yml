@@ -276,10 +276,19 @@ jobs:
             echo "Validated CAD outputs unchanged"
           else
             git commit -m "Update validated v50 CAD outputs [skip ci]"
+            expected_remote=$(git rev-parse HEAD^)
             if ! git push origin HEAD:main; then
-              git fetch origin main
-              echo "::notice::main advanced while publishing; skipping stale generated CAD output instead of rebasing it onto a newer commit."
-              exit 0
+              if ! git fetch origin main; then
+                echo "::error::Publish push failed and main could not be refreshed."
+                exit 1
+              fi
+              new_remote=$(git rev-parse origin/main)
+              if [ "$new_remote" != "$expected_remote" ]; then
+                echo "::notice::main advanced while publishing; skipping stale generated CAD output instead of rebasing it onto a newer commit."
+                exit 0
+              fi
+              echo "::error::Generated CAD push failed although main did not advance."
+              exit 1
             fi
           fi
 
