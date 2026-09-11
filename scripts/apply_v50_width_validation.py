@@ -1,5 +1,31 @@
 from pathlib import Path
 
+# Compatibility for the restored 600 mm inboard architecture. The current
+# lead-nut cartridge no longer has the obsolete tail extension used by the
+# original width-cleanup pass. Remove only that stale tail pocket from the
+# generated build source; retain the current cartridge, pin and service-pocket
+# geometry unchanged.
+bp = Path('scripts/build_v50.py')
+bs = bp.read_text(encoding='utf-8')
+old = "NUT_TAIL_Y0 = NUT_THREAD_Y0 - LEAD_NUT_TAIL_L\n"
+if old not in bs:
+    raise SystemExit('Could not locate obsolete lead-nut tail datum in inboard width pass')
+bs = bs.replace(old, '', 1)
+old = '''    _tail_pocket = box(sx-6.2, NUT_TAIL_Y0-0.25, SPINDLE_Z-10.25,
+                       12.4, LEAD_NUT_TAIL_L+0.50, 6.0)
+'''
+if old not in bs:
+    raise SystemExit('Could not locate obsolete lead-nut tail pocket in inboard width pass')
+bs = bs.replace(old, '', 1)
+old = '''    for cutter in (_nut_pocket, _tail_pocket, _spindle_tunnel,
+                   _pin_bore, _head_service, _clip_service):'''
+new = '''    for cutter in (_nut_pocket, _spindle_tunnel,
+                   _pin_bore, _head_service, _clip_service):'''
+if old not in bs:
+    raise SystemExit('Could not remove obsolete lead-nut tail pocket from cutter set')
+bs = bs.replace(old, new, 1)
+bp.write_text(bs, encoding='utf-8')
+
 # The restored width pass turns the lead hardware inward by a proper Z180
 # rotation, so the printable RH8x2 parts occupy local -Y. Keep the final STL
 # checks aligned with that print orientation, while retaining the mechanical
@@ -44,4 +70,4 @@ if old_meta not in vs:
 vs = vs.replace(old_meta, new_meta, 1)
 vp.write_text(vs, encoding='utf-8')
 
-print('Width validation: enforce inward -Y print orientation and tessellation-safe handed mesh gate')
+print('Width validation: current lead-nut cartridge + inward -Y print orientation + tessellation-safe handed mesh gate')
