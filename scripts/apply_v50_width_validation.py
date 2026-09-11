@@ -40,6 +40,43 @@ compat = (
 if anchor not in bs:
     raise SystemExit('Could not locate inboard width architecture anchor')
 bs = bs.replace(anchor, compat + anchor, 1)
+
+# The inboard plate occupies the former central crosshead corridor. Do not
+# delete or weaken the whole crosshead: retain the full-width lower flange below
+# the moving plate and the two outer side structures, but clear exactly the
+# plate-body sweep plus the existing 0.4 mm guide clearance. The side guide
+# rails start at X +/-70.4, so this cutter terminates exactly at their inner
+# faces and leaves the intended sliding guides intact.
+anchor = '''BASE_RIGHT = BASE_RIGHT.fuse(INBOARD_CAGE).removeSplitter()
+BASE_LEFT = BASE_LEFT.fuse(INBOARD_CAGE).removeSplitter()
+
+for sx in SPINDLE_X:
+'''
+plate_clearance = '''BASE_RIGHT = BASE_RIGHT.fuse(INBOARD_CAGE).removeSplitter()
+BASE_LEFT = BASE_LEFT.fuse(INBOARD_CAGE).removeSplitter()
+
+_plate_body_y0_for_clearance = BOX_RIM_INNER_Y - PLATE_Y
+_plate_sweep_y0 = _plate_body_y0_for_clearance - PLATE_OPEN - GUIDE_SIDE_CLEAR
+_plate_sweep_y1 = _plate_body_y0_for_clearance + PLATE_Y + GUIDE_SIDE_CLEAR
+_plate_sweep = box(
+    -PLATE_X/2.0-GUIDE_SIDE_CLEAR,
+    _plate_sweep_y0,
+    PLATE_Z0-GUIDE_Z_CLEAR,
+    PLATE_X+2.0*GUIDE_SIDE_CLEAR,
+    _plate_sweep_y1-_plate_sweep_y0,
+    (PLATE_Z1-PLATE_Z0)+2.0*GUIDE_Z_CLEAR,
+)
+BASE_RIGHT = BASE_RIGHT.cut(_plate_sweep).removeSplitter()
+BASE_LEFT = BASE_LEFT.cut(_plate_sweep).removeSplitter()
+if (not BASE_RIGHT.isValid() or len(BASE_RIGHT.Solids) != 1 or
+        not BASE_LEFT.isValid() or len(BASE_LEFT.Solids) != 1):
+    raise RuntimeError('Plate-sweep clearance broke handed BASE topology')
+
+for sx in SPINDLE_X:
+'''
+if anchor not in bs:
+    raise SystemExit('Could not locate inboard cage for plate-sweep clearance')
+bs = bs.replace(anchor, plate_clearance, 1)
 bp.write_text(bs, encoding='utf-8')
 
 # The restored width pass turns the lead hardware inward by a proper Z180
@@ -86,4 +123,4 @@ if old_meta not in vs:
 vs = vs.replace(old_meta, new_meta, 1)
 vp.write_text(vs, encoding='utf-8')
 
-print('Width validation: current lead-nut cartridge + restored inboard print-frame datums + inward -Y mesh gates')
+print('Width validation: current lead-nut cartridge + restored frame datums + plate-sweep clearance + inward -Y mesh gates')
