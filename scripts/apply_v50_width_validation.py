@@ -79,6 +79,102 @@ if anchor not in bs:
 bs = bs.replace(anchor, plate_clearance, 1)
 bp.write_text(bs, encoding='utf-8')
 
+# The standalone box-clamp validator predates the restored inboard architecture.
+# Keep all mechanical thresholds intact, but place and move the real exported
+# hardware using the same datums/directions as the final 600 mm build source.
+cp = Path('scripts/validate_box_clamp.py')
+cs = cp.read_text(encoding='utf-8')
+
+replacements = [
+    (
+        "NUT_Y0 = 260.465\n",
+        "PLATE_SPINDLE_Y = BOX_RIM_INNER_Y\n"
+        "NUT_ANCHOR_OFFSET = 15.8\n"
+        "NUT_Y0 = PLATE_SPINDLE_Y - NUT_ANCHOR_OFFSET\n",
+    ),
+    (
+        '''    closed_hook_inner_y = BOX_EDGE_Y - UNDERHOOK
+    report['measurements']['closed_underhook_inner_y_mm'] = round(closed_hook_inner_y, 3)
+    report['measurements']['closed_underhook_capture_depth_mm'] = round(BOX_EDGE_Y - closed_hook_inner_y, 3)
+    report['checks']['closed_hook_captures_box_edge'] = closed_hook_inner_y < BOX_EDGE_Y
+    report['checks']['closed_plate_does_not_interpenetrate_rim'] = common_volume(plate, rim, 'closed_plate_vs_rim') < 1e-4
+
+    open_hook_inner_y = closed_hook_inner_y + PLATE_OPEN
+    open_clearance = open_hook_inner_y - BOX_EDGE_Y
+    report['measurements']['open_underhook_inner_y_mm'] = round(open_hook_inner_y, 3)
+    report['measurements']['open_box_edge_clearance_mm'] = round(open_clearance, 3)
+    report['checks']['open_clearance_at_least_1mm'] = open_clearance >= 1.0
+    pl_open = plate.copy()
+    pl_open.translate(App.Vector(0, PLATE_OPEN, 0))
+''',
+        '''    # Inboard clamp: the hook captures the INNER rim edge from below.
+    # Opening moves toward -Y; 5.5 mm yields 1.3 mm release clearance.
+    closed_hook_outer_y = BOX_RIM_INNER_Y + UNDERHOOK
+    report['measurements']['closed_underhook_outer_y_mm'] = round(closed_hook_outer_y, 3)
+    report['measurements']['closed_underhook_capture_depth_mm'] = round(closed_hook_outer_y - BOX_RIM_INNER_Y, 3)
+    report['checks']['closed_hook_captures_box_edge'] = closed_hook_outer_y > BOX_RIM_INNER_Y
+    report['checks']['closed_plate_does_not_interpenetrate_rim'] = common_volume(plate, rim, 'closed_plate_vs_rim') < 1e-4
+
+    open_hook_outer_y = closed_hook_outer_y - PLATE_OPEN
+    open_clearance = BOX_RIM_INNER_Y - open_hook_outer_y
+    report['measurements']['open_underhook_outer_y_mm'] = round(open_hook_outer_y, 3)
+    report['measurements']['open_box_edge_clearance_mm'] = round(open_clearance, 3)
+    report['checks']['open_clearance_at_least_1mm'] = open_clearance >= 1.0
+    pl_open = plate.copy()
+    pl_open.translate(App.Vector(0, -PLATE_OPEN, 0))
+''',
+    ),
+    (
+        "    pl_clamp.translate(App.Vector(0, -CLAMP_PRELOAD, 0))\n",
+        "    pl_clamp.translate(App.Vector(0, CLAMP_PRELOAD, 0))\n",
+    ),
+    (
+        "        q.translate(App.Vector(SPINDLE_X, BOX_EDGE_Y + travel_mm, SPINDLE_Z))\n",
+        "        q.translate(App.Vector(SPINDLE_X, PLATE_SPINDLE_Y - travel_mm, SPINDLE_Z))\n",
+    ),
+    (
+        "                             NUT_Y0+LEAD_NUT_PIN_Y,\n",
+        "                             NUT_Y0-LEAD_NUT_PIN_Y,\n",
+    ),
+    (
+        "                              NUT_Y0+LEAD_NUT_PIN_Y,\n",
+        "                              NUT_Y0-LEAD_NUT_PIN_Y,\n",
+    ),
+    (
+        "        rot = -360.0 * travel / THREAD_PITCH\n",
+        "        rot = +360.0 * travel / THREAD_PITCH\n",
+    ),
+    (
+        "    # At +0.5 mm travel the correct rotation is -90 deg. +90 deg is 180 deg out\n"
+        "    # of phase and must visibly intersect a developed RH 8x2 female thread.\n"
+        "    q_wrong = placed_spindle(0.5, 90.0)\n",
+        "    # With inward -Y travel the correct +0.5 mm rotation is +90 deg.\n"
+        "    # -90 deg is 180 deg out of phase and must visibly intersect the RH8x2 nut.\n"
+        "    q_wrong = placed_spindle(0.5, -90.0)\n",
+    ),
+    (
+        "    cap.rotate(App.Vector(0,0,0), App.Vector(0,1,0), CAP_NUT_PHASE_DEG)\n"
+        "    cap.translate(App.Vector(0, CAP_NUT_Y0, 0))\n",
+        "    cap.rotate(App.Vector(0,0,0), App.Vector(0,1,0), -CAP_NUT_PHASE_DEG)\n"
+        "    cap.translate(App.Vector(0, -CAP_NUT_Y0, 0))\n",
+    ),
+    (
+        "    cap_wrong.rotate(App.Vector(0,0,0), App.Vector(0,1,0), CAP_NUT_PHASE_DEG+180.0)\n"
+        "    cap_wrong.translate(App.Vector(0, CAP_NUT_Y0, 0))\n",
+        "    cap_wrong.rotate(App.Vector(0,0,0), App.Vector(0,1,0), -CAP_NUT_PHASE_DEG-180.0)\n"
+        "    cap_wrong.translate(App.Vector(0, -CAP_NUT_Y0, 0))\n",
+    ),
+    (
+        "    report['measurements']['knob_retainer_nut_phase_deg'] = round(CAP_NUT_PHASE_DEG, 3)\n",
+        "    report['measurements']['knob_retainer_nut_phase_deg'] = round(-CAP_NUT_PHASE_DEG, 3)\n",
+    ),
+]
+for old, new in replacements:
+    if old not in cs:
+        raise SystemExit('Could not align box-clamp validator with inboard architecture: ' + old.splitlines()[0])
+    cs = cs.replace(old, new, 1)
+cp.write_text(cs, encoding='utf-8')
+
 # The restored width pass turns the lead hardware inward by a proper Z180
 # rotation, so the printable RH8x2 parts occupy local -Y. Keep the final STL
 # checks aligned with that print orientation, while retaining the mechanical
@@ -123,4 +219,4 @@ if old_meta not in vs:
 vs = vs.replace(old_meta, new_meta, 1)
 vp.write_text(vs, encoding='utf-8')
 
-print('Width validation: current lead-nut cartridge + restored frame datums + plate-sweep clearance + inward -Y mesh gates')
+print('Width validation: current lead-nut cartridge + restored frame datums + plate-sweep clearance + inboard box-clamp/STL gates')
