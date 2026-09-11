@@ -50,6 +50,7 @@ for script_name, missing in [
     ('scripts/apply_v50_backstop_contact_side.py','Missing corrected backstop contact-side pass'),
     ('scripts/apply_v50_handed_base_export_final.py','Missing final explicit handed-base geometry/export correction'),
     ('scripts/apply_v50_rack_joint_v51.py','Missing v51 inverted rack-clevis refinement'),
+    ('scripts/apply_v50_rack_joint_gusset_v52.py','Missing v52 teardrop Upper pivot-root reinforcement'),
 ]:
     q = Path(script_name)
     if not q.is_file():
@@ -59,4 +60,4 @@ for script_name, missing in [
 # Important: no global printability geometry rewrite here. Printability changes
 # must remain local and may not replace proven rack roots, clamp kinematics or
 # threaded hardware.
-print('Restored proven pre-printability v50 mechanics with corrected stop side and v51 rack joint')
+print('Restored proven pre-printability v50 mechanics with corrected stop side, v51 rack joint and v52 Upper pivot gusset')
