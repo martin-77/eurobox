@@ -5,37 +5,33 @@ p = Path('scripts/build_v50.py')
 s = p.read_text(encoding='utf-8')
 orig = s
 
-# Final all-thread source audit.  v54 supplies the true radial/AXIAL RH8x2
-# generator.  This pass makes every female cutter overrun both faces, preserves
-# the already-correct radial/axial M4 pair, and records geometry witnesses.
+# Final all-thread source audit.
+# v55 has already rebuilt the main RH8x2 male/female pairs as true radial/AXIAL
+# helical ridges that are OCC-fused to smooth cores.  Do not regenerate those
+# here.  This pass converts the final knob-retainer cutter to the same geometry,
+# preserves the already-good M4 radial/axial pair, and installs hard source
+# geometry witnesses.  A separate post-export mesh-section validator verifies
+# the actual STL tooth widths; source witnesses alone are no longer sufficient.
 
-# RH8x2 removable lead nut: use the true female helper with one-pitch overrun.
-old_female = '''FEMALE = import_scad_shape(FEMALE_SCAD).common(
-    Part.makeCylinder(THREAD_MAJOR/2 + LEAD_RADIAL_CLEARANCE + 0.06,
-                      NUT_THREAD_LEN)).removeSplitter()'''
-new_female = '''LEAD_FEMALE_OVERRUN = THREAD_PITCH
+if "LEAD_THREAD_PROFILE_GENERATOR = 'true_radial_axial_OCC_fused_v55'" not in s:
+    raise SystemExit('v55 true RH8x2 generator is not present before final thread audit')
+if s.count('= make_true_thread_solid(') < 4:
+    raise SystemExit('Main RH8x2 male/female/stud objects were not rebuilt with native OCC core fusion')
+
+# Truthful final female-profile constants used by source validation metadata.
+cap_anchor = "CAP_NUT_H = 5.8\n"
+if cap_anchor not in s:
+    raise SystemExit('Could not locate knob-retainer block for final RH8x2 metadata')
+lead_meta = '''LEAD_FEMALE_OVERRUN = THREAD_PITCH
 lead_female_core = THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 lead_female_major = THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE
 lead_female_root_w = LEAD_PROFILE_ROOT_W + 2.0*LEAD_FLANK_CLEARANCE
 lead_female_crest_w = LEAD_PROFILE_CREST_W + 2.0*LEAD_FLANK_CLEARANCE
-lead_female_span = NUT_THREAD_LEN + 2.0*LEAD_FEMALE_OVERRUN
-LEAD_FEMALE_OPEN_SCAD = os.path.join(
-    OUT, 'thread_RH_8x2_female_open_overrun.scad')
-write_female_thread_cutter_scad(
-    LEAD_FEMALE_OPEN_SCAD,
-    lead_female_core, lead_female_major, THREAD_PITCH, NUT_THREAD_LEN,
-    lead_female_root_w, lead_female_crest_w, LEAD_FEMALE_OVERRUN)
-FEMALE = import_scad_shape(LEAD_FEMALE_OPEN_SCAD).common(
-    Part.makeCylinder(
-        lead_female_major + 0.06,
-        lead_female_span,
-        App.Vector(0,0,-LEAD_FEMALE_OVERRUN))).removeSplitter()'''
-if old_female not in s:
-    raise SystemExit('Could not locate final RH8x2 removable-nut female cutter')
-s = s.replace(old_female, new_female, 1)
+'''
+s = s.replace(cap_anchor, lead_meta + cap_anchor, 1)
 
-# RH8x2 knob-retainer: replace the previous twisted-ribbon extended cutter with
-# the same true radial/axial female helper used by the lead nut.
+# RH8x2 knob-retainer: replace the legacy twisted-ribbon extended cutter with
+# the same true axial ridge + native OCC core fusion as the main lead nut.
 cap_pattern = re.compile(
     r"CAP_FEMALE_EXT_SCAD = os\.path\.join\(\n"
     r"    OUT, 'thread_RH_8x2_knob_retainer_extended_cutter\.scad'\)\n"
@@ -49,17 +45,16 @@ write_female_thread_cutter_scad(
     CAP_FEMALE_EXT_SCAD,
     cap_female_core, cap_female_major, THREAD_PITCH, CAP_NUT_H,
     cap_root_w, cap_crest_w, CAP_THREAD_OVERRUN)
-CAP_FEMALE = import_scad_shape(CAP_FEMALE_EXT_SCAD).common(
-    Part.makeCylinder(
-        cap_female_major + 0.06,
-        cap_span,
-        App.Vector(0,0,-CAP_THREAD_OVERRUN))).removeSplitter()
+CAP_FEMALE = make_true_thread_solid(
+    CAP_FEMALE_EXT_SCAD, cap_female_core, cap_female_major, CAP_NUT_H)
 '''
 s, n = cap_pattern.subn(cap_replacement, s, count=1)
 if n != 1:
     raise SystemExit('Could not replace obsolete knob-retainer twisted-ribbon cutter')
 
-# M4 true radial/axial pair: ensure its ridge/groove overruns both ends.
+# M4 is already a real radial/axial polyhedron and looked correct in the actual
+# exported longitudinal STL sections.  Only extend its ridge/groove one pitch
+# beyond each end so the faces cannot retain a smooth terminal wall.
 m4_end_hits = s.count('a1=360*(turns-1);')
 if m4_end_hits != 2:
     raise SystemExit('Expected exactly two final radial-Z M4 generators, found '+str(m4_end_hits))
@@ -116,7 +111,7 @@ _lead_body = _lead_body.cut(cyl_x(
 _lead_smooth = _lead_body.cut(
     cyl_y(_lead_bore_r, NUT_THREAD_LEN+2.0, 0, -1.0, 0)).removeSplitter()
 _lead_shell = _y_annulus(
-    _lead_bore_r-0.02, _lead_bore_r+0.16, 0.5, NUT_THREAD_LEN-1.0)
+    _lead_bore_r-0.02, _lead_bore_r+0.20, 0.5, NUT_THREAD_LEN-1.0)
 _lead_groove_open = (
     _lead_smooth.common(_lead_shell).Volume
     - LEAD_NUT.common(_lead_shell).Volume)
@@ -128,7 +123,7 @@ _cap_body = z_to_y(hex_z(13.0, CAP_NUT_H), 0, 0, 0)
 _cap_smooth = _cap_body.cut(
     cyl_y(_cap_bore_r, CAP_NUT_H+2.0, 0, -1.0, 0)).removeSplitter()
 _cap_shell = _y_annulus(
-    _cap_bore_r-0.02, _cap_bore_r+0.16, 0.35, CAP_NUT_H-0.70)
+    _cap_bore_r-0.02, _cap_bore_r+0.20, 0.35, CAP_NUT_H-0.70)
 _cap_groove_open = (
     _cap_smooth.common(_cap_shell).Volume
     - CAP_NUT.common(_cap_shell).Volume)
@@ -174,11 +169,13 @@ V['thread_surface_audit'] = {
     'rh8x2_stud_end_ridge_mm3': round(_lead_stud_end, 6),
     'm4_male_start_ridge_mm3': round(_m4_male_start, 6),
     'm4_male_end_ridge_mm3': round(_m4_male_end, 6),
-    'female_cutter_overrun': 'one full pitch beyond both faces',
+    'female_cutter_overrun': 'one full pitch beyond both faces before OCC clipping',
 }
 
-if LEAD_THREAD_PROFILE_GENERATOR != 'true_radial_axial_trapezoid_polyhedron_v54':
-    failures.append('RH8x2 source still uses obsolete tangential/twisted-ribbon thread generator')
+if LEAD_THREAD_PROFILE_GENERATOR != 'true_radial_axial_OCC_fused_v55':
+    failures.append('RH8x2 source is not the v55 true radial/axial OCC-fused generator')
+if LEAD_PROFILE_ROOT_W < 0.60 or LEAD_PROFILE_CREST_W < 0.25:
+    failures.append('RH8x2 nominal axial tooth width is too small for 0.4 mm FDM')
 if _lead_core_block > 1e-4:
     failures.append('RH8x2 lead nut has a wall blocking its through bore')
 if _lead_groove_open < 0.05:
@@ -211,4 +208,4 @@ if 'thread_surface_audit' not in s:
     raise SystemExit('Final thread-surface audit was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied final thread audit: true RH8x2 axial profiles + open female cutters + M4 end overrun')
+print('Applied final thread audit: v55 true RH8x2 + open female cutters + preserved M4')
