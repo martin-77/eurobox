@@ -24,6 +24,22 @@ new = '''    for cutter in (_nut_pocket, _spindle_tunnel,
 if old not in bs:
     raise SystemExit('Could not remove obsolete lead-nut tail pocket from cutter set')
 bs = bs.replace(old, new, 1)
+
+# The original inboard pass was authored after the printability pass and uses
+# these four frame datums. Printability is no longer executed globally, so
+# restore only the exact datums required by the inboard cage. They are taken
+# verbatim from apply_v50_printability_final.py and do not modify rack roots,
+# pivots, threads or frozen box/rack measurements.
+anchor = "PLATE_SPINDLE_Y = BOX_RIM_INNER_Y\n"
+compat = (
+    "PRINT_BASE_PLANE_Z = BOX_SUPPORT_Z\n"
+    "PRINT_GUIDE_Z0 = 14.0\n"
+    "PRINT_FRAME_TIE_T = 6.0\n"
+    "PRINT_FRAME_BOSS_Z0 = 20.0\n"
+)
+if anchor not in bs:
+    raise SystemExit('Could not locate inboard width architecture anchor')
+bs = bs.replace(anchor, compat + anchor, 1)
 bp.write_text(bs, encoding='utf-8')
 
 # The restored width pass turns the lead hardware inward by a proper Z180
@@ -70,4 +86,4 @@ if old_meta not in vs:
 vs = vs.replace(old_meta, new_meta, 1)
 vp.write_text(vs, encoding='utf-8')
 
-print('Width validation: current lead-nut cartridge + inward -Y print orientation + tessellation-safe handed mesh gate')
+print('Width validation: current lead-nut cartridge + restored inboard print-frame datums + inward -Y mesh gates')
