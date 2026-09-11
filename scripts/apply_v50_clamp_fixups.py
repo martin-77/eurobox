@@ -46,6 +46,7 @@ for script_name, missing in [
     ('scripts/apply_v50_rack_m4_nut_rebuild.py','Missing standalone rack M4 nut rebuild'),
     ('scripts/apply_v50_lead_hardware_final.py','Missing final v50 lead-hardware correction'),
     ('scripts/apply_v50_knob_retainer_thread_final.py','Missing final open RH8x2 knob-retainer thread rebuild'),
+    ('scripts/apply_v50_thread_audit_final.py','Missing final all-thread open-bore/surface audit'),
     ('scripts/apply_v50_mounting_backstop.py','Missing integrated v50 mounting-backstop pass'),
     ('scripts/apply_v50_backstop_contact_side.py','Missing corrected backstop contact-side pass'),
     ('scripts/apply_v50_handed_base_export_final.py','Missing final explicit handed-base geometry/export correction'),
@@ -60,4 +61,4 @@ for script_name, missing in [
 # Important: no global printability geometry rewrite here. Printability changes
 # must remain local and may not replace proven rack roots, clamp kinematics or
 # threaded hardware.
-print('Restored proven pre-printability v50 mechanics with corrected stop side, v51 rack joint and v52 Upper pivot gusset')
+print('Restored proven pre-printability v50 mechanics with final thread audit, corrected stop side, v51 rack joint and v52 Upper pivot gusset')
