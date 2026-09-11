@@ -37,21 +37,27 @@ root_half={root_half};
 crest_half={crest_half};
 overrun={overrun};
 span={span};
-turns=span/pitch;
-steps=ceil(turns*{steps_per_turn});
-function ang(i)=360*turns*i/steps;
-function zc(i)=-overrun + pitch*ang(i)/360;
+a0=-360*overrun/pitch;
+a1=360*(length+overrun)/pitch;
+turn_span=(a1-a0)/360;
+steps=ceil(turn_span*{steps_per_turn});
+function ang(i)=a0+(a1-a0)*i/steps;
+function zc(i)=pitch*ang(i)/360;
 function pt(r,a,z)=[r*cos(a),r*sin(a),z];
 pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
        each [pt(inner_r,a,z-root_half),
              pt(major_r,a,z-crest_half),
              pt(major_r,a,z+crest_half),
              pt(inner_r,a,z+root_half)]];
-side_faces=[for(i=[0:steps-1]) for(j=[0:3])
-  [4*i+j,4*(i+1)+j,4*(i+1)+((j+1)%4),4*i+((j+1)%4)]];
-start_face=[[0,1,2,3]];
+// Every side is explicitly triangulated. Non-planar quad faces were accepted
+// by CGAL but reconstructed as an invalid multi-shell solid by FreeCAD/OCC.
+side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
+  [4*i+j,4*(i+1)+j,4*(i+1)+((j+1)%4)],
+  [4*i+j,4*(i+1)+((j+1)%4),4*i+((j+1)%4)]
+]];
+start_face=[[0,1,2],[0,2,3]];
 e=4*steps;
-end_face=[[e+3,e+2,e+1,e]];
+end_face=[[e+3,e+2,e+1],[e+3,e+1,e]];
 module true_helical_tooth(){{
   polyhedron(points=pts,faces=concat(side_faces,start_face,end_face),convexity=80);
 }}
@@ -97,4 +103,4 @@ if 'write_female_thread_cutter_scad' not in s:
     raise SystemExit('v54 female true-thread helper was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied v54 true RH8x2 profiles: radial/axial trapezoidal male and female helices')
+print('Applied v54 true RH8x2 profiles: triangulated radial/axial trapezoidal helices')
