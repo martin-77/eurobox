@@ -1,0 +1,83 @@
+name: Mesh debug v50
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/mesh-debug.yml"
+  workflow_dispatch:
+
+jobs:
+  mesh-debug:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install OpenSCAD and mesh checks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad libfuse2
+          python3 -m pip install --break-system-packages trimesh networkx scipy
+
+      - name: Cache FreeCAD AppImage
+        id: freecad-cache
+        uses: actions/cache@v5
+        with:
+          path: FreeCAD.AppImage
+          key: freecad-1.1.3-linux-x86_64-py311
+
+      - name: Download verified FreeCAD 1.1.3
+        if: steps.freecad-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o FreeCAD.AppImage \
+            https://github.com/FreeCAD/FreeCAD/releases/download/1.1.3/FreeCAD_1.1.3-conda-Linux-x86_64-py311.AppImage
+
+      - name: Verify and extract FreeCAD
+        run: |
+          set -euo pipefail
+          echo "3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb03a8f5ef  FreeCAD.AppImage" | sha256sum -c -
+          chmod +x FreeCAD.AppImage
+          rm -rf squashfs-root
+          ./FreeCAD.AppImage --appimage-extract >/dev/null
+          FREECADCMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) | head -n1)
+          test -n "$FREECADCMD"
+          echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
+
+      - name: Resolve final v50 source
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_v50_fixups.py
+          python3 scripts/apply_v50_clamp_fixups.py
+          python3 scripts/apply_v50_width_cleanup.py
+          python3 scripts/apply_v50_width_validation.py
+
+      - name: Build v50 CAD
+        run: |
+          set -euo pipefail
+          "$FREECADCMD" scripts/build_v50.py | tee build_v50.log
+
+      - name: Upload generated STLs before validation
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: eurobox-v50-mesh-debug
+          path: |
+            build_v50/*.stl
+            build_v50/VALIDATION_v50_source.json
+            build_v50.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Validate STL meshes
+        run: python3 scripts/validate_meshes.py build_v50
+
+      - name: Upload mesh report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: eurobox-v50-mesh-report
+          path: build_v50/MESH_VALIDATION.json
+          if-no-files-found: warn
+          retention-days: 7
