@@ -20,6 +20,10 @@ on:
       - "docs/FOCUS_THRON2_EQP_2023.md"
       - ".github/workflows/build.yml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -204,6 +208,32 @@ jobs:
       - name: Publish validated CAD files into repository
         run: |
           set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          remote_head=$(git rev-parse origin/main)
+
+          if [ "$remote_head" != "$GITHUB_SHA" ]; then
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" "$remote_head"; then
+              echo "::notice::Trigger commit is no longer an ancestor of main; skipping stale generated CAD publish."
+              exit 0
+            fi
+
+            while IFS= read -r commit; do
+              subject=$(git show -s --format=%s "$commit")
+              author_email=$(git show -s --format=%ae "$commit")
+              if [ "$subject" != "Update validated v50 CAD outputs [skip ci]" ] || [ "$author_email" != "41898282+github-actions[bot]@users.noreply.github.com" ]; then
+                echo "::notice::main contains a newer non-generated commit; skipping stale generated CAD publish."
+                exit 0
+              fi
+            done < <(git rev-list --reverse "$GITHUB_SHA..$remote_head")
+
+            # Only known generated-output commits are ahead. Build products are
+            # untracked, so resetting the tracked tree here keeps build_v50 intact.
+            git reset --hard "$remote_head"
+          fi
+
           rm -rf cad/v50 preview-stl/v50
           mkdir -p cad/v50/FCStd cad/v50/STEP cad/v50/STL cad/v50/assembly preview-stl/v50
           find build_v50 -maxdepth 1 -type f -name '*.FCStd' ! -name 'eurobox_v50_assembly.FCStd' -exec cp {} cad/v50/FCStd/ \;
@@ -241,25 +271,16 @@ jobs:
 
           Canonical assembly preview: [PREVIEW_v50.png](assembly/PREVIEW_v50.png)
           EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A cad/v50 preview-stl/v50
           if git diff --cached --quiet; then
             echo "Validated CAD outputs unchanged"
           else
             git commit -m "Update validated v50 CAD outputs [skip ci]"
-            output_commit=$(git rev-parse HEAD)
-            for attempt in 1 2 3; do
+            if ! git push origin HEAD:main; then
               git fetch origin main
-              remote_head=$(git rev-parse origin/main)
-              if ! git merge-base --is-ancestor "$remote_head" HEAD; then
-                git reset --hard "$remote_head"
-                git cherry-pick "$output_commit"
-                output_commit=$(git rev-parse HEAD)
-              fi
-              if git push origin HEAD:main; then break; fi
-              if [ "$attempt" -eq 3 ]; then exit 1; fi
-            done
+              echo "::notice::main advanced while publishing; skipping stale generated CAD output instead of rebasing it onto a newer commit."
+              exit 0
+            fi
           fi
 
       - name: Package output
