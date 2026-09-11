@@ -94,7 +94,9 @@ def rh8_internal_thread_sections(mesh, ys):
 
 
 def lead_screw_square_drive_section(mesh):
-    y=34.5
+    # Printable spindle is rotated 180 deg around Z for the inboard clamp
+    # architecture, so its square-drive end lies on negative Y.
+    y=-34.5
     sec=mesh.section(plane_origin=[0.0,y,0.0], plane_normal=[0.0,1.0,0.0])
     if sec is None or len(sec.vertices) == 0:
         return {'y_mm':y,'ok':False,'reason':'no section'}
@@ -164,7 +166,8 @@ for p in paths:
             info['internal_thread_mesh_gate']='PASS: M4x0.7 internal helix exposed'
 
     if name == 'eurobox_v50_knob_retainer_nut.stl' and good(info):
-        checks=rh8_internal_thread_sections(mesh, (1.2,2.9,4.6))
+        # Printable retainer nut is rotated 180 deg around Z; threaded body is -Y.
+        checks=rh8_internal_thread_sections(mesh, (-1.2,-2.9,-4.6))
         info['internal_RH8x2_thread_section_checks']=checks
         if not checks or not all(c.get('ok') for c in checks):
             info['internal_thread_mesh_gate']='FAILED: RH8x2 helix missing on knob-retainer nut'; failed.append(name)
@@ -172,8 +175,8 @@ for p in paths:
             info['internal_thread_mesh_gate']='PASS: knob-retainer nut exposes RH8x2 internal helix'
 
     if name == 'eurobox_v50_lead_nut_print.stl' and good(info):
-        # Main lead nut thread occupies the positive-Y threaded body before the retaining tab/tail.
-        checks=rh8_internal_thread_sections(mesh, (3.0,8.0,13.0))
+        # Printable main lead nut is rotated 180 deg around Z; threaded body is -Y.
+        checks=rh8_internal_thread_sections(mesh, (-3.0,-8.0,-13.0))
         info['internal_RH8x2_thread_section_checks']=checks
         if not checks or not all(c.get('ok') for c in checks):
             info['internal_thread_mesh_gate']='FAILED: RH8x2 helix missing on main lead nut'; failed.append(name)
