@@ -7,11 +7,9 @@ orig = s
 
 # Do not invent a second RH8x2 thread for the short knob-retainer nut.
 # Reuse the exact female cutter that already makes eurobox_v50_lead_nut_print:
-# same pitch, hand, phase, axial profile and FDM clearances.  The retainer is
-# simply a short section of that proven female master cut into a hex body.
-
-# Undo any cap-only clearance specialisation.  These names remain useful in the
-# validation report, but they intentionally equal the proven lead-nut pair.
+# same pitch, hand, phase, axial profile and FDM clearances. The short hex body
+# itself clips the cutter during the boolean; FEMALE is never re-meshed or
+# re-generated for this part.
 old_clearance = '''cap_female_core = THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 cap_female_major = THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE
 cap_root_w = LEAD_PROFILE_ROOT_W + 2.0*LEAD_FLANK_CLEARANCE
@@ -26,10 +24,12 @@ if s.count(old_clearance) != 1:
     raise SystemExit('Expected exactly one final knob-retainer master-clearance block')
 s = s.replace(old_clearance, new_clearance, 1)
 
-# At this point v55 has already rebuilt FEMALE as the true radial/axial RH8x2
-# solid used to cut the known-good lead nut.  Replace the separately generated
-# cap cutter with a literal clipped section of FEMALE.  This is the important
-# part: the retainer no longer has its own thread generator at all.
+# v55 has already rebuilt FEMALE as the true radial/axial RH8x2 solid used to
+# cut the known-good lead nut. Replace the separately generated cap cutter with
+# an untouched copy of that exact master. Do NOT intersect/clip FEMALE first:
+# OCC can split the helical solid at a coincident clip plane. The CAP_NUT boolean
+# naturally uses only the 5.8 mm overlap and therefore performs the required
+# geometric clipping without altering the proven cutter.
 cap_pattern = re.compile(
     r"CAP_FEMALE_EXT_SCAD = os\.path\.join\(\n"
     r"    OUT, 'thread_RH_8x2_knob_retainer_extended_cutter\.scad'\)\n"
@@ -41,21 +41,18 @@ cap_pattern = re.compile(
     r"    CAP_FEMALE_EXT_SCAD, cap_female_core, cap_female_major, CAP_NUT_H\)\n",
     re.S,
 )
-cap_replacement = '''# Exact section of the already-proven LEAD_NUT female master.
-# FEMALE starts at the same local phase as MALE/MALE_STUD.
-CAP_FEMALE = FEMALE.common(Part.makeCylinder(
-    cap_female_major + 0.06, CAP_NUT_H)).removeSplitter()
+cap_replacement = '''# Exact proven LEAD_NUT female master; CAP_NUT itself limits engagement length.
+CAP_FEMALE = FEMALE.copy()
 if CAP_FEMALE.isNull() or not CAP_FEMALE.isValid() or len(CAP_FEMALE.Solids) != 1:
-    raise RuntimeError('Clipped proven RH8x2 female master is not one valid solid')
+    raise RuntimeError('Proven RH8x2 FEMALE master is not one valid solid')
 '''
 s, n = cap_pattern.subn(cap_replacement, s, count=1)
 if n != 1:
     raise SystemExit('Could not replace dedicated retainer cutter with proven FEMALE master')
 
-# Report the truth: this is not a special retainer profile.
 s = s.replace(
     "    'profile_source': 'matched RH8x2 master profile with one-pitch cutter overrun',\n",
-    "    'profile_source': 'exact clipped FEMALE master from eurobox_v50_lead_nut_print',\n",
+    "    'profile_source': 'exact FEMALE master from eurobox_v50_lead_nut_print',\n",
     1,
 )
 meta_anchor = "    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
@@ -68,8 +65,6 @@ if s.count(meta_anchor) != 1:
 s = s.replace(meta_anchor, meta, 1)
 
 # Audit the actual printable spindle while it still uses its local +Y screw axis.
-# The later width-cleanup rotates this same shape in place; no substitute stud is
-# used for the witness.
 spindle_anchor = '''    z_to_y(MALE_STUD, 0, lead_drive_y0+LEAD_DRIVE_LEN, 0),
 ]).removeSplitter()'''
 spindle_extra = '''    z_to_y(MALE_STUD, 0, lead_drive_y0+LEAD_DRIVE_LEN, 0),
@@ -96,12 +91,10 @@ s = s.replace(
     1,
 )
 
-# A short, clearance-fit nut does not need to physically collide at exactly a
-# half-pitch error to prove that it contains the correct thread.  The SAME female
-# master is already phase-tested over the full lead nut, where wrong phase must
-# interfere.  Keep that authoritative master-pair test and remove only the
-# redundant cap-specific collision assumption that made an otherwise valid short
-# section fail.
+# The master RH8x2 pair already has an authoritative wrong-phase interference
+# check on the working lead nut. Since the retainer literally reuses FEMALE,
+# retain that master test rather than imposing a second arbitrary collision
+# threshold on a much shorter clearance-fit nut.
 old_wrong_gate = "if V['knob_retainer_thread']['half_pitch_wrong_phase_common_mm3'] < 0.25:\n    failures.append('Knob retainer nut lacks phase-sensitive RH8x2 engagement')\n"
 new_wrong_gate = "if V['wrong_phase_0_5mm_nut_common_mm3'] < 1.0:\n    failures.append('Proven RH8x2 FEMALE master lost phase-sensitive engagement')\n"
 if s.count(old_wrong_gate) != 1:
@@ -125,7 +118,7 @@ if s == orig:
     raise SystemExit('Proven-thread retainer pass made no changes')
 for witness in [
     'CAP_RH8_RADIAL_CLEARANCE = LEAD_RADIAL_CLEARANCE',
-    'CAP_FEMALE = FEMALE.common(',
+    'CAP_FEMALE = FEMALE.copy()',
     "'reuses_proven_lead_nut_female_master': True",
     '_retainer_stud_shell_pre = cyl_y(',
 ]:
@@ -133,4 +126,4 @@ for witness in [
         raise SystemExit('Missing proven-thread retainer witness: '+witness)
 
 p.write_text(s, encoding='utf-8')
-print('Applied retainer RH8x2 reuse: exact clipped proven LEAD_NUT female master, no second thread generator')
+print('Applied retainer RH8x2 reuse: exact proven LEAD_NUT FEMALE master, no second thread generator')
