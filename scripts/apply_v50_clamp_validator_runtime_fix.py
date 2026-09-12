@@ -39,11 +39,21 @@ new = '''    # The CAD build already evaluates the exact RH8x2 nut/spindle BRep 
         raise RuntimeError('Missing source validation for RH8x2 travel cross-check')
     with open(source_validation_path) as f:
         source_validation = json.load(f)
-    source_thread_states = {
-        round(float(x['travel_mm']), 6): x
-        for x in source_validation.get('thread_kinematics', [])
-        if 'travel_mm' in x
-    }
+
+    # build_v50.py names the source kinematic coordinate `open_mm`; this STEP
+    # validator calls the same physical coordinate `travel_mm`.  The old runtime
+    # optimization incorrectly searched only for `travel_mm`, creating an empty
+    # lookup even though all source states were present.  Accept the canonical
+    # source key first and the validator key as a backward-compatible fallback.
+    source_thread_states = {}
+    for x in source_validation.get('thread_kinematics', []):
+        coord = x.get('open_mm', x.get('travel_mm'))
+        if coord is None:
+            continue
+        key = round(float(coord), 6)
+        if key in source_thread_states:
+            raise RuntimeError('Duplicate source RH8x2 kinematic state for travel '+str(coord))
+        source_thread_states[key] = x
 
     thread_states = []
     for travel in (-CLAMP_PRELOAD, 0.0, 0.5, 1.0, 2.0, 4.0, PLATE_OPEN):
@@ -53,6 +63,14 @@ new = '''    # The CAD build already evaluates the exact RH8x2 nut/spindle BRep 
         if source_state is None:
             raise RuntimeError('Missing source RH8x2 kinematic state for travel '+str(travel))
         source_n_common = float(source_state.get('nut_common_mm3', 1e9))
+        # Also verify that the source state describes the same screw phase. This
+        # catches a future sign/convention regression instead of silently trusting
+        # a matching travel coordinate.
+        source_rot = float(source_state.get('rotation_deg', 1e9))
+        if abs(source_rot - rot) > 1e-6:
+            raise RuntimeError(
+                'Source RH8x2 rotation mismatch at travel '+str(travel)+
+                ': source='+str(source_rot)+' expected='+str(rot))
         # One independent exact STEP check at maximum thread engagement.
         exact_n_common = None
         if abs(travel) < 1e-9:
@@ -90,6 +108,7 @@ if s == orig:
 for witness in [
     'separate_thread_nut_vs_spindle_nominal_exact_STEP',
     "source_validation.get('thread_kinematics', [])",
+    "x.get('open_mm', x.get('travel_mm'))",
     "report['checks']['nominal_STEP_thread_phase_collision_free']",
 ]:
     if witness not in s:
