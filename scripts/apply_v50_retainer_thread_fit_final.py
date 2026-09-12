@@ -5,11 +5,12 @@ p = Path('scripts/build_v50.py')
 s = p.read_text(encoding='utf-8')
 orig = s
 
-# The short knob-retainer must not have a second RH8x2 implementation.
-# Reuse the exact female master and derive the printable retainer directly from
-# the already-valid LEAD_NUT solid.  Do not reshape the threaded cross-section:
-# the only boolean is an axial crop, so the proven internal thread faces remain
-# untouched.
+# The knob-retainer must use the exact already-proven RH8x2 female geometry.
+# Every attempt to crop or re-cut that helical BRep produced an invalid OCC
+# solid.  Stop modifying threaded faces entirely: use a direct copy of the
+# finished valid LEAD_NUT as the printable retainer.  This is deliberately
+# bulkier, but it is mechanically the same known-good nut and introduces no
+# second thread implementation or boolean on the thread.
 old_clearance = '''cap_female_core = THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 cap_female_major = THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE
 cap_root_w = LEAD_PROFILE_ROOT_W + 2.0*LEAD_FLANK_CLEARANCE
@@ -44,24 +45,18 @@ s, n = cap_pattern.subn(cap_replacement, s, count=1)
 if n != 1:
     raise SystemExit('Could not replace dedicated retainer cutter with proven FEMALE master')
 
-# Previous attempts failed because an AF13 transverse intersection cut through
-# the helical faces and made OCC split the short nut.  Keep the exact proven
-# LEAD_NUT cross-section instead.  Crop only along its screw axis.  The crop box
-# starts before Y=0 so the original open entry face is inherited unchanged; only
-# the far end is shortened to CAP_NUT_H.
 old_cap_cut = '''CAP_NUT = z_to_y(hex_z(13.0, CAP_NUT_H), 0, 0, 0)
 CAP_NUT = CAP_NUT.cut(z_to_y(CAP_FEMALE, 0, 0, 0)).removeSplitter()'''
 if s.count(old_cap_cut) != 1:
     raise SystemExit('Could not locate short retainer-nut boolean')
-new_cap_cut = '''_cap_axial_crop = box(-20.0, -0.25, -20.0, 40.0, CAP_NUT_H + 0.25, 40.0)
-CAP_NUT = LEAD_NUT.common(_cap_axial_crop).removeSplitter()
+new_cap_cut = '''CAP_NUT = LEAD_NUT.copy()
 if CAP_NUT.isNull() or not CAP_NUT.isValid() or len(CAP_NUT.Solids) != 1:
-    raise RuntimeError('Lead knob retainer axial slice of proven LEAD_NUT is not one valid solid')'''
+    raise RuntimeError('Proven LEAD_NUT copy for knob retainer is not one valid solid')'''
 s = s.replace(old_cap_cut, new_cap_cut, 1)
 
 s = s.replace(
     "    'profile_source': 'matched RH8x2 master profile with one-pitch cutter overrun',\n",
-    "    'profile_source': 'direct axial slice of finished eurobox_v50_lead_nut_print; no transverse thread boolean',\n",
+    "    'profile_source': 'unchanged copy of finished eurobox_v50_lead_nut_print; zero thread booleans',\n",
     1,
 )
 meta_anchor = "    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
@@ -69,8 +64,8 @@ meta = ("    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
         "    'retainer_radial_clearance_mm': CAP_RH8_RADIAL_CLEARANCE,\n"
         "    'retainer_flank_clearance_each_side_mm': CAP_RH8_FLANK_CLEARANCE,\n"
         "    'reuses_proven_lead_nut_female_master': True,\n"
-        "    'retainer_is_direct_slice_of_proven_lead_nut': True,\n"
-        "    'retainer_transverse_thread_boolean': False,\n")
+        "    'retainer_is_unchanged_copy_of_proven_lead_nut': True,\n"
+        "    'retainer_thread_boolean_count': 0,\n")
 if s.count(meta_anchor) != 1:
     raise SystemExit('Could not locate knob-retainer metadata anchor')
 s = s.replace(meta_anchor, meta, 1)
@@ -102,8 +97,8 @@ s = s.replace(
     1,
 )
 
-# The full working lead nut remains the authoritative phase-sensitive RH8x2 pair
-# check.  The retainer literally inherits those same thread faces.
+# The full working lead nut remains the authoritative phase-sensitive RH8x2
+# pair check. The retainer now literally is that same finished threaded solid.
 old_wrong_gate = "if V['knob_retainer_thread']['half_pitch_wrong_phase_common_mm3'] < 0.25:\n    failures.append('Knob retainer nut lacks phase-sensitive RH8x2 engagement')\n"
 new_wrong_gate = "if V['wrong_phase_0_5mm_nut_common_mm3'] < 1.0:\n    failures.append('Proven RH8x2 FEMALE master lost phase-sensitive engagement')\n"
 if s.count(old_wrong_gate) != 1:
@@ -117,10 +112,10 @@ s = s.replace(
     fail_anchor,
     "if not V['knob_retainer_thread']['reuses_proven_lead_nut_female_master']:\n"
     "    failures.append('Knob retainer nut is not using the proven lead-nut RH8x2 female master')\n"
-    "if not V['knob_retainer_thread']['retainer_is_direct_slice_of_proven_lead_nut']:\n"
-    "    failures.append('Knob retainer nut is not a direct slice of the proven threaded lead nut')\n"
-    "if V['knob_retainer_thread']['retainer_transverse_thread_boolean']:\n"
-    "    failures.append('Knob retainer nut unexpectedly reshapes the proven thread transversely')\n"
+    "if not V['knob_retainer_thread']['retainer_is_unchanged_copy_of_proven_lead_nut']:\n"
+    "    failures.append('Knob retainer is not an unchanged copy of the proven threaded lead nut')\n"
+    "if V['knob_retainer_thread']['retainer_thread_boolean_count'] != 0:\n"
+    "    failures.append('Knob retainer unexpectedly performs a boolean on proven RH8x2 thread faces')\n"
     "if _retainer_actual_ridge_mm3 < 0.05:\n"
     "    failures.append('Actual exported lead spindle has no developed RH8x2 retainer-stud ridge')\n"
     + fail_anchor,
@@ -132,13 +127,13 @@ if s == orig:
 for witness in [
     'CAP_RH8_RADIAL_CLEARANCE = LEAD_RADIAL_CLEARANCE',
     'CAP_FEMALE = FEMALE.copy()',
-    'CAP_NUT = LEAD_NUT.common(_cap_axial_crop).removeSplitter()',
-    "'retainer_is_direct_slice_of_proven_lead_nut': True",
-    "'retainer_transverse_thread_boolean': False",
+    'CAP_NUT = LEAD_NUT.copy()',
+    "'retainer_is_unchanged_copy_of_proven_lead_nut': True",
+    "'retainer_thread_boolean_count': 0",
     '_retainer_stud_shell_pre = cyl_y(',
 ]:
     if witness not in s:
         raise SystemExit('Missing proven-thread retainer witness: '+witness)
 
 p.write_text(s, encoding='utf-8')
-print('Applied retainer RH8x2 reuse: axial-only slice of proven threaded LEAD_NUT')
+print('Applied retainer RH8x2 reuse: unchanged proven LEAD_NUT copy, zero thread booleans')
