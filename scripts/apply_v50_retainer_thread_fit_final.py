@@ -6,13 +6,8 @@ orig = s
 
 # Final fit hardening for the short RH8x2 knob-retainer interface.
 # The long lead-nut pair is already phase-sensitive with the global printable
-# clearances.  The short 4.5 mm retainer engagement, however, was loose enough
-# that a half-pitch phase error could still pass without interference.  Keep the
-# same pitch/hand/profile generator, but use a deliberately tighter (still FDM-
-# printable) clearance only for this small replaceable retainer nut.
-CAP_RH8_RADIAL_CLEARANCE = 0.14
-CAP_RH8_FLANK_CLEARANCE = 0.06
-
+# clearances. The short retainer engagement gets its own tighter, still
+# printable clearance. The actual exported spindle is audited as well.
 old = '''cap_female_core = THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 cap_female_major = THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE
 cap_root_w = LEAD_PROFILE_ROOT_W + 2.0*LEAD_FLANK_CLEARANCE
@@ -27,10 +22,10 @@ if s.count(old) != 1:
     raise SystemExit('Expected exactly one final knob-retainer clearance block')
 s = s.replace(old, new, 1)
 
-# The exported spindle must contain the same true threaded stud that the source
-# audit checks in isolation.  Re-fuse that exact stud into the actual spindle
-# after all thread-generator rewrites; this is idempotent where it already
-# exists and prevents a later smooth-stud reconstruction from silently winning.
+# Re-fuse the same true MALE_STUD into the actual printable SPINDLE. This is
+# idempotent if the preceding spindle construction already contains it, but it
+# makes the exported part—not merely the standalone helper—the authoritative
+# threaded geometry.
 anchor = '''cap_y = hex_y + 7.0
 cap_thread_start_y = lead_drive_y0 + LEAD_DRIVE_LEN'''
 replacement = '''cap_y = hex_y + 7.0
@@ -43,8 +38,6 @@ if s.count(anchor) != 1:
     raise SystemExit('Could not locate final retainer-stud placement anchor')
 s = s.replace(anchor, replacement, 1)
 
-# Add explicit metadata so CI reports the cap-only fit instead of hiding the
-# actual tolerances behind the main lead-nut constants.
 meta_anchor = "    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
 meta = ("    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
         "    'retainer_radial_clearance_mm': CAP_RH8_RADIAL_CLEARANCE,\n"
@@ -53,10 +46,8 @@ if s.count(meta_anchor) != 1:
     raise SystemExit('Could not locate knob-retainer metadata anchor')
 s = s.replace(meta_anchor, meta, 1)
 
-# Audit the actual exported spindle, not only the standalone MALE_STUD helper.
-# The annular shell excludes the smooth Ø6.5 core, so non-zero common volume is
-# direct proof that the real SPINDLE carries an external thread ridge on the
-# retainer stud.
+# Probe only the annulus outside the smooth Ø6.5 stud core. Non-zero volume is
+# therefore direct proof that the real SPINDLE has an external helical ridge.
 audit_anchor = "V['knob_retainer_thread'] = {\n"
 audit = '''_retainer_stud_shell = cyl_y(
     THREAD_MAJOR/2.0 + 0.03,
@@ -71,14 +62,19 @@ _retainer_actual_ridge_mm3 = SPINDLE.common(_retainer_stud_shell).Volume
 if s.count(audit_anchor) != 1:
     raise SystemExit('Could not locate knob-retainer validation dictionary')
 s = s.replace(audit_anchor, audit + audit_anchor, 1)
+metric_anchor = "    'correct_phase_common_mm3': round(SPINDLE.common(cn).Volume, 6),\n"
+if s.count(metric_anchor) != 1:
+    raise SystemExit('Could not locate knob-retainer correct-phase metric')
 s = s.replace(
-    "    'correct_phase_common_mm3': round(SPINDLE.common(cn).Volume, 6),\n",
-    "    'actual_spindle_stud_ridge_mm3': round(_retainer_actual_ridge_mm3, 6),\n"
-    "    'correct_phase_common_mm3': round(SPINDLE.common(cn).Volume, 6),\n",
+    metric_anchor,
+    "    'actual_spindle_stud_ridge_mm3': round(_retainer_actual_ridge_mm3, 6),\n" + metric_anchor,
     1,
 )
 
-fail_anchor = "if SPINDLE.common(cn).Volume > 0.05:\n    failures.append('Knob retainer nut collides with matched outer stud at correct phase')\n"
+# Keep the existing correct-phase and deliberately wrong-phase gates intact;
+# add a separate hard gate proving that the actual screw—not only MALE_STUD—
+# carries the external thread.
+fail_anchor = "if V['knob_retainer_thread']['correct_phase_common_mm3'] > 0.02:\n    failures.append('Knob retainer nut collides with matched RH8x2 outer stud')\n"
 if s.count(fail_anchor) != 1:
     raise SystemExit('Could not locate retainer correct-phase hard gate')
 s = s.replace(
