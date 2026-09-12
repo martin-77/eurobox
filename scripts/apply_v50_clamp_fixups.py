@@ -50,6 +50,7 @@ for script_name, missing in [
     ('scripts/apply_v50_thread_audit_final.py','Missing final all-thread open-bore/surface audit'),
     ('scripts/apply_v50_rh8x2_phase_fix.py','Missing v55 RH8x2 phase correction'),
     ('scripts/apply_v50_retainer_thread_fit_final.py','Missing final short RH8x2 retainer fit hardening'),
+    ('scripts/apply_v50_retainer_validator_fix.py','Missing final RH8x2 retainer surface-audit validator'),
     ('scripts/apply_v50_mounting_backstop.py','Missing integrated v50 mounting-backstop pass'),
     ('scripts/apply_v50_backstop_contact_side.py','Missing corrected backstop contact-side pass'),
     ('scripts/apply_v50_handed_base_export_final.py','Missing final explicit handed-base geometry/export correction'),
