@@ -153,18 +153,6 @@ replacements = [
         "                              NUT_Y0-LEAD_NUT_PIN_Y,\n",
     ),
     (
-        "        rot = -360.0 * travel / THREAD_PITCH\n",
-        "        rot = +360.0 * travel / THREAD_PITCH\n",
-    ),
-    (
-        "    # At +0.5 mm travel the correct rotation is -90 deg. +90 deg is 180 deg out\n"
-        "    # of phase and must visibly intersect a developed RH 8x2 female thread.\n"
-        "    q_wrong = placed_spindle(0.5, 90.0)\n",
-        "    # With inward -Y travel the correct +0.5 mm rotation is +90 deg.\n"
-        "    # -90 deg is 180 deg out of phase and must visibly intersect the RH8x2 nut.\n"
-        "    q_wrong = placed_spindle(0.5, -90.0)\n",
-    ),
-    (
         "    cap.rotate(App.Vector(0,0,0), App.Vector(0,1,0), CAP_NUT_PHASE_DEG)\n"
         "    cap.translate(App.Vector(0, CAP_NUT_Y0, 0))\n",
         "    cap.rotate(App.Vector(0,0,0), App.Vector(0,1,0), -CAP_NUT_PHASE_DEG)\n"
@@ -185,6 +173,15 @@ for old, new in replacements:
     if old not in cs:
         raise SystemExit('Could not align box-clamp validator with inboard architecture: ' + old.splitlines()[0])
     cs = cs.replace(old, new, 1)
+
+# The final post-Z180 RH8x2 kinematics are already expressed by the validator's
+# -360*travel/pitch convention.  Do not invert that sign again here.  Likewise,
+# keep +90 degrees as the deliberate half-pitch wrong-phase witness at +0.5 mm.
+if "        rot = -360.0 * travel / THREAD_PITCH\n" not in cs:
+    raise SystemExit('Final RH8x2 validator rotation convention is not the expected post-Z180 sign')
+if "    q_wrong = placed_spindle(0.5, 90.0)\n" not in cs:
+    raise SystemExit('Final RH8x2 validator wrong-phase witness is not +90 degrees')
+
 cp.write_text(cs, encoding='utf-8')
 
 # The restored width pass turns the lead hardware inward by a proper Z180
