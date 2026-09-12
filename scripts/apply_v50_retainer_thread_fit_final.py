@@ -6,10 +6,10 @@ s = p.read_text(encoding='utf-8')
 orig = s
 
 # The short knob-retainer must not have a second RH8x2 implementation.
-# Reuse the exact female master and, more importantly, derive the printable
-# retainer directly from the already-valid LEAD_NUT solid.  This avoids a
-# second helical OCC cut entirely: the retainer inherits the exact internal
-# faces of the known-good lead nut.
+# Reuse the exact female master and derive the printable retainer directly from
+# the already-valid LEAD_NUT solid.  Do not reshape the threaded cross-section:
+# the only boolean is an axial crop, so the proven internal thread faces remain
+# untouched.
 old_clearance = '''cap_female_core = THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 cap_female_major = THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE
 cap_root_w = LEAD_PROFILE_ROOT_W + 2.0*LEAD_FLANK_CLEARANCE
@@ -44,28 +44,24 @@ s, n = cap_pattern.subn(cap_replacement, s, count=1)
 if n != 1:
     raise SystemExit('Could not replace dedicated retainer cutter with proven FEMALE master')
 
-# Do NOT cut a fresh hex blank with a helix.  That path repeatedly produced an
-# invalid OCC result although the very same thread works in LEAD_NUT.  Instead
-# intersect the finished, valid LEAD_NUT with the desired short hex envelope.
-# Rotate the hex section by -30 deg before z_to_y so an AF13 cross-section fits
-# fully inside the proven 16 x 14 mm lead-nut body (X +/-7.506, Z +/-6.5).
-# Start the envelope 0.2 mm before Y=0 to avoid coincident clipping geometry;
-# LEAD_NUT itself defines the open Y=0 thread face and the common ends at 5.8 mm.
+# Previous attempts failed because an AF13 transverse intersection cut through
+# the helical faces and made OCC split the short nut.  Keep the exact proven
+# LEAD_NUT cross-section instead.  Crop only along its screw axis.  The crop box
+# starts before Y=0 so the original open entry face is inherited unchanged; only
+# the far end is shortened to CAP_NUT_H.
 old_cap_cut = '''CAP_NUT = z_to_y(hex_z(13.0, CAP_NUT_H), 0, 0, 0)
 CAP_NUT = CAP_NUT.cut(z_to_y(CAP_FEMALE, 0, 0, 0)).removeSplitter()'''
 if s.count(old_cap_cut) != 1:
     raise SystemExit('Could not locate short retainer-nut boolean')
-new_cap_cut = '''_cap_hex_z = hex_z(13.0, CAP_NUT_H + 0.2, -0.2)
-_cap_hex_z.rotate(App.Vector(0,0,0), App.Vector(0,0,1), -30.0)
-_cap_hex_y = z_to_y(_cap_hex_z, 0, 0, 0)
-CAP_NUT = LEAD_NUT.common(_cap_hex_y).removeSplitter()
+new_cap_cut = '''_cap_axial_crop = box(-20.0, -0.25, -20.0, 40.0, CAP_NUT_H + 0.25, 40.0)
+CAP_NUT = LEAD_NUT.common(_cap_axial_crop).removeSplitter()
 if CAP_NUT.isNull() or not CAP_NUT.isValid() or len(CAP_NUT.Solids) != 1:
-    raise RuntimeError('Lead knob retainer slice of proven LEAD_NUT is not one valid solid')'''
+    raise RuntimeError('Lead knob retainer axial slice of proven LEAD_NUT is not one valid solid')'''
 s = s.replace(old_cap_cut, new_cap_cut, 1)
 
 s = s.replace(
     "    'profile_source': 'matched RH8x2 master profile with one-pitch cutter overrun',\n",
-    "    'profile_source': 'direct 5.8 mm axial slice of finished eurobox_v50_lead_nut_print',\n",
+    "    'profile_source': 'direct axial slice of finished eurobox_v50_lead_nut_print; no transverse thread boolean',\n",
     1,
 )
 meta_anchor = "    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
@@ -73,7 +69,8 @@ meta = ("    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
         "    'retainer_radial_clearance_mm': CAP_RH8_RADIAL_CLEARANCE,\n"
         "    'retainer_flank_clearance_each_side_mm': CAP_RH8_FLANK_CLEARANCE,\n"
         "    'reuses_proven_lead_nut_female_master': True,\n"
-        "    'retainer_is_direct_slice_of_proven_lead_nut': True,\n")
+        "    'retainer_is_direct_slice_of_proven_lead_nut': True,\n"
+        "    'retainer_transverse_thread_boolean': False,\n")
 if s.count(meta_anchor) != 1:
     raise SystemExit('Could not locate knob-retainer metadata anchor')
 s = s.replace(meta_anchor, meta, 1)
@@ -105,8 +102,8 @@ s = s.replace(
     1,
 )
 
-# The full working lead nut remains the authoritative phase-sensitive RH8x2
-# pair check.  The retainer is literally a slice of that same finished nut.
+# The full working lead nut remains the authoritative phase-sensitive RH8x2 pair
+# check.  The retainer literally inherits those same thread faces.
 old_wrong_gate = "if V['knob_retainer_thread']['half_pitch_wrong_phase_common_mm3'] < 0.25:\n    failures.append('Knob retainer nut lacks phase-sensitive RH8x2 engagement')\n"
 new_wrong_gate = "if V['wrong_phase_0_5mm_nut_common_mm3'] < 1.0:\n    failures.append('Proven RH8x2 FEMALE master lost phase-sensitive engagement')\n"
 if s.count(old_wrong_gate) != 1:
@@ -122,6 +119,8 @@ s = s.replace(
     "    failures.append('Knob retainer nut is not using the proven lead-nut RH8x2 female master')\n"
     "if not V['knob_retainer_thread']['retainer_is_direct_slice_of_proven_lead_nut']:\n"
     "    failures.append('Knob retainer nut is not a direct slice of the proven threaded lead nut')\n"
+    "if V['knob_retainer_thread']['retainer_transverse_thread_boolean']:\n"
+    "    failures.append('Knob retainer nut unexpectedly reshapes the proven thread transversely')\n"
     "if _retainer_actual_ridge_mm3 < 0.05:\n"
     "    failures.append('Actual exported lead spindle has no developed RH8x2 retainer-stud ridge')\n"
     + fail_anchor,
@@ -133,12 +132,13 @@ if s == orig:
 for witness in [
     'CAP_RH8_RADIAL_CLEARANCE = LEAD_RADIAL_CLEARANCE',
     'CAP_FEMALE = FEMALE.copy()',
-    'CAP_NUT = LEAD_NUT.common(_cap_hex_y).removeSplitter()',
+    'CAP_NUT = LEAD_NUT.common(_cap_axial_crop).removeSplitter()',
     "'retainer_is_direct_slice_of_proven_lead_nut': True",
+    "'retainer_transverse_thread_boolean': False",
     '_retainer_stud_shell_pre = cyl_y(',
 ]:
     if witness not in s:
         raise SystemExit('Missing proven-thread retainer witness: '+witness)
 
 p.write_text(s, encoding='utf-8')
-print('Applied retainer RH8x2 reuse: direct AF13 slice of proven threaded LEAD_NUT')
+print('Applied retainer RH8x2 reuse: axial-only slice of proven threaded LEAD_NUT')
