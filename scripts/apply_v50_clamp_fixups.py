@@ -49,6 +49,7 @@ for script_name, missing in [
     ('scripts/apply_v50_true_rh8x2_threads_v54.py','Missing v54 true radial/axial RH8x2 thread generator'),
     ('scripts/apply_v50_thread_audit_final.py','Missing final all-thread open-bore/surface audit'),
     ('scripts/apply_v50_rh8x2_phase_fix.py','Missing v55 RH8x2 phase correction'),
+    ('scripts/apply_v50_retainer_thread_fit_final.py','Missing compact native OCC RH8x2 retainer rebuild'),
     ('scripts/apply_v50_mounting_backstop.py','Missing integrated v50 mounting-backstop pass'),
     ('scripts/apply_v50_backstop_contact_side.py','Missing corrected backstop contact-side pass'),
     ('scripts/apply_v50_handed_base_export_final.py','Missing final explicit handed-base geometry/export correction'),
@@ -64,4 +65,4 @@ for script_name, missing in [
 # Important: no global printability geometry rewrite here. Printability changes
 # must remain local and may not replace proven rack roots, clamp kinematics or
 # threaded hardware.
-print('Restored proven v50 mechanics with v55 RH8x2 geometry/phase, final thread audit, corrected stop side, v51 rack joint and v52 Upper pivot gusset')
+print('Restored proven v50 mechanics with compact RH8x2 retainer, v55 thread geometry/phase, corrected stop side, v51 rack joint and v52 Upper pivot gusset')
