@@ -54,6 +54,7 @@ for script_name, missing in [
     ('scripts/apply_v50_handed_base_export_final.py','Missing final explicit handed-base geometry/export correction'),
     ('scripts/apply_v50_rack_joint_v51.py','Missing v51 inverted rack-clevis refinement'),
     ('scripts/apply_v50_rack_joint_gusset_v52.py','Missing v52 teardrop Upper pivot-root reinforcement'),
+    ('scripts/apply_v50_width_cleanup_phase_compat.py','Missing v55 width-cleanup phase compatibility pass'),
 ]:
     q = Path(script_name)
     if not q.is_file():
