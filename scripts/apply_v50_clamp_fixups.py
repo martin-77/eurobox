@@ -57,6 +57,7 @@ for script_name, missing in [
     ('scripts/apply_v50_rack_joint_gusset_v52.py','Missing v52 teardrop Upper pivot-root reinforcement'),
     ('scripts/apply_v50_width_cleanup_phase_compat.py','Missing v55 width-cleanup phase compatibility pass'),
     ('scripts/apply_v50_clamp_validator_runtime_fix.py','Missing bounded-runtime RH8x2 clamp validation pass'),
+    ('scripts/apply_v50_width_validation_phase_final.py','Missing final width-validator phase correction'),
 ]:
     q = Path(script_name)
     if not q.is_file():
