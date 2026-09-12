@@ -56,6 +56,7 @@ for script_name, missing in [
     ('scripts/apply_v50_rack_joint_v51.py','Missing v51 inverted rack-clevis refinement'),
     ('scripts/apply_v50_rack_joint_gusset_v52.py','Missing v52 teardrop Upper pivot-root reinforcement'),
     ('scripts/apply_v50_width_cleanup_phase_compat.py','Missing v55 width-cleanup phase compatibility pass'),
+    ('scripts/apply_v50_clamp_validator_runtime_fix.py','Missing bounded-runtime RH8x2 clamp validation pass'),
 ]:
     q = Path(script_name)
     if not q.is_file():
@@ -65,4 +66,4 @@ for script_name, missing in [
 # Important: no global printability geometry rewrite here. Printability changes
 # must remain local and may not replace proven rack roots, clamp kinematics or
 # threaded hardware.
-print('Restored proven v50 mechanics with compact RH8x2 retainer, v55 thread geometry/phase, corrected stop side, v51 rack joint and v52 Upper pivot gusset')
+print('Restored proven v50 mechanics with compact RH8x2 retainer, v55 thread geometry/phase, bounded clamp validation, corrected stop side, v51 rack joint and v52 Upper pivot gusset')
