@@ -7,9 +7,7 @@ orig = s
 
 # Do not invent a second RH8x2 thread for the short knob-retainer nut.
 # Reuse the exact female cutter that already makes eurobox_v50_lead_nut_print:
-# same pitch, hand, phase, axial profile and FDM clearances. The short hex body
-# itself clips the cutter during the boolean; FEMALE is never re-meshed or
-# re-generated for this part.
+# same pitch, hand, phase, axial profile and FDM clearances.
 old_clearance = '''cap_female_core = THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 cap_female_major = THREAD_MAJOR/2.0 + LEAD_RADIAL_CLEARANCE
 cap_root_w = LEAD_PROFILE_ROOT_W + 2.0*LEAD_FLANK_CLEARANCE
@@ -27,9 +25,7 @@ s = s.replace(old_clearance, new_clearance, 1)
 # v55 has already rebuilt FEMALE as the true radial/axial RH8x2 solid used to
 # cut the known-good lead nut. Replace the separately generated cap cutter with
 # an untouched copy of that exact master. Do NOT intersect/clip FEMALE first:
-# OCC can split the helical solid at a coincident clip plane. The CAP_NUT boolean
-# naturally uses only the 5.8 mm overlap and therefore performs the required
-# geometric clipping without altering the proven cutter.
+# OCC can split the helical solid at a coincident clip plane.
 cap_pattern = re.compile(
     r"CAP_FEMALE_EXT_SCAD = os\.path\.join\(\n"
     r"    OUT, 'thread_RH_8x2_knob_retainer_extended_cutter\.scad'\)\n"
@@ -41,7 +37,7 @@ cap_pattern = re.compile(
     r"    CAP_FEMALE_EXT_SCAD, cap_female_core, cap_female_major, CAP_NUT_H\)\n",
     re.S,
 )
-cap_replacement = '''# Exact proven LEAD_NUT female master; CAP_NUT itself limits engagement length.
+cap_replacement = '''# Exact proven LEAD_NUT female master.
 CAP_FEMALE = FEMALE.copy()
 if CAP_FEMALE.isNull() or not CAP_FEMALE.isValid() or len(CAP_FEMALE.Solids) != 1:
     raise RuntimeError('Proven RH8x2 FEMALE master is not one valid solid')
@@ -50,15 +46,28 @@ s, n = cap_pattern.subn(cap_replacement, s, count=1)
 if n != 1:
     raise SystemExit('Could not replace dedicated retainer cutter with proven FEMALE master')
 
+# Critical OCC robustness detail: the proven FEMALE master is 14 mm long while
+# CAP_NUT is only 5.8 mm. Move the cutter one complete 2 mm pitch before the nut
+# so it crosses both nut end faces instead of starting exactly coplanar with one
+# face. A full-pitch translation preserves the RH8x2 helix phase exactly.
+old_cap_cut = '''CAP_NUT = z_to_y(hex_z(13.0, CAP_NUT_H), 0, 0, 0)
+CAP_NUT = CAP_NUT.cut(z_to_y(CAP_FEMALE, 0, 0, 0)).removeSplitter()'''
+new_cap_cut = '''CAP_NUT = z_to_y(hex_z(13.0, CAP_NUT_H), 0, 0, 0)
+CAP_NUT = CAP_NUT.cut(z_to_y(CAP_FEMALE, 0, -THREAD_PITCH, 0)).removeSplitter()'''
+if s.count(old_cap_cut) != 1:
+    raise SystemExit('Could not locate short retainer-nut boolean for full-pitch cutter overrun')
+s = s.replace(old_cap_cut, new_cap_cut, 1)
+
 s = s.replace(
     "    'profile_source': 'matched RH8x2 master profile with one-pitch cutter overrun',\n",
-    "    'profile_source': 'exact FEMALE master from eurobox_v50_lead_nut_print',\n",
+    "    'profile_source': 'exact FEMALE master from eurobox_v50_lead_nut_print, shifted -1 full pitch for open-end boolean',\n",
     1,
 )
 meta_anchor = "    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
 meta = ("    'outer_stud_length_mm': OUTER_STUD_LEN,\n"
         "    'retainer_radial_clearance_mm': CAP_RH8_RADIAL_CLEARANCE,\n"
         "    'retainer_flank_clearance_each_side_mm': CAP_RH8_FLANK_CLEARANCE,\n"
+        "    'retainer_cutter_axial_overrun_mm': THREAD_PITCH,\n"
         "    'reuses_proven_lead_nut_female_master': True,\n")
 if s.count(meta_anchor) != 1:
     raise SystemExit('Could not locate knob-retainer metadata anchor')
@@ -119,6 +128,7 @@ if s == orig:
 for witness in [
     'CAP_RH8_RADIAL_CLEARANCE = LEAD_RADIAL_CLEARANCE',
     'CAP_FEMALE = FEMALE.copy()',
+    'z_to_y(CAP_FEMALE, 0, -THREAD_PITCH, 0)',
     "'reuses_proven_lead_nut_female_master': True",
     '_retainer_stud_shell_pre = cyl_y(',
 ]:
@@ -126,4 +136,4 @@ for witness in [
         raise SystemExit('Missing proven-thread retainer witness: '+witness)
 
 p.write_text(s, encoding='utf-8')
-print('Applied retainer RH8x2 reuse: exact proven LEAD_NUT FEMALE master, no second thread generator')
+print('Applied retainer RH8x2 reuse: proven FEMALE master with one-full-pitch open-end overrun')
