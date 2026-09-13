@@ -59,6 +59,7 @@ for script_name, missing in [
     ('scripts/apply_v50_clamp_validator_runtime_fix.py','Missing bounded-runtime RH8x2 clamp validation pass'),
     ('scripts/apply_v50_width_validation_phase_final.py','Missing final width-validator phase correction'),
     ('scripts/apply_v50_indx_supportfree_arm.py','Missing support-safe INDX arm-profile refinement'),
+    ('scripts/apply_v50_headside_floor_support.py','Missing head-side wall/floor support refinement'),
 ]:
     q = Path(script_name)
     if not q.is_file():
@@ -68,4 +69,4 @@ for script_name, missing in [
 # Important: no global printability geometry rewrite here. Printability changes
 # must remain local and may not replace proven rack roots, clamp kinematics or
 # threaded hardware.
-print('Restored proven v50 mechanics with compact RH8x2 retainer, v55 thread geometry/phase, bounded clamp validation, corrected stop side, v51 rack joint, v52 Upper pivot gusset and support-safe INDX arm profile')
+print('Restored proven v50 mechanics with support-safe arm profile, straight head-side walls and locally supported screw blocks')
