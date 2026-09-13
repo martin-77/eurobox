@@ -31,8 +31,9 @@ for x0 in (-78.0, 70.4):
                      HEADSIDE_BASE_PLANE_Z-HEADSIDE_GUIDE_Z0)
     BASE = BASE.fuse(_head_wall).removeSplitter()
 
-# Low plane stays at the existing front/lower level and ends exactly at the
-# rear face of the screw blocks. It does not raise the areas beside the blocks.
+# Low plane stays at the existing front/lower level and ends at the screw-block
+# rear face, with at most the deliberate Boolean overlap retained by later
+# inboard fixups. It does not raise the areas beside the blocks.
 HEADSIDE_DECK_X0=-70.4
 HEADSIDE_DECK_X1=70.4
 HEADSIDE_DECK_Y0=BOX_EDGE_Y-HEADSIDE_BOP_OVERLAP
@@ -63,18 +64,26 @@ s=s.replace(anchor,replacement,1)
 export_anchor='for name, sh in PARTS.items():\n'
 if export_anchor not in s:
     raise SystemExit('Could not locate export gate')
-validation='''V['headside_floor_support']={
+validation='''# Later inboard fixups shift CAGE_Y1 inward by the same 0.20 mm used here as
+# deliberate BOP overlap. Validate the physical requirement, not exact equality
+# to a datum which is intentionally rewritten later in the fixup chain.
+_head_wall_reach = HEADSIDE_WALL_Y1 - CAGE_Y1
+_head_deck_overrun = HEADSIDE_DECK_Y1 - CAGE_Y1
+V['headside_floor_support']={
     'wall_y':[HEADSIDE_WALL_Y0,HEADSIDE_WALL_Y1],
     'deck_y':[HEADSIDE_DECK_Y0,HEADSIDE_DECK_Y1],
     'deck_z':[HEADSIDE_DECK_Z0,HEADSIDE_DECK_Z1],
     'boss_support_z':[HEADSIDE_BOSS_SUPPORT_Z0,HEADSIDE_BOSS_SUPPORT_Z1],
+    'wall_reach_past_final_cage_mm':round(_head_wall_reach,6),
+    'deck_overrun_past_final_cage_mm':round(_head_deck_overrun,6),
     'bop_overlap_mm':HEADSIDE_BOP_OVERLAP,
-    'policy':'straight head walls; low deck only to block rear face; full block underbuild',
+    'policy':'straight head walls; low deck only to block rear face plus <=0.20 mm BOP overlap; full block underbuild',
 }
-if abs(HEADSIDE_WALL_Y1-CAGE_Y1)>1e-9:
-    failures.append('Head-side wall does not reach head face')
-if abs(HEADSIDE_DECK_Y1-CAGE_Y1)>1e-9:
-    failures.append('Low deck extends beyond screw-block rear face')
+_tol=1e-6
+if _head_wall_reach < -_tol or _head_wall_reach > HEADSIDE_BOP_OVERLAP+_tol:
+    failures.append('Head-side wall does not terminate at final head face within BOP overlap')
+if _head_deck_overrun < -_tol or _head_deck_overrun > HEADSIDE_BOP_OVERLAP+_tol:
+    failures.append('Low deck does not terminate at screw-block rear face within BOP overlap')
 if abs(HEADSIDE_DECK_Z1-14.0)>1e-9:
     failures.append('Head-side low deck is not on the intended front/lower level')
 if HEADSIDE_BOSS_SUPPORT_Z1 < 20.0:
