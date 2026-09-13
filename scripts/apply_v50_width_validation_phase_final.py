@@ -66,42 +66,25 @@ if old not in s:
     raise SystemExit('Could not locate final RH8x2 validator phase assertions')
 s = s.replace(old, new, 1)
 
-# The native source BRep already performs two exact phase-rejection booleans and
-# the failed run proves they are healthy (both about 139 mm3). The STEP round-trip
-# is still checked at nominal engagement and its wrong-phase booleans are kept as
-# diagnostics, but OCC's re-imported STEP representation must not replace the
-# authoritative source-BRep phase gate with a false zero-volume result.
+# The clamp-runtime optimization already replaced the two expensive exported-STEP
+# negative booleans with the exact source-BRep phase-rejection values. Do not try
+# to patch those legacy STEP-only blocks a second time here; that stale second
+# rewrite caused run #204 to fail during source resolution before FreeCAD even
+# started. Instead, make the final width pass assert that the optimized source
+# gates are still present before it writes the validator back out.
 write_anchor = "cp.write_text(cs, encoding='utf-8')\n"
 if write_anchor not in s:
     raise SystemExit('Could not locate box-clamp validator writeback')
-runtime_patch = r'''# Preserve STEP wrong-phase booleans as diagnostics, but gate functional RH8x2
-# rejection on the exact source BRep checks produced in the same build. The
-# runtime optimization above already loaded source_validation and independently
-# cross-checks one nominal STEP thread state plus every source kinematic state.
-_phase_gate_replacements = [
-    (
-        "    report['measurements']['axial_slide_without_rotation_interference_mm3'] = round(slide_interference, 6)\n"
-        "    report['checks']['separate_thread_blocks_axial_slide_without_rotation'] = slide_interference > 1.0\n",
-        "    report['measurements']['axial_slide_without_rotation_STEP_interference_mm3'] = round(slide_interference, 6)\n"
-        "    source_slide_interference = float(source_validation.get('axial_half_pitch_without_rotation_common_mm3', -1.0))\n"
-        "    report['measurements']['axial_slide_without_rotation_interference_mm3'] = round(source_slide_interference, 6)\n"
-        "    report['checks']['separate_thread_blocks_axial_slide_without_rotation'] = source_slide_interference > 1.0\n",
-    ),
-    (
-        "    report['measurements']['wrong_phase_interference_mm3'] = round(wrong_interference, 6)\n"
-        "    report['checks']['separate_thread_has_phase_sensitive_engagement'] = wrong_interference > 1.0\n",
-        "    report['measurements']['wrong_phase_STEP_interference_mm3'] = round(wrong_interference, 6)\n"
-        "    source_wrong_interference = float(source_validation.get('wrong_phase_0_5mm_nut_common_mm3', -1.0))\n"
-        "    report['measurements']['wrong_phase_interference_mm3'] = round(source_wrong_interference, 6)\n"
-        "    report['checks']['separate_thread_has_phase_sensitive_engagement'] = source_wrong_interference > 1.0\n",
-    ),
-]
-for _old, _new in _phase_gate_replacements:
-    if _old not in cs:
-        raise SystemExit('Could not replace STEP-only RH8x2 phase gate')
-    cs = cs.replace(_old, _new, 1)
+source_gate_assertion = r'''# The bounded-runtime clamp pass must already have installed source-BRep phase
+# rejection gates. Width validation only changes the witness placement/signs.
+for _source_gate in (
+    "source_validation.get(\n        'axial_half_pitch_without_rotation_common_mm3'",
+    "source_validation.get(\n        'wrong_phase_0_5mm_nut_common_mm3'",
+):
+    if _source_gate not in cs:
+        raise SystemExit('Missing optimized source-BRep RH8x2 phase gate')
 '''
-s = s.replace(write_anchor, runtime_patch + "\n" + write_anchor, 1)
+s = s.replace(write_anchor, source_gate_assertion + "\n" + write_anchor, 1)
 
 if s == orig:
     raise SystemExit('Final width-validator phase patch made no changes')
@@ -110,11 +93,10 @@ for witness in [
     'CAP_NUT_PHASE_DEG+180.0',
     'q_slide = placed_spindle(1.0, 0.0)',
     'q_wrong = placed_spindle(0.0, 180.0)',
-    'source_slide_interference',
-    'source_wrong_interference',
+    'Missing optimized source-BRep RH8x2 phase gate',
 ]:
     if witness not in s:
         raise SystemExit('Missing final phase-patch witness: ' + witness)
 
 p.write_text(s, encoding='utf-8')
-print('Prepared final width validator: corrected retainer phase + source-BRep RH8x2 phase gates with STEP diagnostics')
+print('Prepared final width validator: corrected retainer phase + optimized source-BRep RH8x2 gates')
