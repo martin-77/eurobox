@@ -5,6 +5,9 @@ on:
     branches: [main, fix/mesh-validation-debug]
     paths:
       - ".github/workflows/mesh-debug.yml"
+      - "scripts/build_v50.py"
+      - "scripts/apply_v50_*.py"
+      - "scripts/validate_meshes.py"
   workflow_dispatch:
 
 jobs:
