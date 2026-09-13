@@ -2,9 +2,12 @@ name: Mesh debug v50
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/mesh-validation-debug]
     paths:
       - ".github/workflows/mesh-debug.yml"
+      - "scripts/build_v50.py"
+      - "scripts/apply_v50_*.py"
+      - "scripts/validate_meshes.py"
   workflow_dispatch:
 
 jobs:
@@ -70,14 +73,27 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Validate STL meshes
-        run: python3 scripts/validate_meshes.py build_v50
+      - name: Validate STL meshes with diagnostics
+        run: |
+          set +e
+          python3 scripts/validate_meshes.py build_v50 2>&1 | tee mesh_validation.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ -s build_v50/MESH_VALIDATION.json ]; then
+            echo "===== MESH_VALIDATION.json ====="
+            cat build_v50/MESH_VALIDATION.json
+          else
+            echo "::error::Mesh validator did not create build_v50/MESH_VALIDATION.json"
+          fi
+          exit "$rc"
 
       - name: Upload mesh report
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: eurobox-v50-mesh-report
-          path: build_v50/MESH_VALIDATION.json
+          path: |
+            build_v50/MESH_VALIDATION.json
+            mesh_validation.log
           if-no-files-found: warn
           retention-days: 7

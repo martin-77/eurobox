@@ -24,6 +24,7 @@ FINAL_BASE_DECK_Y1 = PRINT_GUIDE_Y1
 FINAL_BASE_DECK_Z0 = ARM_BOTTOM_Z
 FINAL_BASE_DECK_Z1 = PRINT_GUIDE_Z0
 FINAL_BASE_BOP_OVERLAP = 0.20
+FINAL_GUIDE_STITCH_OVERLAP = 0.20
 FINAL_BOSS_SUPPORT_Z0 = FINAL_BASE_DECK_Z1 - FINAL_BASE_BOP_OVERLAP
 FINAL_BOSS_SUPPORT_Z1 = PRINT_FRAME_BOSS_Z0 + FINAL_BASE_BOP_OVERLAP
 
@@ -46,6 +47,26 @@ for _name in ('RIGHT', 'LEFT'):
         BASE_RIGHT = BASE_RIGHT.fuse(_FINAL_BASE_DECK).removeSplitter()
     else:
         BASE_LEFT = BASE_LEFT.fuse(_FINAL_BASE_DECK).removeSplitter()
+
+# The deck top and the two side guides intentionally meet at x=+/-70.4 and
+# z=14.0. A pure edge-on-edge contact is legal enough for OCC to report one
+# valid solid, but it tessellates to a non-manifold STL edge (four triangles on
+# one edge). Add tiny buried stitch volumes around those two interfaces so the
+# union has real 3-D overlap. They remain below the moving plate (PLATE_Z0=16)
+# and do not change the requested 14.0 mm deck plane.
+_FINAL_GUIDE_STITCHES = []
+for _xc in (FINAL_BASE_DECK_X0, FINAL_BASE_DECK_X1):
+    _q = box(
+        _xc-FINAL_GUIDE_STITCH_OVERLAP,
+        PRINT_GUIDE_Y0,
+        FINAL_BASE_DECK_Z1-FINAL_GUIDE_STITCH_OVERLAP,
+        2.0*FINAL_GUIDE_STITCH_OVERLAP,
+        PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,
+        2.0*FINAL_GUIDE_STITCH_OVERLAP,
+    )
+    _FINAL_GUIDE_STITCHES.append(_q)
+    BASE_RIGHT = BASE_RIGHT.fuse(_q).removeSplitter()
+    BASE_LEFT = BASE_LEFT.fuse(_q).removeSplitter()
 
 # Underbuild the COMPLETE 22 mm footprint of each screw block down to that lower
 # plane. This is intentionally the whole block area, not a post beneath the bore.
@@ -83,19 +104,26 @@ _final_deck_fraction_right = _final_deck_common_right / _FINAL_BASE_DECK.Volume
 _final_deck_fraction_left = _final_deck_common_left / _FINAL_BASE_DECK.Volume
 _final_boss_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _FINAL_BOSS_SUPPORTS]
 _final_boss_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _FINAL_BOSS_SUPPORTS]
+_final_guide_stitch_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _FINAL_GUIDE_STITCHES]
+_final_guide_stitch_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _FINAL_GUIDE_STITCHES]
+_final_guide_stitch_plate_common = [PLATE.common(q).Volume for q in _FINAL_GUIDE_STITCHES]
 V['final_requested_base_geometry'] = {
     'applied_after_width_cleanup': True,
     'deck_x_mm': [FINAL_BASE_DECK_X0, FINAL_BASE_DECK_X1],
     'deck_y_mm': [FINAL_BASE_DECK_Y0, FINAL_BASE_DECK_Y1],
     'deck_z_mm': [FINAL_BASE_DECK_Z0, FINAL_BASE_DECK_Z1],
     'boss_support_z_mm': [FINAL_BOSS_SUPPORT_Z0, FINAL_BOSS_SUPPORT_Z1],
+    'guide_stitch_overlap_mm': FINAL_GUIDE_STITCH_OVERLAP,
     'deck_material_fraction_right': round(_final_deck_fraction_right, 6),
     'deck_material_fraction_left': round(_final_deck_fraction_left, 6),
     'boss_material_fraction_right': [round(x, 6) for x in _final_boss_fraction_right],
     'boss_material_fraction_left': [round(x, 6) for x in _final_boss_fraction_left],
+    'guide_stitch_material_fraction_right': [round(x, 6) for x in _final_guide_stitch_fraction_right],
+    'guide_stitch_material_fraction_left': [round(x, 6) for x in _final_guide_stitch_fraction_left],
+    'guide_stitch_plate_common_mm3': [round(x, 9) for x in _final_guide_stitch_plate_common],
     'rear_stop_matches_block_rear_face': abs(FINAL_BASE_DECK_Y0-CAGE_Y0) <= 1e-9,
     'same_level_as_front': abs(FINAL_BASE_DECK_Z1-PRINT_GUIDE_Z0) <= 1e-9,
-    'policy': 'straight head-side wall retained; lower front plane pulled back only to block rear edge; complete 22 mm screw-block footprints underbuilt',
+    'policy': 'straight head-side wall retained; lower front plane pulled back only to block rear edge; complete 22 mm screw-block footprints underbuilt; guide/deck edge seam stitched with buried volumetric overlap',
 }
 if _final_deck_fraction_right < 0.98 or _final_deck_fraction_left < 0.98:
     failures.append('Final lower BASE plane is not substantially present through the screw-block depth')
@@ -103,6 +131,12 @@ for side, vals in [('RIGHT', _final_boss_fraction_right), ('LEFT', _final_boss_f
     for i, frac in enumerate(vals):
         if frac < 0.90:
             failures.append(f'{side} screw block {i} lacks the requested broad full-footprint underbuild')
+for side, vals in [('RIGHT', _final_guide_stitch_fraction_right), ('LEFT', _final_guide_stitch_fraction_left)]:
+    for i, frac in enumerate(vals):
+        if frac < 0.999:
+            failures.append(f'{side} guide/deck stitch {i} is not fully incorporated in the BASE')
+if any(v > 1e-6 for v in _final_guide_stitch_plate_common):
+    failures.append('Guide/deck manifold stitch intrudes into the moving plate envelope')
 if abs(FINAL_BASE_DECK_Y0-CAGE_Y0) > 1e-9:
     failures.append('Final lower BASE plane extends behind the screw-block rear edge')
 if abs(FINAL_BASE_DECK_Z1-PRINT_GUIDE_Z0) > 1e-9:
@@ -115,4 +149,4 @@ if s == orig:
     raise SystemExit('Final BASE geometry patch made no changes')
 
 p.write_text(s, encoding='utf-8')
-print('Applied requested geometry to FINAL post-width-cleanup BASE')
+print('Applied requested geometry to FINAL post-width-cleanup BASE with manifold guide stitches')
