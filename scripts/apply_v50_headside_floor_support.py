@@ -101,3 +101,5 @@ for token in ('HEADSIDE_WALL_DEPTH', 'HEADSIDE_DECK_Y1 = CAGE_Y1',
 
 p.write_text(s, encoding='utf-8')
 print('Applied straight head-side walls plus low deck to screw-block depth and full block underbuild')
+
+# CI retrigger marker after wiring the new local geometry pass into main.
