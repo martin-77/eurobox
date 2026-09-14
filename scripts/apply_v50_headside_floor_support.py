@@ -6,7 +6,7 @@ from pathlib import Path
 # build_v50.py here would be silently removed again later in the workflow.
 #
 # This compatibility hook makes the subsequent width-cleanup script invoke the
-# actual final-geometry patch only after it has rebuilt the handed bases.
+# actual final-geometry patches only after it has rebuilt the handed bases.
 wc = Path('scripts/apply_v50_width_cleanup.py')
 s = wc.read_text(encoding='utf-8')
 marker = '# APPLY_FINAL_REQUESTED_BASE_GEOMETRY_AFTER_WIDTH_CLEANUP'
@@ -22,6 +22,15 @@ if not _final_base_patch.is_file():
     raise SystemExit('Missing final requested BASE geometry patch')
 exec(compile(_final_base_patch.read_text(encoding='utf-8'),
              str(_final_base_patch), 'exec'))
+
+# Apply the final visual/structural corrections at the same stable stage: the
+# rear backstop bridge spans the complete 50 mm panel width and the short gap
+# from each holm to its single flush head cap is closed by side DROP walls.
+_final_backstop_drop_patch = Path('scripts/apply_v50_final_backstop_holm_drop.py')
+if not _final_backstop_drop_patch.is_file():
+    raise SystemExit('Missing final backstop/holm DROP geometry patch')
+exec(compile(_final_backstop_drop_patch.read_text(encoding='utf-8'),
+             str(_final_backstop_drop_patch), 'exec'))
 '''
     wc.write_text(s + hook, encoding='utf-8')
 
@@ -44,4 +53,4 @@ if old_tail not in vs:
 vs = vs.replace(old_tail, new_tail, 1)
 wv.write_text(vs, encoding='utf-8')
 
-print('Deferred requested BASE geometry until after final width cleanup and retargeted width-validation anchor')
+print('Deferred requested BASE geometry until after final width cleanup, including full-width backstop and holm DROP cleanup')
