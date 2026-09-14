@@ -5,24 +5,11 @@ p = Path('scripts/build_v50.py')
 s = p.read_text(encoding='utf-8')
 orig = s
 
-# CORE One L+ INDX / FDM printability refinement.
-# Keep the proven two-web arm architecture and leave BOTH longitudinal side
-# channels open over the full holm length. The requested closure is only at the
-# HEAD: each BASE has two short open profile ends at the outer head edge. Close
-# them with one 3.2 mm end cap per holm, flush with the existing crosshead edge
-# at BOX_RIM_INNER_Y-0.20 (=228.015 mm). No long -X/+X skin is allowed.
-# Spindle, screw cage, nut pockets and clamp kinematics remain untouched.
-#
-# The side flange overhangs are carried by symmetric cubic Hermite haunches.
-# The curve is deliberately slope-limited: with the final 6.4 mm lateral reach
-# and 10.0 mm vertical rise, max |dx/dz| = 1.5*6.4/10 = 0.96, i.e. < 1.0
-# (45 deg limit).
-#
-# This is intentionally NOT a free cosmetic spline and not a literal R20 arc.
-# It is an R20-like soft contour whose tangent envelope is constrained for
-# support-free printing in the frozen upside-down BASE orientation.
-
-# Replace whichever make_i_beam_y implementation preceding fixups left behind.
+# Final arm/profile cleanup. Keep both longitudinal side channels open. At the
+# head each BASE has two holms; each holm gets exactly ONE flush 3.2 mm end wall
+# at BOX_RIM_INNER_Y-0.20 (=228.015 mm). The old inner crosshead wall in the same
+# two holm windows is removed so BASE_LEFT/BASE_RIGHT have four corrected
+# positions in total. Spindle/cage/nut/box-clamp geometry is untouched.
 pat = re.compile(r"def make_i_beam_y\(xc, y0, y1\):\n.*?(?=\n\ndef |\n# -----------------------------|\nbase_parts =)", re.S)
 if not pat.search(s):
     raise SystemExit('Could not locate final make_i_beam_y implementation')
@@ -43,8 +30,6 @@ def _arm_smoothstep(t):
 
 
 def _arm_side_haunch(xc, y0, length, side, top):
-    # side: -1 left, +1 right. top=False is the print-critical lower physical
-    # haunch (upper in the upside-down print); top=True is its exact mirror.
     web_center = xc + side*8.0
     web_outer = web_center + side*(ARM_PROFILE_WEB_T/2.0)
     outer = xc + side*(ARM_W/2.0)
@@ -52,17 +37,12 @@ def _arm_side_haunch(xc, y0, length, side, top):
     z_flange = ((ARM_TOP_Z-ARM_PROFILE_FLANGE_T) if top
                 else (ARM_BOTTOM_Z+ARM_PROFILE_FLANGE_T))
     z_tip = z_flange + ((-1.0 if top else 1.0)*ARM_PROFILE_SPLINE_RISE)
-
     curve = []
     for i in range(ARM_PROFILE_SPLINE_SAMPLES+1):
         t = i/float(ARM_PROFILE_SPLINE_SAMPLES)
-        # t=0 at the web tip; t=1 at the flange outer edge.
         z = z_tip + (z_flange-z_tip)*t
         x = web_outer + side*span*_arm_smoothstep(t)
         curve.append(App.Vector(x, y0, z))
-
-    # Close back along the web outer face. This produces only the material
-    # under the flange; BOTH longitudinal side recesses remain open to air.
     pts = [App.Vector(web_outer, y0, z_flange),
            App.Vector(web_outer, y0, z_tip)] + curve[1:] + [
            App.Vector(web_outer, y0, z_flange)]
@@ -87,8 +67,6 @@ def make_i_beam_y(xc, y0, y1):
 
 
 def _arm_head_cap(xc, y_face):
-    # Close only the two short open ends at the visible head edge. The outside
-    # face is exactly flush with y_face; thickness grows inward (-Y).
     return box(xc-ARM_W/2.0,
                y_face-ARM_PROFILE_HEAD_CAP_T,
                ARM_BOTTOM_Z,
@@ -98,25 +76,39 @@ def _arm_head_cap(xc, y_face):
 '''
 s = pat.sub(rep.rstrip(), s, count=1)
 
-# Apply exactly TWO short head caps to the shared BASE core, one at the head of
-# each longitudinal holm. The caps are X-symmetric, so the established handed
-# LEFT/RIGHT mirror relationship remains intact.
+# Single-wall head geometry on the shared core: remove the redundant inner wall
+# only in the two 32 mm holm windows, retaining top/bottom flanges, then add the
+# single flush outer wall. Because this is BASE_CORE it applies identically to
+# both handed BASE parts (2 holms per BASE, 4 corrected positions total).
 handed_anchor = 'BASE_CORE = BASE.copy()\n'
 if handed_anchor not in s:
-    raise SystemExit('Could not locate handed BASE core anchor for head caps')
+    raise SystemExit('Could not locate handed BASE core anchor')
 handed_insert = '''BASE_CORE = BASE.copy()
+
+ARM_PROFILE_REDUNDANT_HEAD_WALL_Y0 = ARM_Y1 - 4.0
+ARM_PROFILE_REDUNDANT_HEAD_WALL_Y1 = ARM_Y1 + 0.55
+_ARM_REDUNDANT_HEAD_WALL_CUTTERS = []
+for xc in CLAMP_X:
+    _q = box(
+        xc-ARM_W/2.0-0.05,
+        ARM_PROFILE_REDUNDANT_HEAD_WALL_Y0,
+        ARM_BOTTOM_Z+ARM_PROFILE_FLANGE_T-0.05,
+        ARM_W+0.10,
+        ARM_PROFILE_REDUNDANT_HEAD_WALL_Y1-ARM_PROFILE_REDUNDANT_HEAD_WALL_Y0,
+        ARM_H-2.0*ARM_PROFILE_FLANGE_T+0.10,
+    )
+    _ARM_REDUNDANT_HEAD_WALL_CUTTERS.append(_q)
+    BASE_CORE = BASE_CORE.cut(_q).removeSplitter()
 
 _ARM_HEAD_CAPS = [_arm_head_cap(xc, ARM_PROFILE_HEAD_FACE_Y) for xc in CLAMP_X]
 for _q in _ARM_HEAD_CAPS:
     BASE_CORE = BASE_CORE.fuse(_q).removeSplitter()
 if not BASE_CORE.isValid() or len(BASE_CORE.Solids) != 1:
-    raise RuntimeError('Two short flush holm head caps broke BASE core topology')
+    raise RuntimeError('Single-wall holm head cleanup broke BASE core topology')
 '''
 s = s.replace(handed_anchor, handed_insert, 1)
 
-# Final requested rear mounting-stop geometry: keep the rear edge at X=+190 mm
-# but widen the panel by 10 mm toward the rear clamp. With REAR_CLAMP_X=+90 mm,
-# the contact window therefore changes from +150..+190 to +140..+190 mm.
+# Keep rear panel edge at +190, widen it to 50 mm toward the rear clamp.
 if 'MOUNT_BACKSTOP_X_FROM_REAR_CLAMP = 60.0' not in s:
     raise SystemExit('Could not locate mounting-backstop start offset')
 s = s.replace('MOUNT_BACKSTOP_X_FROM_REAR_CLAMP = 60.0',
@@ -125,26 +117,81 @@ if 'MOUNT_BACKSTOP_W_X = 40.0' not in s:
     raise SystemExit('Could not locate 40 mm mounting-backstop width')
 s = s.replace('MOUNT_BACKSTOP_W_X = 40.0', 'MOUNT_BACKSTOP_W_X = 50.0', 1)
 s = s.replace('handed_single_rear_40mm_panel_with_deep_root_and_rear_i_beam_gusset',
-              'handed_single_rear_50mm_panel_with_deep_root_and_rear_i_beam_gusset')
+              'handed_single_rear_50mm_panel_with_rectangular_step_bridge')
 s = s.replace("if V['mounting_backstop']['clearance_from_rear_clamp_body_mm'] < 35.0:",
               "if V['mounting_backstop']['clearance_from_rear_clamp_body_mm'] < 32.5:")
 s = s.replace("if V['mounting_backstop']['contact_window_behind_rear_clamp_center_mm'][0] < 55.0:",
               "if V['mounting_backstop']['contact_window_behind_rear_clamp_center_mm'][0] < 49.9:")
 
-# Add hard source-level checks immediately before the existing export loop.
+# Replace the long diagonal gusset by a short rectangular step bridge. It starts
+# only 8 mm inside the rear holm's outer edge, reaches 4 mm into the 20 mm-deep
+# panel root, and starts at Z=18 mm so the moving lower rack clamp remains below
+# it throughout its opening sweep. No diagonal face remains.
+right_pat = re.compile(
+    r"MOUNT_BACKSTOP_GUSSET_Y0 = 0\.0\n"
+    r"MOUNT_BACKSTOP_GUSSET_Y1 = 20\.0\n"
+    r"MOUNT_BACKSTOP_GUSSET_TOP_Z = 38\.75\n"
+    r"MOUNT_BACKSTOP_REAR_ROOT_X0 = REAR_CLAMP_X - ARM_W/2\.0\n"
+    r"_mount_backstop_profile = \[.*?"
+    r"MOUNT_BACKSTOP_GUSSET = Part\.Face\(_mount_backstop_wire\)\.extrude\(\n"
+    r"    App\.Vector\(0, MOUNT_BACKSTOP_GUSSET_Y1-MOUNT_BACKSTOP_GUSSET_Y0, 0\)\)\n",
+    re.S,
+)
+right_rep = '''MOUNT_BACKSTOP_GUSSET_Y0 = 0.0
+MOUNT_BACKSTOP_GUSSET_Y1 = 20.0
+MOUNT_BACKSTOP_GUSSET_TOP_Z = 38.75
+MOUNT_BACKSTOP_BRIDGE_Z0 = 18.0
+MOUNT_BACKSTOP_HOLM_OVERLAP_X = 8.0
+MOUNT_BACKSTOP_ROOT_OVERLAP_X = 4.0
+MOUNT_BACKSTOP_REAR_ROOT_X0 = REAR_CLAMP_X + ARM_W/2.0 - MOUNT_BACKSTOP_HOLM_OVERLAP_X
+MOUNT_BACKSTOP_BRIDGE_X1 = MOUNT_BACKSTOP_X0 + MOUNT_BACKSTOP_ROOT_OVERLAP_X
+MOUNT_BACKSTOP_GUSSET = box(
+    MOUNT_BACKSTOP_REAR_ROOT_X0,
+    MOUNT_BACKSTOP_GUSSET_Y0,
+    MOUNT_BACKSTOP_BRIDGE_Z0,
+    MOUNT_BACKSTOP_BRIDGE_X1-MOUNT_BACKSTOP_REAR_ROOT_X0,
+    MOUNT_BACKSTOP_GUSSET_Y1-MOUNT_BACKSTOP_GUSSET_Y0,
+    MOUNT_BACKSTOP_GUSSET_TOP_Z-MOUNT_BACKSTOP_BRIDGE_Z0,
+)
+'''
+s, n = right_pat.subn(right_rep, s, count=1)
+if n != 1:
+    raise SystemExit('Could not replace RIGHT sloping backstop gusset')
+
+left_pat = re.compile(
+    r"MOUNT_BACKSTOP_LEFT_REAR_ROOT_X1 = FRONT_CLAMP_X \+ ARM_W/2\.0\n"
+    r"_mount_backstop_left_profile = \[.*?"
+    r"MOUNT_BACKSTOP_GUSSET_LEFT = Part\.Face\(_mount_backstop_left_wire\)\.extrude\(\n"
+    r"    App\.Vector\(0, MOUNT_BACKSTOP_GUSSET_Y1-MOUNT_BACKSTOP_GUSSET_Y0, 0\)\)\n",
+    re.S,
+)
+left_rep = '''MOUNT_BACKSTOP_LEFT_REAR_ROOT_X1 = FRONT_CLAMP_X - ARM_W/2.0 + MOUNT_BACKSTOP_HOLM_OVERLAP_X
+MOUNT_BACKSTOP_LEFT_BRIDGE_X0 = MOUNT_BACKSTOP_LEFT_X1 - MOUNT_BACKSTOP_ROOT_OVERLAP_X
+MOUNT_BACKSTOP_GUSSET_LEFT = box(
+    MOUNT_BACKSTOP_LEFT_BRIDGE_X0,
+    MOUNT_BACKSTOP_GUSSET_Y0,
+    MOUNT_BACKSTOP_BRIDGE_Z0,
+    MOUNT_BACKSTOP_LEFT_REAR_ROOT_X1-MOUNT_BACKSTOP_LEFT_BRIDGE_X0,
+    MOUNT_BACKSTOP_GUSSET_Y1-MOUNT_BACKSTOP_GUSSET_Y0,
+    MOUNT_BACKSTOP_GUSSET_TOP_Z-MOUNT_BACKSTOP_BRIDGE_Z0,
+)
+'''
+s, n = left_pat.subn(left_rep, s, count=1)
+if n != 1:
+    raise SystemExit('Could not replace LEFT sloping backstop gusset')
+
+# Keep generated notes aligned with the rectangular load path.
+s = s.replace('deeply gusseted into its rear I-beam root',
+              'connected by a short rectangular step bridge into its rear holm')
+
 anchor = "for name, sh in PARTS.items():\n"
 if anchor not in s:
     raise SystemExit('Could not locate final PARTS export gate')
-validation = '''# Support-safe symmetric arm-profile / FLUSH SHORT HEAD-CAP checks.
-# Cubic smoothstep derivative max is 1.5; lateral reach is 6.4 mm.
+validation = '''# Final single-wall + rectangular-backstop hard checks.
 _arm_web_outer = 8.0 + ARM_PROFILE_WEB_T/2.0
 _arm_side_reach = ARM_W/2.0 - _arm_web_outer
 _arm_max_dx_dz = 1.5*_arm_side_reach/ARM_PROFILE_SPLINE_RISE
 _arm_probe = make_i_beam_y(0.0, 0.0, 20.0)
-
-# Prove that the long side channels remain open. These probes sit at mid-height
-# in the outer recesses where a mistaken full-length -X/+X skin would appear,
-# but the intended I/H profile contains no material.
 _arm_open_probe_z0 = ARM_BOTTOM_Z + ARM_H/2.0 - 0.20
 _arm_open_probe_left = box(-ARM_W/2.0+0.20, 5.0, _arm_open_probe_z0,
                            3.0, 10.0, 0.40)
@@ -155,8 +202,26 @@ _arm_open_right_common = _arm_probe.common(_arm_open_probe_right).Volume
 
 _head_cap_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _ARM_HEAD_CAPS]
 _head_cap_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _ARM_HEAD_CAPS]
+_redundant_head_wall_common_right = [BASE_RIGHT.common(q).Volume for q in _ARM_REDUNDANT_HEAD_WALL_CUTTERS]
+_redundant_head_wall_common_left = [BASE_LEFT.common(q).Volume for q in _ARM_REDUNDANT_HEAD_WALL_CUTTERS]
+
+_backstop_sweep = []
+for _side, _xc, _stop in (
+    ('RIGHT', REAR_CLAMP_X, MOUNT_BACKSTOP_RIGHT),
+    ('LEFT', FRONT_CLAMP_X, MOUNT_BACKSTOP_LEFT),
+):
+    for _deg in (0, -15, -30, -45, -60, -75):
+        _lo = LOWER.copy()
+        _lo.rotate(App.Vector(0, PIN_Y, PIN_Z), App.Vector(1,0,0), _deg)
+        _lo.translate(App.Vector(_xc, 0, 0))
+        _backstop_sweep.append({
+            'side': _side,
+            'rotation_deg': _deg,
+            'backstop_common_mm3': round(_stop.common(_lo).Volume, 9),
+        })
+
 V['supportfree_arm_profile'] = {
-    'architecture': 'symmetric_two_web_open_profile_with_two_flush_short_head_end_caps',
+    'architecture': 'symmetric_two_web_open_profile_one_flush_head_wall_per_holm',
     'outer_width_mm': round(_arm_probe.BoundBox.XLength, 3),
     'outer_height_mm': round(_arm_probe.BoundBox.ZLength, 3),
     'flange_thickness_mm': ARM_PROFILE_FLANGE_T,
@@ -164,23 +229,28 @@ V['supportfree_arm_profile'] = {
     'web_centers_mm': list(ARM_PROFILE_WEB_CENTERS),
     'side_reach_mm': round(_arm_side_reach, 3),
     'spline_rise_mm': ARM_PROFILE_SPLINE_RISE,
-    'visual_radius_intent_mm': ARM_PROFILE_VISUAL_RADIUS,
     'max_dx_dz': round(_arm_max_dx_dz, 6),
-    'max_overhang_deg_from_vertical': round(math.degrees(math.atan(_arm_max_dx_dz)), 3),
-    'symmetric_top_bottom': True,
-    'symmetric_left_right': True,
     'longitudinal_side_channels_open': True,
     'left_side_open_probe_common_mm3': round(_arm_open_left_common, 9),
     'right_side_open_probe_common_mm3': round(_arm_open_right_common, 9),
-    'head_cap_count_per_base': len(_ARM_HEAD_CAPS),
+    'holm_positions_per_base': len(CLAMP_X),
+    'problem_positions_total_left_plus_right': 2*len(CLAMP_X),
     'head_face_y_mm': round(ARM_PROFILE_HEAD_FACE_Y, 3),
     'head_cap_y_mm': [round(ARM_PROFILE_HEAD_FACE_Y-ARM_PROFILE_HEAD_CAP_T, 3),
                       round(ARM_PROFILE_HEAD_FACE_Y, 3)],
-    'head_cap_thickness_mm': ARM_PROFILE_HEAD_CAP_T,
     'head_cap_material_fraction_right': [round(x, 6) for x in _head_cap_fraction_right],
     'head_cap_material_fraction_left': [round(x, 6) for x in _head_cap_fraction_left],
-    'print_orientation': 'BASE rotated 180deg about X; BOX_SUPPORT_Z on bed',
-    'support_policy': 'side channels remain open; only two short head ends are closed flush at the 228.015 mm outer edge; no generated support required',
+    'redundant_inner_wall_common_right_mm3': [round(x, 9) for x in _redundant_head_wall_common_right],
+    'redundant_inner_wall_common_left_mm3': [round(x, 9) for x in _redundant_head_wall_common_left],
+}
+V['mounting_backstop_final_cleanup'] = {
+    'bridge_shape': 'rectangular_step_no_diagonal_faces',
+    'bridge_z_mm': [MOUNT_BACKSTOP_BRIDGE_Z0, MOUNT_BACKSTOP_GUSSET_TOP_Z],
+    'holm_overlap_x_mm': MOUNT_BACKSTOP_HOLM_OVERLAP_X,
+    'root_overlap_x_mm': MOUNT_BACKSTOP_ROOT_OVERLAP_X,
+    'right_bridge_x_mm': [MOUNT_BACKSTOP_REAR_ROOT_X0, MOUNT_BACKSTOP_BRIDGE_X1],
+    'left_bridge_x_mm': [MOUNT_BACKSTOP_LEFT_BRIDGE_X0, MOUNT_BACKSTOP_LEFT_REAR_ROOT_X1],
+    'rack_clamp_sweep': _backstop_sweep,
 }
 if abs(V['supportfree_arm_profile']['outer_width_mm']-ARM_W) > 0.02:
     failures.append('Support-free arm profile no longer has the frozen 32 mm outer width')
@@ -188,18 +258,27 @@ if abs(V['supportfree_arm_profile']['outer_height_mm']-ARM_H) > 0.02:
     failures.append('Support-free arm profile no longer has the frozen 30 mm outer height')
 if _arm_max_dx_dz > 1.0 + 1e-9:
     failures.append('Support-free spline exceeds the 45 degree lateral-growth envelope')
-if abs(ARM_PROFILE_WEB_CENTERS[0] + ARM_PROFILE_WEB_CENTERS[1]) > 1e-9:
-    failures.append('Support-free arm webs are not symmetric about the arm center')
 if _arm_open_left_common > 1e-6 or _arm_open_right_common > 1e-6:
-    failures.append('A longitudinal holm side channel was closed; only the two short head ends may be capped')
-if len(_ARM_HEAD_CAPS) != 2:
-    failures.append('BASE does not have exactly two short holm head caps')
+    failures.append('A longitudinal holm side channel was closed')
+if len(_ARM_HEAD_CAPS) != 2 or len(_ARM_REDUNDANT_HEAD_WALL_CUTTERS) != 2:
+    failures.append('BASE does not contain exactly two corrected holm-head positions')
 if abs(ARM_PROFILE_HEAD_FACE_Y-(BOX_RIM_INNER_Y-0.20)) > 1e-9:
-    failures.append('Holm head caps are not flush with the existing 228.015 mm head edge')
-for side, vals in [('RIGHT', _head_cap_fraction_right), ('LEFT', _head_cap_fraction_left)]:
-    for i, frac in enumerate(vals):
-        if frac < 0.999:
-            failures.append(f'{side} short holm head cap {i} is not fully incorporated in the BASE')
+    failures.append('Single holm end walls are not flush with the 228.015 mm head edge')
+for _side, _vals in (('RIGHT', _head_cap_fraction_right), ('LEFT', _head_cap_fraction_left)):
+    for _i, _frac in enumerate(_vals):
+        if _frac < 0.999:
+            failures.append(f'{_side} holm {_i} lost its single flush outer head wall')
+for _side, _vals in (('RIGHT', _redundant_head_wall_common_right), ('LEFT', _redundant_head_wall_common_left)):
+    for _i, _common in enumerate(_vals):
+        if _common > 1e-5:
+            failures.append(f'{_side} holm {_i} still has the redundant parallel inner head wall')
+for _state in _backstop_sweep:
+    if _state['backstop_common_mm3'] > 1e-5:
+        failures.append('Rectangular rear backstop blocks rack-clamp sweep: '+repr(_state))
+if abs(MOUNT_BACKSTOP_REAR_ROOT_X0-(REAR_CLAMP_X+8.0)) > 1e-9:
+    failures.append('RIGHT rectangular backstop bridge reaches too deep into rear holm')
+if abs(MOUNT_BACKSTOP_LEFT_REAR_ROOT_X1-(FRONT_CLAMP_X-8.0)) > 1e-9:
+    failures.append('LEFT rectangular backstop bridge reaches too deep into rear holm')
 if abs(MOUNT_BACKSTOP_X0-140.0) > 0.02:
     failures.append('Rear mounting backstop does not start at local X=140 mm')
 if abs(MOUNT_BACKSTOP_W_X-50.0) > 1e-9:
@@ -211,13 +290,11 @@ if abs((MOUNT_BACKSTOP_X0+MOUNT_BACKSTOP_W_X)-190.0) > 0.02:
 s = s.replace(anchor, validation + anchor, 1)
 
 if s == orig:
-    raise SystemExit('INDX support-free arm patch made no changes')
-if 'ARM_PROFILE_MAX_DX_DZ = 0.96' not in s:
-    raise SystemExit('Support-free spline constants were not installed')
-if '_ARM_HEAD_CAPS = [_arm_head_cap(xc, ARM_PROFILE_HEAD_FACE_Y) for xc in CLAMP_X]' not in s:
-    raise SystemExit('Two flush short holm head caps were not installed')
-if 'MOUNT_BACKSTOP_W_X = 50.0' not in s:
-    raise SystemExit('Requested 50 mm backstop was not installed')
+    raise SystemExit('INDX final arm/backstop patch made no changes')
+if 'MOUNT_BACKSTOP_BRIDGE_Z0 = 18.0' not in s:
+    raise SystemExit('Rectangular backstop bridge was not installed')
+if '_ARM_REDUNDANT_HEAD_WALL_CUTTERS' not in s:
+    raise SystemExit('Single-wall holm-head cleanup was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied open longitudinal holms with two flush 3.2 mm head end caps at Y=228.015 mm per BASE')
+print('Applied one flush wall per holm and a short rectangular clamp-safe rear backstop bridge')
