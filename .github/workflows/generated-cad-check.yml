@@ -43,7 +43,7 @@ jobs:
           fc = {p.stem for p in fc_dir.glob('*.FCStd') if p.stat().st_size > 0}
           st = {p.stem for p in step_dir.glob('*.step') if p.stat().st_size > 0}
           sl = {p.stem for p in stl_dir.glob('*.stl') if p.stat().st_size > 0}
-          expected = {
+          required = {
               'eurobox_v50_base',
               'eurobox_v50_base_left',
               'eurobox_v50_base_right',
@@ -57,12 +57,21 @@ jobs:
               'eurobox_v50_knob_retainer_nut',
           }
 
-          if fc != expected or st != expected or sl != expected:
+          missing_required = {
+              'FCStd': sorted(required - fc),
+              'STEP': sorted(required - st),
+              'STL': sorted(required - sl),
+          }
+          if any(missing_required.values()):
+              raise SystemExit(f'missing required published CAD parts: {missing_required}')
+
+          if not (fc == st == sl):
               raise SystemExit(
-                  'published CAD set mismatch: '
-                  f'FCStd missing={sorted(expected-fc)} extra={sorted(fc-expected)}; '
-                  f'STEP missing={sorted(expected-st)} extra={sorted(st-expected)}; '
-                  f'STL missing={sorted(expected-sl)} extra={sorted(sl-expected)}'
+                  'published CAD file sets differ: '
+                  f'FCStd_only={sorted(fc-st-sl)}; '
+                  f'STEP_only={sorted(st-fc-sl)}; '
+                  f'STL_only={sorted(sl-fc-st)}; '
+                  f'counts=FCStd:{len(fc)} STEP:{len(st)} STL:{len(sl)}'
               )
 
           assembly = root / 'assembly/eurobox_v50_assembly.FCStd'
@@ -104,5 +113,5 @@ jobs:
           if bad_meshes:
               raise SystemExit(f'published STL mesh validation failed: {bad_meshes}')
 
-          print(f'PASS: {len(sl)} published STL meshes are watertight and byte-identical to preview mirror')
+          print(f'PASS: {len(sl)} published CAD parts; every STL is watertight and byte-identical to preview mirror')
           PY
