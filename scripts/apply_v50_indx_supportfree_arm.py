@@ -6,11 +6,14 @@ s = p.read_text(encoding='utf-8')
 orig = s
 
 # CORE One L+ INDX / FDM printability refinement.
-# Keep the proven two-web arm architecture, but restore an open H/I-style
-# section instead of the later closed tapered solid. The side flange overhangs
-# are carried by symmetric cubic Hermite haunches. The curve is deliberately
-# slope-limited: with the final 6.4 mm lateral reach and 10.0 mm vertical rise,
-# max |dx/dz| = 1.5*6.4/10 = 0.96, i.e. < 1.0 (45 deg limit).
+# Keep the proven two-web arm architecture and its support-safe spline haunches.
+# The H/I-style section remains open on the REAR (+X) side, while the FRONT
+# (-X, as labelled in the assembly preview) is closed by one straight skin on
+# each of the two longitudinal holms. No clamp/spindle/cage geometry is touched.
+# The side flange overhangs are carried by symmetric cubic Hermite haunches.
+# The curve is deliberately slope-limited: with the final 6.4 mm lateral reach
+# and 10.0 mm vertical rise, max |dx/dz| = 1.5*6.4/10 = 0.96, i.e. < 1.0
+# (45 deg limit).
 #
 # This is intentionally NOT a free cosmetic spline and not a literal R20 arc.
 # It is an R20-like soft contour whose tangent envelope is constrained for
@@ -28,6 +31,7 @@ ARM_PROFILE_SPLINE_RISE = 10.0
 ARM_PROFILE_VISUAL_RADIUS = 20.0
 ARM_PROFILE_SPLINE_SAMPLES = 18
 ARM_PROFILE_MAX_DX_DZ = 0.96
+ARM_PROFILE_FRONT_SKIN_T = ARM_PROFILE_WEB_T
 
 
 def _arm_smoothstep(t):
@@ -53,8 +57,8 @@ def _arm_side_haunch(xc, y0, length, side, top):
         x = web_outer + side*span*_arm_smoothstep(t)
         curve.append(App.Vector(x, y0, z))
 
-    # Close back along the web outer face. This produces only the material
-    # under the flange; the side recess remains open to air.
+    # Close back along the web outer face. The rear (+X) side recess remains
+    # open to air; the front (-X) recess is subsequently covered by the skin.
     pts = [App.Vector(web_outer, y0, z_flange),
            App.Vector(web_outer, y0, z_tip)] + curve[1:] + [
            App.Vector(web_outer, y0, z_flange)]
@@ -75,7 +79,14 @@ def make_i_beam_y(xc, y0, y1):
             for c in ARM_PROFILE_WEB_CENTERS]
     haunches = [_arm_side_haunch(xc, y0, L, side, top_side)
                 for side in (-1, 1) for top_side in (False, True)]
-    return fuse_all([top, bot] + webs + haunches).removeSplitter()
+
+    # FRONT is global -X. Close only that visible face of each longitudinal
+    # holm, entirely inside the existing 32 x 30 mm envelope. The wall uses the
+    # proven 3.2 mm web thickness, overlaps both flanges volumetrically and is a
+    # vertical support-free feature. The +X/rear face stays open.
+    front_skin = box(xc-ARM_W/2.0, y0, ARM_BOTTOM_Z,
+                     ARM_PROFILE_FRONT_SKIN_T, L, ARM_H)
+    return fuse_all([top, bot] + webs + haunches + [front_skin]).removeSplitter()
 '''
 s = pat.sub(rep.rstrip(), s, count=1)
 
@@ -100,14 +111,18 @@ s = s.replace("if V['mounting_backstop']['contact_window_behind_rear_clamp_cente
 anchor = "for name, sh in PARTS.items():\n"
 if anchor not in s:
     raise SystemExit('Could not locate final PARTS export gate')
-validation = '''# Support-safe symmetric arm-profile / INDX checks.
+validation = '''# Support-safe arm-profile / INDX checks.
 # Cubic smoothstep derivative max is 1.5; lateral reach is 6.4 mm.
 _arm_web_outer = 8.0 + ARM_PROFILE_WEB_T/2.0
 _arm_side_reach = ARM_W/2.0 - _arm_web_outer
 _arm_max_dx_dz = 1.5*_arm_side_reach/ARM_PROFILE_SPLINE_RISE
 _arm_probe = make_i_beam_y(0.0, 0.0, 20.0)
+_arm_front_skin_probe = box(-ARM_W/2.0, 0.0, ARM_BOTTOM_Z,
+                            ARM_PROFILE_FRONT_SKIN_T, 20.0, ARM_H)
+_arm_front_skin_fraction = (_arm_probe.common(_arm_front_skin_probe).Volume /
+                            _arm_front_skin_probe.Volume)
 V['supportfree_arm_profile'] = {
-    'architecture': 'symmetric_two_web_open_profile_with_slope_limited_spline_haunches',
+    'architecture': 'two_web_profile_front_closed_rear_open_with_slope_limited_spline_haunches',
     'outer_width_mm': round(_arm_probe.BoundBox.XLength, 3),
     'outer_height_mm': round(_arm_probe.BoundBox.ZLength, 3),
     'flange_thickness_mm': ARM_PROFILE_FLANGE_T,
@@ -119,9 +134,14 @@ V['supportfree_arm_profile'] = {
     'max_dx_dz': round(_arm_max_dx_dz, 6),
     'max_overhang_deg_from_vertical': round(math.degrees(math.atan(_arm_max_dx_dz)), 3),
     'symmetric_top_bottom': True,
-    'symmetric_left_right': True,
+    'symmetric_left_right': False,
+    'front_direction': '-X',
+    'front_face_closed': True,
+    'front_skin_thickness_mm': ARM_PROFILE_FRONT_SKIN_T,
+    'front_skin_material_fraction': round(_arm_front_skin_fraction, 6),
+    'rear_face_open': True,
     'print_orientation': 'BASE rotated 180deg about X; BOX_SUPPORT_Z on bed',
-    'support_policy': 'no generated support required for side flange haunches when max_dx_dz<=1.0',
+    'support_policy': 'front skin is vertical; spline haunches remain <=45deg; no generated support required',
 }
 if abs(V['supportfree_arm_profile']['outer_width_mm']-ARM_W) > 0.02:
     failures.append('Support-free arm profile no longer has the frozen 32 mm outer width')
@@ -131,6 +151,8 @@ if _arm_max_dx_dz > 1.0 + 1e-9:
     failures.append('Support-free spline exceeds the 45 degree lateral-growth envelope')
 if abs(ARM_PROFILE_WEB_CENTERS[0] + ARM_PROFILE_WEB_CENTERS[1]) > 1e-9:
     failures.append('Support-free arm webs are not symmetric about the arm center')
+if _arm_front_skin_fraction < 0.999:
+    failures.append('Front -X face of the two longitudinal holms is not fully closed')
 if abs(MOUNT_BACKSTOP_X0-140.0) > 0.02:
     failures.append('Rear mounting backstop does not start at local X=140 mm')
 if abs(MOUNT_BACKSTOP_W_X-50.0) > 1e-9:
@@ -145,8 +167,10 @@ if s == orig:
     raise SystemExit('INDX support-free arm patch made no changes')
 if 'ARM_PROFILE_MAX_DX_DZ = 0.96' not in s:
     raise SystemExit('Support-free spline constants were not installed')
+if 'ARM_PROFILE_FRONT_SKIN_T = ARM_PROFILE_WEB_T' not in s:
+    raise SystemExit('Front holm closure skin was not installed')
 if 'MOUNT_BACKSTOP_W_X = 50.0' not in s:
     raise SystemExit('Requested 50 mm backstop was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied symmetric support-safe spline arm profile and 50 mm rear backstop at X=140..190 mm')
+print('Applied support-safe arm profile with both -X/front holm faces closed and 50 mm rear backstop')
