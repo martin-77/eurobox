@@ -65,20 +65,20 @@ for _name in ('RIGHT', 'LEFT'):
     else:
         BASE_LEFT = BASE_LEFT.fuse(_FINAL_BASE_DECK).removeSplitter()
 
-# The deck top and the two side guides intentionally meet at x=+/-70.4 and
-# z=14.0. A pure edge-on-edge contact is legal enough for OCC to report one
-# valid solid, but it tessellates to a non-manifold STL edge (four triangles on
-# one edge). Add tiny buried stitch volumes around those two interfaces so the
-# union has real 3-D overlap. They remain below the moving plate (PLATE_Z0=16)
-# and do not change the requested 14.0 mm deck plane.
+# The deck top and the outer cage side walls meet at x=+/-70.4 and z=14.0.
+# A pure edge-on-edge contact is legal enough for OCC to report one valid solid,
+# but it tessellates to a non-manifold STL edge (four triangles on one edge).
+# Add tiny buried stitch volumes around those two interfaces over the complete
+# deck depth, including the forward head-side extension. They remain below the
+# moving plate (PLATE_Z0=16) and do not change the requested 14.0 mm deck plane.
 _FINAL_GUIDE_STITCHES = []
 for _xc in (FINAL_BASE_DECK_X0, FINAL_BASE_DECK_X1):
     _q = box(
         _xc-FINAL_GUIDE_STITCH_OVERLAP,
-        PRINT_GUIDE_Y0,
+        FINAL_BASE_DECK_Y0,
         FINAL_BASE_DECK_Z1-FINAL_GUIDE_STITCH_OVERLAP,
         2.0*FINAL_GUIDE_STITCH_OVERLAP,
-        PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,
+        PRINT_GUIDE_Y1-FINAL_BASE_DECK_Y0,
         2.0*FINAL_GUIDE_STITCH_OVERLAP,
     )
     _FINAL_GUIDE_STITCHES.append(_q)
