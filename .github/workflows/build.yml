@@ -223,7 +223,7 @@ jobs:
             while IFS= read -r commit; do
               subject=$(git show -s --format=%s "$commit")
               author_email=$(git show -s --format=%ae "$commit")
-              if [ "$subject" != "Update validated v50 CAD outputs [skip ci]" ] || [ "$author_email" != "41898282+github-actions[bot]@users.noreply.github.com" ]; then
+              if [ "$subject" != "Update validated v50 CAD outputs" ] || [ "$author_email" != "41898282+github-actions[bot]@users.noreply.github.com" ]; then
                 echo "::notice::main contains a newer non-generated commit; skipping stale generated CAD publish."
                 exit 0
               fi
@@ -275,7 +275,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Validated CAD outputs unchanged"
           else
-            git commit -m "Update validated v50 CAD outputs [skip ci]"
+            git commit -m "Update validated v50 CAD outputs"
             expected_remote=$(git rev-parse HEAD^)
             if ! git push origin HEAD:main; then
               if ! git fetch origin main; then
