@@ -31,6 +31,15 @@ if not _final_backstop_drop_patch.is_file():
     raise SystemExit('Missing final backstop/holm DROP geometry patch')
 exec(compile(_final_backstop_drop_patch.read_text(encoding='utf-8'),
              str(_final_backstop_drop_patch), 'exec'))
+
+# Finally tie the two fixed rack-clamp stations together on the frame side. A
+# straight top member plus DROP uses the same saddle radius as the upper clamps,
+# so it may bear on the Ø12.42 rack tube while the moving lower clamps stay free.
+_final_clamp_frame_patch = Path('scripts/apply_v50_clamp_frame_bridge.py')
+if not _final_clamp_frame_patch.is_file():
+    raise SystemExit('Missing final clamp-frame saddle bridge patch')
+exec(compile(_final_clamp_frame_patch.read_text(encoding='utf-8'),
+             str(_final_clamp_frame_patch), 'exec'))
 '''
     wc.write_text(s + hook, encoding='utf-8')
 
@@ -53,4 +62,4 @@ if old_tail not in vs:
 vs = vs.replace(old_tail, new_tail, 1)
 wv.write_text(vs, encoding='utf-8')
 
-print('Deferred requested BASE geometry until after final width cleanup, including full-width backstop and holm DROP cleanup')
+print('Deferred requested BASE geometry until after final width cleanup, including backstop, holm DROP and clamp-frame saddle bridge')
