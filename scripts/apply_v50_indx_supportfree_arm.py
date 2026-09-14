@@ -8,9 +8,10 @@ orig = s
 # CORE One L+ INDX / FDM printability refinement.
 # Keep the proven two-web arm architecture and leave BOTH longitudinal side
 # channels open over the full holm length. The requested closure is only at the
-# HEAD: each BASE has two holms, and each holm gets one short 3.2 mm end cap at
-# ARM_Y1. No long -X/+X skin is allowed. Spindle, screw cage, nut pockets and
-# clamp kinematics remain untouched.
+# HEAD: each BASE has two short open profile ends at the outer head edge. Close
+# them with one 3.2 mm end cap per holm, flush with the existing crosshead edge
+# at BOX_RIM_INNER_Y-0.20 (=228.015 mm). No long -X/+X skin is allowed.
+# Spindle, screw cage, nut pockets and clamp kinematics remain untouched.
 #
 # The side flange overhangs are carried by symmetric cubic Hermite haunches.
 # The curve is deliberately slope-limited: with the final 6.4 mm lateral reach
@@ -34,6 +35,7 @@ ARM_PROFILE_VISUAL_RADIUS = 20.0
 ARM_PROFILE_SPLINE_SAMPLES = 18
 ARM_PROFILE_MAX_DX_DZ = 0.96
 ARM_PROFILE_HEAD_CAP_T = ARM_PROFILE_WEB_T
+ARM_PROFILE_HEAD_FACE_Y = BOX_RIM_INNER_Y - 0.20
 
 
 def _arm_smoothstep(t):
@@ -84,12 +86,11 @@ def make_i_beam_y(xc, y0, y1):
     return fuse_all([top, bot] + webs + haunches).removeSplitter()
 
 
-def _arm_head_cap(xc, y_head):
-    # Short end closure only: 3.2 mm in Y immediately before the holm head.
-    # It spans the 32 x 30 mm holm cross-section and stays inside the existing
-    # envelope. This closes the two open H/I ends without skinning either side.
+def _arm_head_cap(xc, y_face):
+    # Close only the two short open ends at the visible head edge. The outside
+    # face is exactly flush with y_face; thickness grows inward (-Y).
     return box(xc-ARM_W/2.0,
-               y_head-ARM_PROFILE_HEAD_CAP_T,
+               y_face-ARM_PROFILE_HEAD_CAP_T,
                ARM_BOTTOM_Z,
                ARM_W,
                ARM_PROFILE_HEAD_CAP_T,
@@ -105,11 +106,11 @@ if handed_anchor not in s:
     raise SystemExit('Could not locate handed BASE core anchor for head caps')
 handed_insert = '''BASE_CORE = BASE.copy()
 
-_ARM_HEAD_CAPS = [_arm_head_cap(xc, ARM_Y1) for xc in CLAMP_X]
+_ARM_HEAD_CAPS = [_arm_head_cap(xc, ARM_PROFILE_HEAD_FACE_Y) for xc in CLAMP_X]
 for _q in _ARM_HEAD_CAPS:
     BASE_CORE = BASE_CORE.fuse(_q).removeSplitter()
 if not BASE_CORE.isValid() or len(BASE_CORE.Solids) != 1:
-    raise RuntimeError('Two short holm head caps broke BASE core topology')
+    raise RuntimeError('Two short flush holm head caps broke BASE core topology')
 '''
 s = s.replace(handed_anchor, handed_insert, 1)
 
@@ -134,7 +135,7 @@ s = s.replace("if V['mounting_backstop']['contact_window_behind_rear_clamp_cente
 anchor = "for name, sh in PARTS.items():\n"
 if anchor not in s:
     raise SystemExit('Could not locate final PARTS export gate')
-validation = '''# Support-safe symmetric arm-profile / SHORT HEAD-CAP checks.
+validation = '''# Support-safe symmetric arm-profile / FLUSH SHORT HEAD-CAP checks.
 # Cubic smoothstep derivative max is 1.5; lateral reach is 6.4 mm.
 _arm_web_outer = 8.0 + ARM_PROFILE_WEB_T/2.0
 _arm_side_reach = ARM_W/2.0 - _arm_web_outer
@@ -155,7 +156,7 @@ _arm_open_right_common = _arm_probe.common(_arm_open_probe_right).Volume
 _head_cap_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _ARM_HEAD_CAPS]
 _head_cap_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _ARM_HEAD_CAPS]
 V['supportfree_arm_profile'] = {
-    'architecture': 'symmetric_two_web_open_profile_with_two_short_head_end_caps',
+    'architecture': 'symmetric_two_web_open_profile_with_two_flush_short_head_end_caps',
     'outer_width_mm': round(_arm_probe.BoundBox.XLength, 3),
     'outer_height_mm': round(_arm_probe.BoundBox.ZLength, 3),
     'flange_thickness_mm': ARM_PROFILE_FLANGE_T,
@@ -172,12 +173,14 @@ V['supportfree_arm_profile'] = {
     'left_side_open_probe_common_mm3': round(_arm_open_left_common, 9),
     'right_side_open_probe_common_mm3': round(_arm_open_right_common, 9),
     'head_cap_count_per_base': len(_ARM_HEAD_CAPS),
-    'head_cap_y_mm': [ARM_Y1-ARM_PROFILE_HEAD_CAP_T, ARM_Y1],
+    'head_face_y_mm': round(ARM_PROFILE_HEAD_FACE_Y, 3),
+    'head_cap_y_mm': [round(ARM_PROFILE_HEAD_FACE_Y-ARM_PROFILE_HEAD_CAP_T, 3),
+                      round(ARM_PROFILE_HEAD_FACE_Y, 3)],
     'head_cap_thickness_mm': ARM_PROFILE_HEAD_CAP_T,
     'head_cap_material_fraction_right': [round(x, 6) for x in _head_cap_fraction_right],
     'head_cap_material_fraction_left': [round(x, 6) for x in _head_cap_fraction_left],
     'print_orientation': 'BASE rotated 180deg about X; BOX_SUPPORT_Z on bed',
-    'support_policy': 'side channels remain open; only two short vertical head end caps are added; no generated support required',
+    'support_policy': 'side channels remain open; only two short head ends are closed flush at the 228.015 mm outer edge; no generated support required',
 }
 if abs(V['supportfree_arm_profile']['outer_width_mm']-ARM_W) > 0.02:
     failures.append('Support-free arm profile no longer has the frozen 32 mm outer width')
@@ -191,6 +194,8 @@ if _arm_open_left_common > 1e-6 or _arm_open_right_common > 1e-6:
     failures.append('A longitudinal holm side channel was closed; only the two short head ends may be capped')
 if len(_ARM_HEAD_CAPS) != 2:
     failures.append('BASE does not have exactly two short holm head caps')
+if abs(ARM_PROFILE_HEAD_FACE_Y-(BOX_RIM_INNER_Y-0.20)) > 1e-9:
+    failures.append('Holm head caps are not flush with the existing 228.015 mm head edge')
 for side, vals in [('RIGHT', _head_cap_fraction_right), ('LEFT', _head_cap_fraction_left)]:
     for i, frac in enumerate(vals):
         if frac < 0.999:
@@ -209,10 +214,10 @@ if s == orig:
     raise SystemExit('INDX support-free arm patch made no changes')
 if 'ARM_PROFILE_MAX_DX_DZ = 0.96' not in s:
     raise SystemExit('Support-free spline constants were not installed')
-if '_ARM_HEAD_CAPS = [_arm_head_cap(xc, ARM_Y1) for xc in CLAMP_X]' not in s:
-    raise SystemExit('Two short holm head caps were not installed')
+if '_ARM_HEAD_CAPS = [_arm_head_cap(xc, ARM_PROFILE_HEAD_FACE_Y) for xc in CLAMP_X]' not in s:
+    raise SystemExit('Two flush short holm head caps were not installed')
 if 'MOUNT_BACKSTOP_W_X = 50.0' not in s:
     raise SystemExit('Requested 50 mm backstop was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied open longitudinal holms with only two short 3.2 mm head end caps per BASE')
+print('Applied open longitudinal holms with two flush 3.2 mm head end caps at Y=228.015 mm per BASE')
