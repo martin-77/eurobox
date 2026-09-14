@@ -29,15 +29,21 @@ FINAL_BOSS_SIDE_OVERLAP = 0.35
 FINAL_BOSS_SUPPORT_Z0 = FINAL_BASE_DECK_Z1 - FINAL_BASE_BOP_OVERLAP
 FINAL_BOSS_SUPPORT_Z1 = PRINT_FRAME_BOSS_Z0 + FINAL_BASE_BOP_OVERLAP
 
-# Outer clamp-head faces: pull both head walls forward to the front edge of the
-# clamp station and carry them continuously into the arm/transition. In the
-# frozen upside-down print orientation these walls rise directly from the bed
-# side, removing the two head-side overhangs marked in the user's reference.
-FINAL_HEAD_WALL_T_X = 4.0
-FINAL_HEAD_WALL_Y0 = -8.0
-FINAL_HEAD_WALL_Y1 = 30.0
-FINAL_HEAD_WALL_Z0 = ARM_BOTTOM_Z
-FINAL_HEAD_WALL_Z1 = ARM_TOP_Z
+# CORRECT head-side interpretation from the user's marked reference image:
+# the two marked faces are the OUTER SIDE WALLS of the screw/plate cage at
+# X=-78..-70.4 and X=70.4..78, not the rack-clamp stations at X=+/-90.
+#
+# The original guide walls begin only at PRINT_GUIDE_Y0 (~214.2 mm), while the
+# upper transverse tie already begins at CAGE_Y0-0.1 (~190.6 mm). That leaves
+# the tie overhanging at both outer cage heads in the upside-down print
+# orientation. Extend those existing guide walls forward in Y to the tie's
+# front edge and overlap the old guide by 0.35 mm, producing one continuous,
+# planar support wall under each outer end of the tie.
+FINAL_HEADSIDE_Y0 = CAGE_Y0 - 0.10
+FINAL_HEADSIDE_Y1 = PRINT_GUIDE_Y0 + 0.35
+FINAL_HEADSIDE_Z0 = PRINT_GUIDE_Z0
+FINAL_HEADSIDE_Z1 = PRINT_BASE_PLANE_Z
+FINAL_HEADSIDE_X_RANGES = [(-78.0, -70.4), (70.4, 78.0)]
 
 INBOARD_CAGE = fuse_all(_inboard_parts)
 BASE_RIGHT = BASE_RIGHT.fuse(INBOARD_CAGE).removeSplitter()
@@ -97,25 +103,26 @@ for sx in SPINDLE_X:
     BASE_RIGHT = BASE_RIGHT.fuse(_q).removeSplitter()
     BASE_LEFT = BASE_LEFT.fuse(_q).removeSplitter()
 
-# Close the two marked clamp-head overhangs with straight planar walls at the
-# OUTER X side of the two rack-clamp stations. The wall is 4 mm thick inward,
-# spans Y=-8..30 mm and Z=ARM_BOTTOM_Z..ARM_TOP_Z, so it remains entirely above
-# the real rack-tube crown and clear of the articulated lower clamp/pivot.
-_FINAL_HEAD_WALLS = [
-    box(CLAMP_X[0]-17.0, FINAL_HEAD_WALL_Y0, FINAL_HEAD_WALL_Z0,
-        FINAL_HEAD_WALL_T_X, FINAL_HEAD_WALL_Y1-FINAL_HEAD_WALL_Y0,
-        FINAL_HEAD_WALL_Z1-FINAL_HEAD_WALL_Z0),
-    box(CLAMP_X[1]+17.0-FINAL_HEAD_WALL_T_X, FINAL_HEAD_WALL_Y0, FINAL_HEAD_WALL_Z0,
-        FINAL_HEAD_WALL_T_X, FINAL_HEAD_WALL_Y1-FINAL_HEAD_WALL_Y0,
-        FINAL_HEAD_WALL_Z1-FINAL_HEAD_WALL_Z0),
-]
-for _q in _FINAL_HEAD_WALLS:
+# Extend the TWO EXISTING OUTER CAGE GUIDE WALLS forward to the front edge of
+# the top tie. These are exactly the head-side faces marked with the user's thin
+# black lines. Do NOT add material at the rack clamps.
+_FINAL_HEADSIDE_EXTENSIONS = []
+for _x0, _x1 in FINAL_HEADSIDE_X_RANGES:
+    _q = box(
+        _x0,
+        FINAL_HEADSIDE_Y0,
+        FINAL_HEADSIDE_Z0,
+        _x1-_x0,
+        FINAL_HEADSIDE_Y1-FINAL_HEADSIDE_Y0,
+        FINAL_HEADSIDE_Z1-FINAL_HEADSIDE_Z0,
+    )
+    _FINAL_HEADSIDE_EXTENSIONS.append(_q)
     BASE_RIGHT = BASE_RIGHT.fuse(_q).removeSplitter()
     BASE_LEFT = BASE_LEFT.fuse(_q).removeSplitter()
 
 if (not BASE_RIGHT.isValid() or len(BASE_RIGHT.Solids) != 1 or
         not BASE_LEFT.isValid() or len(BASE_LEFT.Solids) != 1):
-    raise RuntimeError('Requested final BASE floor/support/head-wall geometry broke handed topology')
+    raise RuntimeError('Requested final BASE floor/support/head-side geometry broke handed topology')
 '''
 s = s.replace(anchor, replacement, 1)
 
@@ -125,8 +132,8 @@ if export_anchor not in s:
 
 validation = '''# Validate the ACTUAL final handed geometry after all width-cleanup cutters.
 # Functional spindle/pin/service bores are allowed to remove material locally;
-# the checks below verify the floor plane, full-footprint underbuild and planar
-# outer head walls are present rather than demanding material inside holes.
+# the checks below verify the floor plane, full-footprint underbuild and the two
+# planar outer screw-cage head-side walls are present.
 _final_deck_common_right = BASE_RIGHT.common(_FINAL_BASE_DECK).Volume
 _final_deck_common_left = BASE_LEFT.common(_FINAL_BASE_DECK).Volume
 _final_deck_fraction_right = _final_deck_common_right / _FINAL_BASE_DECK.Volume
@@ -136,9 +143,9 @@ _final_boss_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _FINAL
 _final_guide_stitch_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _FINAL_GUIDE_STITCHES]
 _final_guide_stitch_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _FINAL_GUIDE_STITCHES]
 _final_guide_stitch_plate_common = [PLATE.common(q).Volume for q in _FINAL_GUIDE_STITCHES]
-_final_head_wall_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _FINAL_HEAD_WALLS]
-_final_head_wall_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _FINAL_HEAD_WALLS]
-_final_head_wall_tube_common = [TUBE.common(q).Volume for q in _FINAL_HEAD_WALLS]
+_final_headside_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _FINAL_HEADSIDE_EXTENSIONS]
+_final_headside_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _FINAL_HEADSIDE_EXTENSIONS]
+_final_headside_plate_common = [PLATE.common(q).Volume for q in _FINAL_HEADSIDE_EXTENSIONS]
 V['final_requested_base_geometry'] = {
     'applied_after_width_cleanup': True,
     'deck_x_mm': [FINAL_BASE_DECK_X0, FINAL_BASE_DECK_X1],
@@ -147,10 +154,11 @@ V['final_requested_base_geometry'] = {
     'boss_support_z_mm': [FINAL_BOSS_SUPPORT_Z0, FINAL_BOSS_SUPPORT_Z1],
     'boss_side_overlap_mm': FINAL_BOSS_SIDE_OVERLAP,
     'guide_stitch_overlap_mm': FINAL_GUIDE_STITCH_OVERLAP,
-    'head_wall_x_outer_edges_mm': [CLAMP_X[0]-17.0, CLAMP_X[1]+17.0],
-    'head_wall_y_mm': [FINAL_HEAD_WALL_Y0, FINAL_HEAD_WALL_Y1],
-    'head_wall_z_mm': [FINAL_HEAD_WALL_Z0, FINAL_HEAD_WALL_Z1],
-    'head_wall_thickness_x_mm': FINAL_HEAD_WALL_T_X,
+    'headside_target': 'outer_screw_cage_guide_walls_not_rack_clamps',
+    'headside_x_ranges_mm': [list(x) for x in FINAL_HEADSIDE_X_RANGES],
+    'headside_y_mm': [FINAL_HEADSIDE_Y0, FINAL_HEADSIDE_Y1],
+    'headside_z_mm': [FINAL_HEADSIDE_Z0, FINAL_HEADSIDE_Z1],
+    'headside_front_matches_tie_front': abs(FINAL_HEADSIDE_Y0-(CAGE_Y0-0.10)) <= 1e-9,
     'deck_material_fraction_right': round(_final_deck_fraction_right, 6),
     'deck_material_fraction_left': round(_final_deck_fraction_left, 6),
     'boss_material_fraction_right': [round(x, 6) for x in _final_boss_fraction_right],
@@ -158,12 +166,12 @@ V['final_requested_base_geometry'] = {
     'guide_stitch_material_fraction_right': [round(x, 6) for x in _final_guide_stitch_fraction_right],
     'guide_stitch_material_fraction_left': [round(x, 6) for x in _final_guide_stitch_fraction_left],
     'guide_stitch_plate_common_mm3': [round(x, 9) for x in _final_guide_stitch_plate_common],
-    'head_wall_material_fraction_right': [round(x, 6) for x in _final_head_wall_fraction_right],
-    'head_wall_material_fraction_left': [round(x, 6) for x in _final_head_wall_fraction_left],
-    'head_wall_tube_common_mm3': [round(x, 9) for x in _final_head_wall_tube_common],
+    'headside_material_fraction_right': [round(x, 6) for x in _final_headside_fraction_right],
+    'headside_material_fraction_left': [round(x, 6) for x in _final_headside_fraction_left],
+    'headside_plate_common_mm3': [round(x, 9) for x in _final_headside_plate_common],
     'rear_stop_matches_block_rear_face': abs(FINAL_BASE_DECK_Y0-CAGE_Y0) <= 1e-9,
     'same_level_as_front': abs(FINAL_BASE_DECK_Z1-PRINT_GUIDE_Z0) <= 1e-9,
-    'policy': 'lower plane through screw cage; screw underbuild side-overlapped to remove slits; outer clamp-head faces pulled forward as continuous planar walls for support-free printing; guide/deck seam stitched',
+    'policy': 'lower plane through screw cage; screw underbuild side-overlapped; outer screw-cage guide walls extended forward under transverse tie for support-free head sides; no rack-clamp head-wall addition; guide/deck seam stitched',
 }
 if _final_deck_fraction_right < 0.98 or _final_deck_fraction_left < 0.98:
     failures.append('Final lower BASE plane is not substantially present through the screw-block depth')
@@ -175,14 +183,16 @@ for side, vals in [('RIGHT', _final_guide_stitch_fraction_right), ('LEFT', _fina
     for i, frac in enumerate(vals):
         if frac < 0.999:
             failures.append(f'{side} guide/deck stitch {i} is not fully incorporated in the BASE')
-for side, vals in [('RIGHT', _final_head_wall_fraction_right), ('LEFT', _final_head_wall_fraction_left)]:
+for side, vals in [('RIGHT', _final_headside_fraction_right), ('LEFT', _final_headside_fraction_left)]:
     for i, frac in enumerate(vals):
         if frac < 0.999:
-            failures.append(f'{side} outer clamp-head wall {i} is not fully incorporated in the BASE')
-if any(v > 1e-6 for v in _final_head_wall_tube_common):
-    failures.append('Planar outer clamp-head wall intrudes into the real rack tube')
+            failures.append(f'{side} outer screw-cage head-side extension {i} is not fully incorporated in the BASE')
+if any(v > 1e-6 for v in _final_headside_plate_common):
+    failures.append('Planar screw-cage head-side extension intrudes into the moving clamp plate')
 if any(v > 1e-6 for v in _final_guide_stitch_plate_common):
     failures.append('Guide/deck manifold stitch intrudes into the moving plate envelope')
+if abs(FINAL_HEADSIDE_Y0-(CAGE_Y0-0.10)) > 1e-9:
+    failures.append('Outer screw-cage head-side walls do not reach the front edge of the transverse tie')
 if abs(FINAL_BASE_DECK_Y0-CAGE_Y0) > 1e-9:
     failures.append('Final lower BASE plane extends behind the screw-block rear edge')
 if abs(FINAL_BASE_DECK_Z1-PRINT_GUIDE_Z0) > 1e-9:
@@ -195,4 +205,4 @@ if s == orig:
     raise SystemExit('Final BASE geometry patch made no changes')
 
 p.write_text(s, encoding='utf-8')
-print('Applied final support-free BASE geometry: connected screw underbuild and planar outer head walls')
+print('Applied final support-free BASE geometry: connected screw underbuild and forward-extended outer screw-cage head walls')
