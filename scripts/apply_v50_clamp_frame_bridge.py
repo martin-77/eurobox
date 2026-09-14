@@ -9,23 +9,26 @@ orig = s
 # ---------------------------------------------------------------------------
 # Connect the two fixed rack-clamp stations on the bicycle/frame side without
 # touching the moving lower jaws. The bridge runs only between the inner faces
-# of the two 34 mm upper clamp bodies (with 0.30 mm buried overlap per side),
-# so its X envelope stays clear of both moving lowers for every opening angle.
+# of the two 34 mm upper clamp bodies (with 0.30 mm buried overlap per side).
 #
-# The bridge consists of a straight top tie plus a central DROP that reaches
-# down to the rack tube. The DROP is cut with the SAME saddle radius as the
-# fixed upper clamps, so it can bear on the real Ø12.42 mm rack tube without
-# creating a new tighter clamp. There is no material below the tube centreline.
+# IMPORTANT: fuse this bridge only after ALL existing inboard/floor/head-side
+# BASE geometry has finished. Adding it to BASE_CORE earlier made a later large
+# OCC fusion numerically unstable even though the bridge itself was valid and
+# mechanically collision-free. The late fusion keeps the proven BASE sequence
+# untouched, then updates BASE_RIGHT/BASE_LEFT/BASE immediately before PARTS.
+#
+# A straight top tie carries a central DROP down to the rack tube. The DROP is
+# cut with the SAME saddle radius as the fixed upper clamps, so it can bear on
+# the real Ø12.42 mm rack tube without becoming a tighter third clamp. Nothing
+# extends below the tube centreline.
 
-anchor = '''if not BASE_CORE.isValid() or len(BASE_CORE.Solids) != 1:
-    raise RuntimeError('Holm head DROP cleanup broke BASE core topology')
-'''
-if anchor not in s:
-    raise SystemExit('Could not locate post-holm-DROP BASE core anchor')
+parts_anchor = "PARTS = {\n"
+if parts_anchor not in s:
+    raise SystemExit('Could not locate final PARTS anchor for late clamp-frame bridge')
 
-bridge_code = anchor + '''
-
-# Frame-side connection between the two fixed rack clamps.
+late_geometry = '''# ---------------------------------------------------------------------------
+# FINAL late-fused frame-side bridge between the two fixed rack clamps.
+# ---------------------------------------------------------------------------
 CLAMP_FRAME_BRIDGE_OVERLAP_X = 0.30
 CLAMP_FRAME_BRIDGE_X0 = FRONT_CLAMP_X + 17.0 - CLAMP_FRAME_BRIDGE_OVERLAP_X
 CLAMP_FRAME_BRIDGE_X1 = REAR_CLAMP_X - 17.0 + CLAMP_FRAME_BRIDGE_OVERLAP_X
@@ -67,11 +70,19 @@ if (not _CLAMP_FRAME_BRIDGE.isValid() or
         len(_CLAMP_FRAME_BRIDGE.Solids) != 1):
     raise RuntimeError('Clamp-frame saddle bridge is not one valid solid')
 
-BASE_CORE = BASE_CORE.fuse(_CLAMP_FRAME_BRIDGE).removeSplitter()
-if not BASE_CORE.isValid() or len(BASE_CORE.Solids) != 1:
-    raise RuntimeError('Clamp-frame saddle bridge broke BASE core topology')
+# At this point all sensitive cage/deck/head-side BOPs are already complete.
+BASE_RIGHT = BASE_RIGHT.fuse(_CLAMP_FRAME_BRIDGE).removeSplitter()
+BASE_LEFT = BASE_LEFT.fuse(_CLAMP_FRAME_BRIDGE).removeSplitter()
+if (not BASE_RIGHT.isValid() or len(BASE_RIGHT.Solids) != 1 or
+        not BASE_LEFT.isValid() or len(BASE_LEFT.Solids) != 1):
+    raise RuntimeError('Late clamp-frame saddle bridge broke handed BASE topology')
+if abs(BASE_RIGHT.Volume-BASE_LEFT.Volume) > 1e-4:
+    raise RuntimeError('Late clamp-frame saddle bridge broke LEFT/RIGHT volume symmetry')
+# Canonical legacy BASE and all downstream hard checks must see the new bridge.
+BASE = BASE_RIGHT
+
 '''
-s = s.replace(anchor, bridge_code, 1)
+s = s.replace(parts_anchor, late_geometry + parts_anchor, 1)
 
 export_anchor = "for name, sh in PARTS.items():\n"
 if export_anchor not in s:
@@ -105,7 +116,7 @@ for _xc in CLAMP_X:
         })
 
 V['clamp_frame_bridge'] = {
-    'architecture': 'straight_top_tie_with_central_drop_and_rack_tube_saddle',
+    'architecture': 'late_fused_straight_top_tie_with_central_drop_and_rack_tube_saddle',
     'x_mm': [round(CLAMP_FRAME_BRIDGE_X0, 3), round(CLAMP_FRAME_BRIDGE_X1, 3)],
     'top_y_mm': [CLAMP_FRAME_BRIDGE_Y0, CLAMP_FRAME_BRIDGE_Y1],
     'top_z_mm': [CLAMP_FRAME_BRIDGE_TOP_Z0, CLAMP_FRAME_BRIDGE_TOP_Z1],
@@ -145,8 +156,8 @@ s = s.replace(export_anchor, validation + export_anchor, 1)
 
 if s == orig:
     raise SystemExit('Clamp-frame saddle bridge patch made no changes')
-if '_CLAMP_FRAME_BRIDGE = fuse_all' not in s:
-    raise SystemExit('Clamp-frame saddle bridge geometry was not installed')
+if 'FINAL late-fused frame-side bridge' not in s:
+    raise SystemExit('Late clamp-frame saddle bridge geometry was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied frame-side saddle bridge between rack clamps with DROP to Ø12.42 rack tube')
+print('Applied late-fused frame-side saddle bridge between rack clamps with DROP to Ø12.42 rack tube')
