@@ -7,9 +7,27 @@ orig = s
 
 # Final arm/profile cleanup. Keep both longitudinal side channels open. At the
 # head each BASE has two holms; each holm gets exactly ONE flush 3.2 mm end wall
-# at BOX_RIM_INNER_Y-0.20 (=228.015 mm). The old inner crosshead wall in the same
-# two holm windows is removed so BASE_LEFT/BASE_RIGHT have four corrected
-# positions in total. Spindle/cage/nut/box-clamp geometry is untouched.
+# at BOX_RIM_INNER_Y-0.20 (=228.015 mm).
+#
+# The redundant inner wall is not a holm feature at all: it comes from the old
+# full-width crosshead middle web at Y=216..220.5. Keep that middle web only
+# between the two holms (X=-74..+74), leaving both 32 mm holm windows open.
+# This applies symmetrically to BASE_LEFT/BASE_RIGHT (4 head positions total).
+# Spindle/cage/nut/box-clamp geometry is untouched.
+
+# Remove the redundant crosshead middle wall from BOTH holm windows at source.
+_old_crosshead_middle = (
+    "    box(-106.0, 216.0, ARM_BOTTOM_Z+FLANGE_T, "
+    "212.0, 4.5, ARM_H-2*FLANGE_T),\n"
+)
+_new_crosshead_middle = (
+    "    box(-74.0, 216.0, ARM_BOTTOM_Z+FLANGE_T, "
+    "148.0, 4.5, ARM_H-2*FLANGE_T),\n"
+)
+if _old_crosshead_middle not in s:
+    raise SystemExit('Could not locate full-width crosshead middle web')
+s = s.replace(_old_crosshead_middle, _new_crosshead_middle, 1)
+
 pat = re.compile(r"def make_i_beam_y\(xc, y0, y1\):\n.*?(?=\n\ndef |\n# -----------------------------|\nbase_parts =)", re.S)
 if not pat.search(s):
     raise SystemExit('Could not locate final make_i_beam_y implementation')
@@ -76,29 +94,13 @@ def _arm_head_cap(xc, y_face):
 '''
 s = pat.sub(rep.rstrip(), s, count=1)
 
-# Single-wall head geometry on the shared core: remove the redundant inner wall
-# only in the two 32 mm holm windows, retaining top/bottom flanges, then add the
-# single flush outer wall. Because this is BASE_CORE it applies identically to
-# both handed BASE parts (2 holms per BASE, 4 corrected positions total).
+# Add exactly one outer head cap per holm to the common handed core. There is no
+# post-boolean "inner wall cutter": the offending wall has already been removed
+# correctly at its source above.
 handed_anchor = 'BASE_CORE = BASE.copy()\n'
 if handed_anchor not in s:
     raise SystemExit('Could not locate handed BASE core anchor')
 handed_insert = '''BASE_CORE = BASE.copy()
-
-ARM_PROFILE_REDUNDANT_HEAD_WALL_Y0 = ARM_Y1 - 4.0
-ARM_PROFILE_REDUNDANT_HEAD_WALL_Y1 = ARM_Y1 + 0.55
-_ARM_REDUNDANT_HEAD_WALL_CUTTERS = []
-for xc in CLAMP_X:
-    _q = box(
-        xc-ARM_W/2.0-0.05,
-        ARM_PROFILE_REDUNDANT_HEAD_WALL_Y0,
-        ARM_BOTTOM_Z+ARM_PROFILE_FLANGE_T-0.05,
-        ARM_W+0.10,
-        ARM_PROFILE_REDUNDANT_HEAD_WALL_Y1-ARM_PROFILE_REDUNDANT_HEAD_WALL_Y0,
-        ARM_H-2.0*ARM_PROFILE_FLANGE_T+0.10,
-    )
-    _ARM_REDUNDANT_HEAD_WALL_CUTTERS.append(_q)
-    BASE_CORE = BASE_CORE.cut(_q).removeSplitter()
 
 _ARM_HEAD_CAPS = [_arm_head_cap(xc, ARM_PROFILE_HEAD_FACE_Y) for xc in CLAMP_X]
 for _q in _ARM_HEAD_CAPS:
@@ -202,8 +204,17 @@ _arm_open_right_common = _arm_probe.common(_arm_open_probe_right).Volume
 
 _head_cap_fraction_right = [BASE_RIGHT.common(q).Volume/q.Volume for q in _ARM_HEAD_CAPS]
 _head_cap_fraction_left = [BASE_LEFT.common(q).Volume/q.Volume for q in _ARM_HEAD_CAPS]
-_redundant_head_wall_common_right = [BASE_RIGHT.common(q).Volume for q in _ARM_REDUNDANT_HEAD_WALL_CUTTERS]
-_redundant_head_wall_common_left = [BASE_LEFT.common(q).Volume for q in _ARM_REDUNDANT_HEAD_WALL_CUTTERS]
+
+# Probe the centre channel behind each outer cap. This is the exact material
+# volume that the old full-width Y=216..220.5 crosshead middle wall used to
+# occupy, but it deliberately avoids the two legitimate longitudinal I/H webs.
+# If the redundant wall ever returns, these probes become solid immediately.
+_ARM_INNER_WALL_PROBES = [
+    box(xc-4.0, 216.25, 18.0, 8.0, 3.50, 13.0)
+    for xc in CLAMP_X
+]
+_inner_wall_probe_common_right = [BASE_RIGHT.common(q).Volume for q in _ARM_INNER_WALL_PROBES]
+_inner_wall_probe_common_left = [BASE_LEFT.common(q).Volume for q in _ARM_INNER_WALL_PROBES]
 
 _backstop_sweep = []
 for _side, _xc, _stop in (
@@ -240,8 +251,9 @@ V['supportfree_arm_profile'] = {
                       round(ARM_PROFILE_HEAD_FACE_Y, 3)],
     'head_cap_material_fraction_right': [round(x, 6) for x in _head_cap_fraction_right],
     'head_cap_material_fraction_left': [round(x, 6) for x in _head_cap_fraction_left],
-    'redundant_inner_wall_common_right_mm3': [round(x, 9) for x in _redundant_head_wall_common_right],
-    'redundant_inner_wall_common_left_mm3': [round(x, 9) for x in _redundant_head_wall_common_left],
+    'crosshead_middle_web_x_mm': [-74.0, 74.0],
+    'inner_wall_probe_common_right_mm3': [round(x, 9) for x in _inner_wall_probe_common_right],
+    'inner_wall_probe_common_left_mm3': [round(x, 9) for x in _inner_wall_probe_common_left],
 }
 V['mounting_backstop_final_cleanup'] = {
     'bridge_shape': 'rectangular_step_no_diagonal_faces',
@@ -260,7 +272,7 @@ if _arm_max_dx_dz > 1.0 + 1e-9:
     failures.append('Support-free spline exceeds the 45 degree lateral-growth envelope')
 if _arm_open_left_common > 1e-6 or _arm_open_right_common > 1e-6:
     failures.append('A longitudinal holm side channel was closed')
-if len(_ARM_HEAD_CAPS) != 2 or len(_ARM_REDUNDANT_HEAD_WALL_CUTTERS) != 2:
+if len(_ARM_HEAD_CAPS) != 2 or len(_ARM_INNER_WALL_PROBES) != 2:
     failures.append('BASE does not contain exactly two corrected holm-head positions')
 if abs(ARM_PROFILE_HEAD_FACE_Y-(BOX_RIM_INNER_Y-0.20)) > 1e-9:
     failures.append('Single holm end walls are not flush with the 228.015 mm head edge')
@@ -268,7 +280,7 @@ for _side, _vals in (('RIGHT', _head_cap_fraction_right), ('LEFT', _head_cap_fra
     for _i, _frac in enumerate(_vals):
         if _frac < 0.999:
             failures.append(f'{_side} holm {_i} lost its single flush outer head wall')
-for _side, _vals in (('RIGHT', _redundant_head_wall_common_right), ('LEFT', _redundant_head_wall_common_left)):
+for _side, _vals in (('RIGHT', _inner_wall_probe_common_right), ('LEFT', _inner_wall_probe_common_left)):
     for _i, _common in enumerate(_vals):
         if _common > 1e-5:
             failures.append(f'{_side} holm {_i} still has the redundant parallel inner head wall')
@@ -293,8 +305,8 @@ if s == orig:
     raise SystemExit('INDX final arm/backstop patch made no changes')
 if 'MOUNT_BACKSTOP_BRIDGE_Z0 = 18.0' not in s:
     raise SystemExit('Rectangular backstop bridge was not installed')
-if '_ARM_REDUNDANT_HEAD_WALL_CUTTERS' not in s:
-    raise SystemExit('Single-wall holm-head cleanup was not installed')
+if _new_crosshead_middle not in s:
+    raise SystemExit('Crosshead middle web was not narrowed between the holms')
 
 p.write_text(s, encoding='utf-8')
 print('Applied one flush wall per holm and a short rectangular clamp-safe rear backstop bridge')
