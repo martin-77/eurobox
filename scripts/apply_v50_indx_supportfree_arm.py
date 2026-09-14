@@ -79,12 +79,22 @@ def make_i_beam_y(xc, y0, y1):
 '''
 s = pat.sub(rep.rstrip(), s, count=1)
 
-# Shorten the rear mounting stop from 40 to 35 mm. This keeps its start at
-# +150 mm but ends at +185 mm, giving the 298 mm CORE One L+ INDX X envelope
-# materially more margin than the former ~297 mm overall BASE length.
+# Final requested rear mounting-stop geometry: keep the rear edge at X=+190 mm
+# but widen the panel by 10 mm toward the rear clamp. With REAR_CLAMP_X=+90 mm,
+# the contact window therefore changes from +150..+190 to +140..+190 mm.
+if 'MOUNT_BACKSTOP_X_FROM_REAR_CLAMP = 60.0' not in s:
+    raise SystemExit('Could not locate mounting-backstop start offset')
+s = s.replace('MOUNT_BACKSTOP_X_FROM_REAR_CLAMP = 60.0',
+              'MOUNT_BACKSTOP_X_FROM_REAR_CLAMP = 50.0', 1)
 if 'MOUNT_BACKSTOP_W_X = 40.0' not in s:
     raise SystemExit('Could not locate 40 mm mounting-backstop width')
-s = s.replace('MOUNT_BACKSTOP_W_X = 40.0', 'MOUNT_BACKSTOP_W_X = 35.0', 1)
+s = s.replace('MOUNT_BACKSTOP_W_X = 40.0', 'MOUNT_BACKSTOP_W_X = 50.0', 1)
+s = s.replace('handed_single_rear_40mm_panel_with_deep_root_and_rear_i_beam_gusset',
+              'handed_single_rear_50mm_panel_with_deep_root_and_rear_i_beam_gusset')
+s = s.replace("if V['mounting_backstop']['clearance_from_rear_clamp_body_mm'] < 35.0:",
+              "if V['mounting_backstop']['clearance_from_rear_clamp_body_mm'] < 32.5:")
+s = s.replace("if V['mounting_backstop']['contact_window_behind_rear_clamp_center_mm'][0] < 55.0:",
+              "if V['mounting_backstop']['contact_window_behind_rear_clamp_center_mm'][0] < 49.9:")
 
 # Add hard source-level checks immediately before the existing export loop.
 anchor = "for name, sh in PARTS.items():\n"
@@ -121,10 +131,12 @@ if _arm_max_dx_dz > 1.0 + 1e-9:
     failures.append('Support-free spline exceeds the 45 degree lateral-growth envelope')
 if abs(ARM_PROFILE_WEB_CENTERS[0] + ARM_PROFILE_WEB_CENTERS[1]) > 1e-9:
     failures.append('Support-free arm webs are not symmetric about the arm center')
-if abs(MOUNT_BACKSTOP_W_X-35.0) > 1e-9:
-    failures.append('INDX rear mounting backstop is not the intended 35 mm width')
-if abs((MOUNT_BACKSTOP_X0+MOUNT_BACKSTOP_W_X)-185.0) > 0.02:
-    failures.append('INDX rear mounting backstop does not end at local X=185 mm')
+if abs(MOUNT_BACKSTOP_X0-140.0) > 0.02:
+    failures.append('Rear mounting backstop does not start at local X=140 mm')
+if abs(MOUNT_BACKSTOP_W_X-50.0) > 1e-9:
+    failures.append('Rear mounting backstop is not the requested 50 mm width')
+if abs((MOUNT_BACKSTOP_X0+MOUNT_BACKSTOP_W_X)-190.0) > 0.02:
+    failures.append('Rear mounting backstop does not retain its local X=190 mm rear edge')
 
 '''
 s = s.replace(anchor, validation + anchor, 1)
@@ -133,8 +145,8 @@ if s == orig:
     raise SystemExit('INDX support-free arm patch made no changes')
 if 'ARM_PROFILE_MAX_DX_DZ = 0.96' not in s:
     raise SystemExit('Support-free spline constants were not installed')
-if 'MOUNT_BACKSTOP_W_X = 35.0' not in s:
-    raise SystemExit('INDX backstop shortening was not installed')
+if 'MOUNT_BACKSTOP_W_X = 50.0' not in s:
+    raise SystemExit('Requested 50 mm backstop was not installed')
 
 p.write_text(s, encoding='utf-8')
-print('Applied symmetric support-safe spline arm profile (max dx/dz 0.96) and 35 mm INDX backstop')
+print('Applied symmetric support-safe spline arm profile and 50 mm rear backstop at X=140..190 mm')
