@@ -106,9 +106,38 @@ if old_cut_gate not in s:
     raise SystemExit('Could not locate measured-layout destructive front trim')
 s = s.replace(old_cut_gate, new_cut_gate, 1)
 
+# The old rear clamp root is intentionally retained only to y=36.2 while its
+# former long holm is removed up to the crosshead. At THIS stage the final
+# clamp-frame wall has not yet been fused. Therefore that retained rear root can
+# legitimately be a separate solid until the late wall joins both clamp roots
+# to the surviving front holm. The previous exact-one-solid check was simply at
+# the wrong construction stage and aborted before the intended joining feature.
+# Keep hard validity and mirror-volume checks here; the existing late clamp-wall
+# pass still requires exactly ONE valid solid per handed BASE after that joining
+# operation, and mesh validation subsequently enforces the exact X mirror.
+old_topology_gate = '''if (not BASE_RIGHT.isValid() or len(BASE_RIGHT.Solids) != 1 or
+        not BASE_LEFT.isValid() or len(BASE_LEFT.Solids) != 1):
+    raise RuntimeError('Measured rack-layout refit broke handed BASE topology')
+if abs(BASE_RIGHT.Volume-BASE_LEFT.Volume) > 1e-4:
+    raise RuntimeError('Measured rack-layout refit broke LEFT/RIGHT mirror volume symmetry')
+BASE = BASE_RIGHT
+'''
+new_topology_gate = '''_MEASURED_PRE_WALL_SOLIDS_RIGHT = len(BASE_RIGHT.Solids)
+_MEASURED_PRE_WALL_SOLIDS_LEFT = len(BASE_LEFT.Solids)
+if (not BASE_RIGHT.isValid() or _MEASURED_PRE_WALL_SOLIDS_RIGHT < 1 or
+        not BASE_LEFT.isValid() or _MEASURED_PRE_WALL_SOLIDS_LEFT < 1):
+    raise RuntimeError('Measured rack-layout refit produced invalid handed BASE geometry before final clamp wall')
+if abs(BASE_RIGHT.Volume-BASE_LEFT.Volume) > 1e-4:
+    raise RuntimeError('Measured rack-layout refit broke LEFT/RIGHT mirror volume symmetry')
+BASE = BASE_RIGHT
+'''
+if old_topology_gate not in s:
+    raise SystemExit('Could not relocate premature measured-layout single-solid gate')
+s = s.replace(old_topology_gate, new_topology_gate, 1)
+
 # Expose truthful topology witnesses in the measured-layout report.
 meta_anchor = "    'rear_support_crosshead_overlap_left_mm3': round(_layout_rear_crosshead_overlap_left, 6),\n"
-meta_extra = meta_anchor + "    'front_holm_crosshead_overlap_right_mm3': round(_front_overlap_right, 6),\n    'front_holm_crosshead_overlap_left_mm3': round(_front_overlap_left, 6),\n    'front_crosshead_trimmed': False,\n    'retired_old_holm_y1_mm': _RETIRED_HOLM_Y1,\n"
+meta_extra = meta_anchor + "    'front_holm_crosshead_overlap_right_mm3': round(_front_overlap_right, 6),\n    'front_holm_crosshead_overlap_left_mm3': round(_front_overlap_left, 6),\n    'front_crosshead_trimmed': False,\n    'retired_old_holm_y1_mm': _RETIRED_HOLM_Y1,\n    'pre_final_clamp_wall_solids_right': _MEASURED_PRE_WALL_SOLIDS_RIGHT,\n    'pre_final_clamp_wall_solids_left': _MEASURED_PRE_WALL_SOLIDS_LEFT,\n    'single_solid_gate_stage': 'after_final_clamp_wall',\n"
 if meta_anchor not in s:
     raise SystemExit('Could not locate measured-layout validation metadata')
 s = s.replace(meta_anchor, meta_extra, 1)
@@ -116,4 +145,4 @@ s = s.replace(meta_anchor, meta_extra, 1)
 if s == orig:
     raise SystemExit('Measured rack-layout topology fix made no changes')
 p.write_text(s, encoding='utf-8')
-print('Stabilized measured rack layout: retirement cut stops before common crosshead; rear support unified; front crosshead preserved')
+print('Stabilized measured rack layout: retirement cut stops before common crosshead; pre-wall detached rear root allowed only until final wall exact-one-solid gate')
