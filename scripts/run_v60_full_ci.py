@@ -27,27 +27,24 @@ def traced_require_single(shape, label):
 
 C.require_single = traced_require_single
 
-
-def baked_mirror_x(sh):
-    """Return a coordinate-baked X mirror, not a mirrored OCC location."""
-    matrix = App.Matrix()
-    matrix.A11 = -1.0
-    matrix.A22 = 1.0
-    matrix.A33 = 1.0
-    matrix.A44 = 1.0
-    out = sh.transformGeometry(matrix).removeSplitter()
-    C.require_single(out, 'baked X-mirror')
-    return out
+# Keep the already-proven OCC handed construction for STEP/FCStd and its exact
+# construction-mirror gate.  The old problem is specifically that OCC's mirrored
+# location was discarded by STL tessellation.  Therefore the printable LEFT STL
+# is made as an explicit coordinate mirror of the tessellated RIGHT print mesh.
+_base_right_mesh_topology = None
 
 
-# Part.Shape.mirror() can preserve the reflection as a shape/location state that
-# STEP understands but tessellation does not: that produced byte-identical LEFT
-# and RIGHT STL meshes. Full v60 construction must use a baked affine mirror.
-C.mirror_x = baked_mirror_x
+def mirrored_mesh_x(mesh):
+    points, facets = mesh.Topology
+    mirrored_points = [App.Vector(-p.x, p.y, p.z) for p in points]
+    # Reflection reverses handedness; reverse triangle winding so the STL keeps
+    # outward normals/manifold orientation.
+    mirrored_facets = [(f[0], f[2], f[1]) for f in facets]
+    return Mesh.Mesh((mirrored_points, mirrored_facets))
 
 
 def direct_export_shape(name, sh):
-    """Export the exact handed BREP and tessellate that shape directly."""
+    global _base_right_mesh_topology
     C.require_single(sh, name + ' export source')
     step_path = os.path.join(C.OUT, name + '.step')
     fcstd_path = os.path.join(C.OUT, name + '.FCStd')
@@ -61,12 +58,21 @@ def direct_export_shape(name, sh):
     doc.saveAs(fcstd_path)
     App.closeDocument(doc.Name)
 
-    mesh = MeshPart.meshFromShape(
-        Shape=sh,
-        LinearDeflection=0.08,
-        AngularDeflection=0.25,
-        Relative=False,
-    )
+    if name == 'eurobox_v60_base_left':
+        if _base_right_mesh_topology is None:
+            raise RuntimeError('LEFT base export occurred before RIGHT mesh reference')
+        right_ref = Mesh.Mesh(_base_right_mesh_topology)
+        mesh = mirrored_mesh_x(right_ref)
+    else:
+        mesh = MeshPart.meshFromShape(
+            Shape=sh,
+            LinearDeflection=0.08,
+            AngularDeflection=0.25,
+            Relative=False,
+        )
+        if name == 'eurobox_v60_base_right':
+            _base_right_mesh_topology = mesh.Topology
+
     if mesh.CountFacets <= 0:
         raise RuntimeError(name + ': direct STL tessellation produced no facets')
     mesh.write(stl_path)
@@ -99,6 +105,11 @@ def near(a, b, tol=0.12):
     return abs(a - b) <= tol
 
 
+def mesh_points(mesh):
+    points, _facets = mesh.Topology
+    return points
+
+
 extra_failures = []
 right_stl = os.path.join(C.OUT, 'eurobox_v60_base_right.stl')
 left_stl = os.path.join(C.OUT, 'eurobox_v60_base_left.stl')
@@ -127,56 +138,74 @@ if not mesh_mirror_ok:
         f'facets={rm.CountFacets}/{lm.CountFacets}'
     )
 
-# Installed orientation: RIGHT is on +Y and both longitudinal carriers extend
-# outward +Y. LEFT is on -Y; after the required 180-degree installation rotation
-# both carriers extend outward -Y. We verify the front and moved rear carrier.
+# Validate the meshes exactly as they are installed. RIGHT is translated onto
+# the +Y rack tube. LEFT is the handed print mesh rotated 180 deg about Z and
+# translated onto the -Y rack tube. At both long-carrier X stations, material
+# must reach >210 mm outward from its tube while no long carrier may project
+# more than 30 mm inward of that tube.
 RY = C.RACK_CTC / 2.0
 LY = -C.RACK_CTC / 2.0
-right_installed = F.RIGHT_FULL.copy()
-right_installed.translate(App.Vector(0, RY, 0))
-left_installed = F.LEFT_FULL.copy()
-left_installed.rotate(App.Vector(0, 0, 0), App.Vector(0, 0, 1), 180.0)
-left_installed.translate(App.Vector(0, LY, 0))
+right_installed_points = [
+    App.Vector(p.x, p.y + RY, p.z) for p in mesh_points(rm)
+]
+left_installed_points = [
+    App.Vector(-p.x, -p.y + LY, p.z) for p in mesh_points(lm)
+]
 
 support_checks = []
 for station_name, xc in (
     ('front', C.FRONT_CLAMP_X),
     ('rear', C.REAR_SUPPORT_X),
 ):
-    z0 = C.ARM_BOTTOM_Z + 0.5
-    dz = C.ARM_H - 1.0
-    right_out_probe = C.box(xc - 12.0, RY + 60.0, z0, 24.0, 100.0, dz)
-    right_in_probe = C.box(xc - 12.0, RY - 160.0, z0, 24.0, 100.0, dz)
-    left_out_probe = C.box(xc - 12.0, LY - 160.0, z0, 24.0, 100.0, dz)
-    left_in_probe = C.box(xc - 12.0, LY + 60.0, z0, 24.0, 100.0, dz)
+    zmin = C.ARM_BOTTOM_Z - 0.25
+    zmax = C.ARM_TOP_Z + 0.25
+    rpts = [
+        p for p in right_installed_points
+        if abs(p.x - xc) <= 16.5 and zmin <= p.z <= zmax
+    ]
+    lpts = [
+        p for p in left_installed_points
+        if abs(p.x - xc) <= 16.5 and zmin <= p.z <= zmax
+    ]
+    if not rpts or not lpts:
+        extra_failures.append(f'{station_name} carrier mesh slice is empty')
+        continue
 
-    ro = right_installed.common(right_out_probe).Volume
-    ri = right_installed.common(right_in_probe).Volume
-    lo = left_installed.common(left_out_probe).Volume
-    li = left_installed.common(left_in_probe).Volume
+    rmin = min(p.y for p in rpts)
+    rmax = max(p.y for p in rpts)
+    lmin = min(p.y for p in lpts)
+    lmax = max(p.y for p in lpts)
+    right_outward = rmax - RY
+    right_inward = RY - rmin
+    left_outward = LY - lmin
+    left_inward = lmax - LY
     support_checks.append({
         'station': station_name,
-        'x_mm': xc,
-        'right_outward_common_mm3': round(ro, 3),
-        'right_inward_common_mm3': round(ri, 3),
-        'left_outward_common_mm3': round(lo, 3),
-        'left_inward_common_mm3': round(li, 3),
+        'installed_x_mm': xc,
+        'right_y_range_mm': [round(rmin, 3), round(rmax, 3)],
+        'left_y_range_mm': [round(lmin, 3), round(lmax, 3)],
+        'right_outward_extent_mm': round(right_outward, 3),
+        'right_inward_extent_mm': round(right_inward, 3),
+        'left_outward_extent_mm': round(left_outward, 3),
+        'left_inward_extent_mm': round(left_inward, 3),
     })
-    if ro < 500.0:
+    if right_outward < 210.0:
         extra_failures.append(
-            f'RIGHT {station_name} carrier is not present outside (+Y) of its clamp'
+            f'RIGHT {station_name} carrier does not extend outward +Y far enough: '
+            f'{right_outward:.3f} mm'
         )
-    if lo < 500.0:
+    if left_outward < 210.0:
         extra_failures.append(
-            f'LEFT {station_name} carrier is not present outside (-Y) of its clamp'
+            f'LEFT {station_name} carrier does not extend outward -Y far enough: '
+            f'{left_outward:.3f} mm'
         )
-    if ri > 1.0:
+    if right_inward > 30.0:
         extra_failures.append(
-            f'RIGHT {station_name} carrier incorrectly extends inward (-Y), {ri:.3f} mm3'
+            f'RIGHT {station_name} has a long inward carrier: {right_inward:.3f} mm'
         )
-    if li > 1.0:
+    if left_inward > 30.0:
         extra_failures.append(
-            f'LEFT {station_name} carrier incorrectly extends inward (+Y), {li:.3f} mm3'
+            f'LEFT {station_name} has a long inward carrier: {left_inward:.3f} mm'
         )
 
 validation_path = os.path.join(C.OUT, 'VALIDATION_v60_full.json')
@@ -187,6 +216,7 @@ validation['handed_stl_export'] = {
     'left_sha256': left_hash,
     'byte_distinct': right_hash != left_hash,
     'mirror_bounds_and_facets_ok': mesh_mirror_ok,
+    'left_stl_generation': 'explicit coordinate mirror of validated RIGHT print mesh',
     'right_bbox_mm': [round(v, 3) for v in bbox_tuple(rbb)],
     'left_bbox_mm': [round(v, 3) for v in bbox_tuple(lbb)],
     'right_facets': rm.CountFacets,
@@ -196,6 +226,8 @@ validation['installed_support_orientation'] = {
     'right_rack_center_y_mm': RY,
     'left_rack_center_y_mm': LY,
     'required_orientation': 'RIGHT carriers +Y outward; LEFT carriers -Y outward',
+    'minimum_outward_extent_mm': 210.0,
+    'maximum_inward_extent_mm': 30.0,
     'checks': support_checks,
 }
 if extra_failures:
@@ -208,4 +240,4 @@ if extra_failures:
     raise SystemExit('V60 HANDED/INSTALLED HARD CHECKS FAILED: ' + ' | '.join(extra_failures))
 
 print('V60_CHECKPOINT handed STL exports distinct and mirrored', flush=True)
-print('V60_CHECKPOINT both carrier stations point outward on both installed sides', flush=True)
+print('V60_CHECKPOINT front and rear carriers are outward on both installed sides', flush=True)
