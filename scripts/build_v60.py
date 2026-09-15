@@ -54,11 +54,6 @@ UPPER_SADDLE_R = 6.26
 PIN_HOLE_D = 4.6
 PIN_Y = -12.0
 PIN_Z = -5.5
-STOP_FACE_Y = -6.46
-STOP_INNER_Y = -12.46
-STOP_Z0 = -8.0
-STOP_Z1 = 5.0
-STOP_X_W = 24.0
 
 INDX_X_MAX = 298.0
 INDX_Y_MAX = 275.0
@@ -102,15 +97,24 @@ def make_i_beam_y(xc, y0, y1):
 
 
 def make_upper_station(xc):
-    bridge = box(xc - 17.0, -12.5, 0.0, 34.0, 26.5, 16.0)
-    cheek_l = box(xc - 17.0, -16.0, -14.0, 4.0, 29.0, 14.5)
-    cheek_r = box(xc + 13.0, -16.0, -14.0, 4.0, 29.0, 14.5)
-    stop = box(xc - STOP_X_W / 2.0, STOP_INNER_Y, STOP_Z0,
-               STOP_X_W, STOP_FACE_Y - STOP_INNER_Y, STOP_Z1 - STOP_Z0)
+    # Exact clevis architecture from the last validated v50 mechanism.  The
+    # moving lower jaw occupies the central 25.2 mm in X; only 4 mm fixed lugs
+    # sit outside it, with 0.4 mm axial clearance on each side.
+    bridge = box(xc - 17.0, -8.0, 0.0, 34.0, 22.0, 16.0)
     transition = box(xc - 16.0, 10.0, ARM_BOTTOM_Z, 32.0, 20.0, ARM_H)
-    station = fuse_seq([bridge, cheek_l, cheek_r, stop, transition], f'upper-station@{xc}')
-    station = station.cut(cyl_x(UPPER_SADDLE_R, 40.0, xc - 20.0, 0.0, 0.0)).removeSplitter()
-    station = station.cut(cyl_x(PIN_HOLE_D / 2.0, 40.0, xc - 20.0, PIN_Y, PIN_Z)).removeSplitter()
+    lug_l = cyl_x(6.0, 4.0, xc - 17.0, PIN_Y, PIN_Z)
+    lug_r = cyl_x(6.0, 4.0, xc + 13.0, PIN_Y, PIN_Z)
+    web_l = box(xc - 17.0, PIN_Y, PIN_Z, 4.0, 7.0, 6.0)
+    web_r = box(xc + 13.0, PIN_Y, PIN_Z, 4.0, 7.0, 6.0)
+    cheek_l = box(xc - 17.0, -8.0, -5.5, 4.0, 8.0, 5.5)
+    cheek_r = box(xc + 13.0, -8.0, -5.5, 4.0, 8.0, 5.5)
+    station = fuse_seq([
+        bridge, transition, lug_l, lug_r, web_l, web_r, cheek_l, cheek_r
+    ], f'upper-station@{xc}')
+    station = station.cut(cyl_x(UPPER_SADDLE_R, 40.0,
+                                xc - 20.0, 0.0, 0.0)).removeSplitter()
+    station = station.cut(cyl_x(PIN_HOLE_D / 2.0, 40.0,
+                                xc - 20.0, PIN_Y, PIN_Z)).removeSplitter()
     require_single(station, f'upper-station@{xc}')
     return station
 
@@ -126,15 +130,27 @@ def make_clamp_wall():
 
 
 def make_crosshead():
+    # The lower flange is the continuous structural tie.  Above it, the centre
+    # of the head stops at Y=220 so the moving 140 mm box-clamp plate has a real
+    # free channel from Y=220.215 outward.  Side shoulders continue to the rim
+    # support face and retain both holm connections.
     x0 = FRONT_CLAMP_X - ARM_W / 2.0
     x1 = REAR_SUPPORT_X + ARM_W / 2.0
     y0 = 216.0
+    y_mid_end = 220.0
     y1 = BOX_RIM_INNER_Y - 0.20
+    plate_x0 = -70.4
+    plate_x1 = 70.4
     web_h = ARM_H - 2.0 * FLANGE_T
     return fuse_seq([
-        box(x0, y0, ARM_TOP_Z - FLANGE_T, x1 - x0, y1 - y0, FLANGE_T),
         box(x0, y0, ARM_BOTTOM_Z, x1 - x0, y1 - y0, FLANGE_T),
-        box(x0, y0, ARM_BOTTOM_Z + FLANGE_T, x1 - x0, 4.5, web_h),
+        box(x0, y0, ARM_TOP_Z - FLANGE_T, x1 - x0, y_mid_end - y0, FLANGE_T),
+        box(x0, y_mid_end, ARM_TOP_Z - FLANGE_T,
+            plate_x0 - x0, y1 - y_mid_end, FLANGE_T),
+        box(plate_x1, y_mid_end, ARM_TOP_Z - FLANGE_T,
+            x1 - plate_x1, y1 - y_mid_end, FLANGE_T),
+        box(-64.0, y0, ARM_BOTTOM_Z + FLANGE_T,
+            128.0, y_mid_end - y0, web_h),
     ], 'crosshead')
 
 
