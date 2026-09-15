@@ -1,5 +1,7 @@
 name: Build Eurobox v60
 
+# v60 is the canonical production CAD build on main. Legacy v50 workflows were
+# retired after the clean rebuild replaced the source-rewriting repair chain.
 on:
   workflow_dispatch:
   push:
