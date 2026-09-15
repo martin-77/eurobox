@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 import os
 import sys
 
@@ -28,17 +29,17 @@ def traced_require_single(shape, label):
 C.require_single = traced_require_single
 
 # Keep the already-proven OCC handed construction for STEP/FCStd and its exact
-# construction-mirror gate.  The old problem is specifically that OCC's mirrored
-# location was discarded by STL tessellation.  Therefore the printable LEFT STL
-# is made as an explicit coordinate mirror of the tessellated RIGHT print mesh.
+# construction-mirror gate. The STL bug was specifically that OCC's mirrored
+# location was discarded by tessellation. The printable LEFT STL is therefore
+# generated as an explicit coordinate mirror of the tessellated RIGHT print mesh.
 _base_right_mesh_topology = None
 
 
 def mirrored_mesh_x(mesh):
     points, facets = mesh.Topology
     mirrored_points = [App.Vector(-p.x, p.y, p.z) for p in points]
-    # Reflection reverses handedness; reverse triangle winding so the STL keeps
-    # outward normals/manifold orientation.
+    # Reflection reverses handedness. Reverse triangle winding so the mirrored
+    # STL keeps outward normals/manifold orientation.
     mirrored_facets = [(f[0], f[2], f[1]) for f in facets]
     return Mesh.Mesh((mirrored_points, mirrored_facets))
 
@@ -110,6 +111,38 @@ def mesh_points(mesh):
     return points
 
 
+def canonical_vertices(mesh, mirror_x=False, decimals=4):
+    points, _facets = mesh.Topology
+    coords = set()
+    for p in points:
+        x = -p.x if mirror_x else p.x
+        coords.add((round(x, decimals), round(p.y, decimals), round(p.z, decimals)))
+    return coords
+
+
+def mesh_geometry_metrics(mesh):
+    points, facets = mesh.Topology
+    signed_six_volume = 0.0
+    area = 0.0
+    for a, b, c in facets:
+        p0 = points[a]
+        p1 = points[b]
+        p2 = points[c]
+        # six times signed tetrahedron volume against the origin
+        cx = p1.y * p2.z - p1.z * p2.y
+        cy = p1.z * p2.x - p1.x * p2.z
+        cz = p1.x * p2.y - p1.y * p2.x
+        signed_six_volume += p0.x * cx + p0.y * cy + p0.z * cz
+
+        ux, uy, uz = p1.x - p0.x, p1.y - p0.y, p1.z - p0.z
+        vx, vy, vz = p2.x - p0.x, p2.y - p0.y, p2.z - p0.z
+        ax = uy * vz - uz * vy
+        ay = uz * vx - ux * vz
+        az = ux * vy - uy * vx
+        area += 0.5 * math.sqrt(ax * ax + ay * ay + az * az)
+    return abs(signed_six_volume) / 6.0, area
+
+
 extra_failures = []
 right_stl = os.path.join(C.OUT, 'eurobox_v60_base_right.stl')
 left_stl = os.path.join(C.OUT, 'eurobox_v60_base_left.stl')
@@ -122,27 +155,47 @@ rm = Mesh.Mesh(right_stl)
 lm = Mesh.Mesh(left_stl)
 rbb = rm.BoundBox
 lbb = lm.BoundBox
-mesh_mirror_ok = (
+bounds_mirror_ok = (
     near(rbb.XMin, -lbb.XMax)
     and near(rbb.XMax, -lbb.XMin)
     and near(rbb.YMin, lbb.YMin)
     and near(rbb.YMax, lbb.YMax)
     and near(rbb.ZMin, lbb.ZMin)
     and near(rbb.ZMax, lbb.ZMax)
-    and rm.CountFacets == lm.CountFacets
 )
-if not mesh_mirror_ok:
+
+# FreeCAD normalizes/removes a few redundant triangles when a mirrored Mesh is
+# reconstructed, so raw facet-count equality is not a geometric invariant. Use
+# mirrored vertex sets plus closed-mesh volume/surface invariants instead.
+right_vertices_mirrored = canonical_vertices(rm, mirror_x=True)
+left_vertices = canonical_vertices(lm)
+vertex_mirror_ok = right_vertices_mirrored == left_vertices
+right_volume, right_area = mesh_geometry_metrics(rm)
+left_volume, left_area = mesh_geometry_metrics(lm)
+volume_delta = abs(right_volume - left_volume)
+area_delta = abs(right_area - left_area)
+volume_tol = max(0.1, max(right_volume, left_volume) * 1e-7)
+area_tol = max(0.1, max(right_area, left_area) * 1e-7)
+geometry_mirror_ok = (
+    bounds_mirror_ok
+    and vertex_mirror_ok
+    and volume_delta <= volume_tol
+    and area_delta <= area_tol
+)
+if not geometry_mirror_ok:
     extra_failures.append(
-        'Handed base STL bounds/facet count are not an X-mirrored pair: '
+        'Handed base STL geometry is not an X-mirrored pair: '
+        f'bounds={bounds_mirror_ok} vertices={vertex_mirror_ok} '
+        f'volume_delta={volume_delta:.6f}/{volume_tol:.6f} mm3 '
+        f'area_delta={area_delta:.6f}/{area_tol:.6f} mm2 '
         f'R={bbox_tuple(rbb)} L={bbox_tuple(lbb)} '
         f'facets={rm.CountFacets}/{lm.CountFacets}'
     )
 
-# Validate the meshes exactly as they are installed. RIGHT is translated onto
-# the +Y rack tube. LEFT is the handed print mesh rotated 180 deg about Z and
-# translated onto the -Y rack tube. At both long-carrier X stations, material
-# must reach >210 mm outward from its tube while no long carrier may project
-# more than 30 mm inward of that tube.
+# Validate the meshes exactly as installed. RIGHT is translated onto the +Y
+# rack tube. LEFT is the handed print mesh rotated 180 deg about Z and translated
+# onto the -Y rack tube. At both long-carrier stations material must extend far
+# outward while no long carrier may project appreciably inward of the rack tube.
 RY = C.RACK_CTC / 2.0
 LY = -C.RACK_CTC / 2.0
 right_installed_points = [
@@ -215,12 +268,20 @@ validation['handed_stl_export'] = {
     'right_sha256': right_hash,
     'left_sha256': left_hash,
     'byte_distinct': right_hash != left_hash,
-    'mirror_bounds_and_facets_ok': mesh_mirror_ok,
+    'mirror_geometry_ok': geometry_mirror_ok,
+    'mirror_bounds_ok': bounds_mirror_ok,
+    'mirror_vertex_set_ok': vertex_mirror_ok,
     'left_stl_generation': 'explicit coordinate mirror of validated RIGHT print mesh',
     'right_bbox_mm': [round(v, 3) for v in bbox_tuple(rbb)],
     'left_bbox_mm': [round(v, 3) for v in bbox_tuple(lbb)],
     'right_facets': rm.CountFacets,
     'left_facets': lm.CountFacets,
+    'right_volume_mm3': round(right_volume, 6),
+    'left_volume_mm3': round(left_volume, 6),
+    'volume_delta_mm3': round(volume_delta, 6),
+    'right_area_mm2': round(right_area, 6),
+    'left_area_mm2': round(left_area, 6),
+    'area_delta_mm2': round(area_delta, 6),
 }
 validation['installed_support_orientation'] = {
     'right_rack_center_y_mm': RY,
@@ -239,5 +300,5 @@ if extra_failures:
     print(json.dumps(validation, indent=2), flush=True)
     raise SystemExit('V60 HANDED/INSTALLED HARD CHECKS FAILED: ' + ' | '.join(extra_failures))
 
-print('V60_CHECKPOINT handed STL exports distinct and mirrored', flush=True)
+print('V60_CHECKPOINT handed STL exports geometrically mirrored', flush=True)
 print('V60_CHECKPOINT front and rear carriers are outward on both installed sides', flush=True)
