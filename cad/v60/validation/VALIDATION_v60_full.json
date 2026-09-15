@@ -230,5 +230,80 @@
     },
     "effective_total_width_mm": 600.0
   },
-  "failures": []
+  "failures": [],
+  "handed_stl_export": {
+    "right_sha256": "a3970704ab1d93ddfaa9769f14069d5d1798e2852b03f8712787d143f0ae3c2d",
+    "left_sha256": "c80c2485517b2b2da563245cae347ffca3937c61fe3d30855a80e19b8b98d04c",
+    "byte_distinct": true,
+    "mirror_geometry_ok": true,
+    "mirror_bounds_ok": true,
+    "mirror_vertex_set_ok": true,
+    "mirror_facet_count_ok": true,
+    "left_stl_generation": "exact binary STL X-mirror of validated RIGHT print triangle mesh",
+    "right_bbox_mm": [
+      -97.0,
+      196.0,
+      -17.995,
+      228.015,
+      -42.0,
+      49.8
+    ],
+    "left_bbox_mm": [
+      -196.0,
+      97.0,
+      -17.995,
+      228.015,
+      -42.0,
+      49.8
+    ],
+    "right_facets": 9294,
+    "left_facets": 9294,
+    "right_volume_mm3": 478534.489329,
+    "left_volume_mm3": 478534.489329,
+    "volume_delta_mm3": 0.0,
+    "right_area_mm2": 176030.459371,
+    "left_area_mm2": 176030.459371,
+    "area_delta_mm2": 0.0
+  },
+  "installed_support_orientation": {
+    "right_rack_center_y_mm": 55.335,
+    "left_rack_center_y_mm": -55.335,
+    "required_orientation": "RIGHT carriers +Y outward; LEFT carriers -Y outward",
+    "minimum_outward_extent_mm": 210.0,
+    "maximum_inward_extent_mm": 30.0,
+    "checks": [
+      {
+        "station": "front",
+        "installed_x_mm": -80.0,
+        "right_y_range_mm": [
+          47.335,
+          283.35
+        ],
+        "left_y_range_mm": [
+          -283.35,
+          -47.335
+        ],
+        "right_outward_extent_mm": 228.015,
+        "right_inward_extent_mm": 8.0,
+        "left_outward_extent_mm": 228.015,
+        "left_inward_extent_mm": 8.0
+      },
+      {
+        "station": "rear",
+        "installed_x_mm": 180.0,
+        "right_y_range_mm": [
+          39.335,
+          283.35
+        ],
+        "left_y_range_mm": [
+          -283.35,
+          -39.335
+        ],
+        "right_outward_extent_mm": 228.015,
+        "right_inward_extent_mm": 16.0,
+        "left_outward_extent_mm": 228.015,
+        "left_inward_extent_mm": 16.0
+      }
+    ]
+  }
 }
