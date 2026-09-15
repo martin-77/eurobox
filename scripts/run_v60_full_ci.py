@@ -2,6 +2,7 @@ import hashlib
 import json
 import math
 import os
+import struct
 import sys
 
 import FreeCAD as App
@@ -35,13 +36,40 @@ C.require_single = traced_require_single
 _base_right_mesh_topology = None
 
 
-def mirrored_mesh_x(mesh):
-    points, facets = mesh.Topology
-    mirrored_points = [App.Vector(-p.x, p.y, p.z) for p in points]
-    # Reflection reverses handedness. Reverse triangle winding so the mirrored
-    # STL keeps outward normals/manifold orientation.
-    mirrored_facets = [(f[0], f[2], f[1]) for f in facets]
-    return Mesh.Mesh((mirrored_points, mirrored_facets))
+def write_mirrored_binary_stl_x(path, topology):
+    """Write an exact X-mirror of the RIGHT triangle soup without FreeCAD remeshing.
+
+    Reconstructing a Mesh object from mirrored topology made FreeCAD normalize
+    away a small set of triangles.  That changed facet count, area and signed
+    volume even though the vertex set was mirrored.  Writing the same triangle
+    soup directly as binary STL preserves every printable facet.  Winding is
+    reversed after reflection so normals remain outward.
+    """
+    points, facets = topology
+    with open(path, 'wb') as f:
+        header = b'Eurobox v60 LEFT = exact X mirror of RIGHT print mesh'
+        f.write(header[:80].ljust(80, b'\0'))
+        f.write(struct.pack('<I', len(facets)))
+        for a, b, c in facets:
+            # X reflection plus b/c swap preserves orientation.
+            p0 = App.Vector(-points[a].x, points[a].y, points[a].z)
+            p1 = App.Vector(-points[c].x, points[c].y, points[c].z)
+            p2 = App.Vector(-points[b].x, points[b].y, points[b].z)
+            u = p1.sub(p0)
+            v = p2.sub(p0)
+            n = u.cross(v)
+            if n.Length > 0.0:
+                n.normalize()
+            else:
+                n = App.Vector(0.0, 0.0, 0.0)
+            f.write(struct.pack(
+                '<12fH',
+                n.x, n.y, n.z,
+                p0.x, p0.y, p0.z,
+                p1.x, p1.y, p1.z,
+                p2.x, p2.y, p2.z,
+                0,
+            ))
 
 
 def direct_export_shape(name, sh):
@@ -62,8 +90,8 @@ def direct_export_shape(name, sh):
     if name == 'eurobox_v60_base_left':
         if _base_right_mesh_topology is None:
             raise RuntimeError('LEFT base export occurred before RIGHT mesh reference')
-        right_ref = Mesh.Mesh(_base_right_mesh_topology)
-        mesh = mirrored_mesh_x(right_ref)
+        write_mirrored_binary_stl_x(stl_path, _base_right_mesh_topology)
+        mesh = Mesh.Mesh(stl_path)
     else:
         mesh = MeshPart.meshFromShape(
             Shape=sh,
@@ -73,10 +101,10 @@ def direct_export_shape(name, sh):
         )
         if name == 'eurobox_v60_base_right':
             _base_right_mesh_topology = mesh.Topology
+        mesh.write(stl_path)
 
     if mesh.CountFacets <= 0:
         raise RuntimeError(name + ': direct STL tessellation produced no facets')
-    mesh.write(stl_path)
 
 
 C.export_shape = direct_export_shape
@@ -164,9 +192,6 @@ bounds_mirror_ok = (
     and near(rbb.ZMax, lbb.ZMax)
 )
 
-# FreeCAD normalizes/removes a few redundant triangles when a mirrored Mesh is
-# reconstructed, so raw facet-count equality is not a geometric invariant. Use
-# mirrored vertex sets plus closed-mesh volume/surface invariants instead.
 right_vertices_mirrored = canonical_vertices(rm, mirror_x=True)
 left_vertices = canonical_vertices(lm)
 vertex_mirror_ok = right_vertices_mirrored == left_vertices
@@ -176,16 +201,18 @@ volume_delta = abs(right_volume - left_volume)
 area_delta = abs(right_area - left_area)
 volume_tol = max(0.1, max(right_volume, left_volume) * 1e-7)
 area_tol = max(0.1, max(right_area, left_area) * 1e-7)
+facet_mirror_ok = rm.CountFacets == lm.CountFacets
 geometry_mirror_ok = (
     bounds_mirror_ok
     and vertex_mirror_ok
+    and facet_mirror_ok
     and volume_delta <= volume_tol
     and area_delta <= area_tol
 )
 if not geometry_mirror_ok:
     extra_failures.append(
-        'Handed base STL geometry is not an X-mirrored pair: '
-        f'bounds={bounds_mirror_ok} vertices={vertex_mirror_ok} '
+        'Handed base STL geometry is not an exact X-mirrored triangle mesh: '
+        f'bounds={bounds_mirror_ok} vertices={vertex_mirror_ok} facets={facet_mirror_ok} '
         f'volume_delta={volume_delta:.6f}/{volume_tol:.6f} mm3 '
         f'area_delta={area_delta:.6f}/{area_tol:.6f} mm2 '
         f'R={bbox_tuple(rbb)} L={bbox_tuple(lbb)} '
@@ -271,7 +298,8 @@ validation['handed_stl_export'] = {
     'mirror_geometry_ok': geometry_mirror_ok,
     'mirror_bounds_ok': bounds_mirror_ok,
     'mirror_vertex_set_ok': vertex_mirror_ok,
-    'left_stl_generation': 'explicit coordinate mirror of validated RIGHT print mesh',
+    'mirror_facet_count_ok': facet_mirror_ok,
+    'left_stl_generation': 'exact binary STL X-mirror of validated RIGHT print triangle mesh',
     'right_bbox_mm': [round(v, 3) for v in bbox_tuple(rbb)],
     'left_bbox_mm': [round(v, 3) for v in bbox_tuple(lbb)],
     'right_facets': rm.CountFacets,
@@ -300,5 +328,5 @@ if extra_failures:
     print(json.dumps(validation, indent=2), flush=True)
     raise SystemExit('V60 HANDED/INSTALLED HARD CHECKS FAILED: ' + ' | '.join(extra_failures))
 
-print('V60_CHECKPOINT handed STL exports geometrically mirrored', flush=True)
+print('V60_CHECKPOINT handed STL exports are exact mirrored triangle meshes', flush=True)
 print('V60_CHECKPOINT front and rear carriers are outward on both installed sides', flush=True)
