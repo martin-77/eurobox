@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   full-direct-build:
@@ -88,6 +88,56 @@ jobs:
           assert full['base']['mirror_delta_mm3'] <= 0.0001
           assert full['box_clamp']['effective_total_width_mm'] <= 600.02
           PY
+
+      - name: Publish validated v60 CAD into repository
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          rm -rf cad/v60 preview-stl/v60
+          mkdir -p cad/v60/FCStd cad/v60/STEP cad/v60/STL cad/v60/assembly cad/v60/validation preview-stl/v60
+
+          for f in build_v60/eurobox_v60_*.FCStd; do
+            base=$(basename "$f")
+            if [ "$base" = "eurobox_v60_assembly.FCStd" ]; then
+              cp "$f" "cad/v60/assembly/$base"
+            else
+              cp "$f" "cad/v60/FCStd/$base"
+            fi
+          done
+          cp build_v60/eurobox_v60_*.step cad/v60/STEP/
+          cp build_v60/eurobox_v60_*.stl cad/v60/STL/
+          cp build_v60/eurobox_v60_*.stl preview-stl/v60/
+          cp build_v60/VALIDATION_v60.json build_v60/VALIDATION_v60_full.json cad/v60/validation/
+
+          cat > cad/v60/README.md <<'EOF'
+          # Eurobox carrier v60
+
+          Canonical clean rebuild generated and hard-validated by `scripts/build_v60.py` and `scripts/build_v60_full.py`.
+
+          - `FCStd/` — individual editable FreeCAD parts
+          - `STEP/` — neutral CAD exports
+          - `STL/` — printable meshes
+          - `assembly/` — complete FreeCAD assembly
+          - `validation/` — machine-readable hard-check reports
+
+          Core layout: 160 mm rack-clamp spacing, 20 mm front reserve, handed rear stop/support layout, CORE One L INDX envelope checks.
+          EOF
+
+          cat > preview-stl/v60/README.md <<'EOF'
+          # v60 preview/print meshes
+
+          Validated v60 STL exports mirrored from `cad/v60/STL/` by the production v60 workflow.
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cad/v60 preview-stl/v60
+          if git diff --cached --quiet; then
+            echo "Validated v60 repository outputs already current"
+          else
+            git commit -m "Publish validated v60 CAD outputs"
+            git push
+          fi
 
       - name: Upload complete v60 proof
         uses: actions/upload-artifact@v6
