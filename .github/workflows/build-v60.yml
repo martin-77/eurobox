@@ -95,10 +95,10 @@ jobs:
           checks = full['installed_support_orientation']['checks']
           assert len(checks) == 2
           for q in checks:
-              assert q['right_outward_common_mm3'] >= 500.0, q
-              assert q['left_outward_common_mm3'] >= 500.0, q
-              assert q['right_inward_common_mm3'] <= 1.0, q
-              assert q['left_inward_common_mm3'] <= 1.0, q
+              assert q['right_outward_extent_mm'] >= 210.0, q
+              assert q['left_outward_extent_mm'] >= 210.0, q
+              assert q['right_inward_extent_mm'] <= 30.0, q
+              assert q['left_inward_extent_mm'] <= 30.0, q
           PY
 
       - name: Render installed-orientation v60 preview PNG
