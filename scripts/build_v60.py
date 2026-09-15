@@ -96,10 +96,27 @@ def make_i_beam_y(xc, y0, y1):
     ], f'i-beam@{xc}')
 
 
+def make_front_support():
+    xc = FRONT_CLAMP_X
+    y0 = ARM_Y0
+    y1 = ARM_Y1
+    head_relief_y0 = 214.50
+    inner_clear_x = -70.40
+    web_h = ARM_H - 2.0 * FLANGE_T
+    web_z = ARM_BOTTOM_Z + FLANGE_T
+    parts = [
+        box(xc - ARM_W/2.0, y0, ARM_BOTTOM_Z, ARM_W, y1-y0, FLANGE_T),
+        box(xc - 8.0 - WEB_T/2.0, y0, web_z, WEB_T, y1-y0, web_h),
+        box(xc + 8.0 - WEB_T/2.0, y0, web_z, WEB_T, y1-y0, web_h),
+        box(xc - ARM_W/2.0, y0, ARM_TOP_Z-FLANGE_T,
+            ARM_W, head_relief_y0-y0, FLANGE_T),
+        box(xc - ARM_W/2.0, head_relief_y0, ARM_TOP_Z-FLANGE_T,
+            inner_clear_x-(xc-ARM_W/2.0), y1-head_relief_y0, FLANGE_T),
+    ]
+    return fuse_seq(parts, 'front-support-plate-clearance')
+
+
 def make_upper_station(xc):
-    # Exact clevis architecture from the last validated v50 mechanism.  The
-    # moving lower jaw occupies the central 25.2 mm in X; only 4 mm fixed lugs
-    # sit outside it, with 0.4 mm axial clearance on each side.
     bridge = box(xc - 17.0, -8.0, 0.0, 34.0, 22.0, 16.0)
     transition = box(xc - 16.0, 10.0, ARM_BOTTOM_Z, 32.0, 20.0, ARM_H)
     lug_l = cyl_x(6.0, 4.0, xc - 17.0, PIN_Y, PIN_Z)
@@ -130,27 +147,19 @@ def make_clamp_wall():
 
 
 def make_crosshead():
-    # The lower flange is the continuous structural tie.  Above it, the centre
-    # of the head stops at Y=220 so the moving 140 mm box-clamp plate has a real
-    # free channel from Y=220.215 outward.  Side shoulders continue to the rim
-    # support face and retain both holm connections.
     x0 = FRONT_CLAMP_X - ARM_W / 2.0
     x1 = REAR_SUPPORT_X + ARM_W / 2.0
     y0 = 216.0
-    y_mid_end = 220.0
     y1 = BOX_RIM_INNER_Y - 0.20
     plate_x0 = -70.4
     plate_x1 = 70.4
     web_h = ARM_H - 2.0 * FLANGE_T
     return fuse_seq([
-        box(x0, y0, ARM_BOTTOM_Z, x1 - x0, y1 - y0, FLANGE_T),
-        box(x0, y0, ARM_TOP_Z - FLANGE_T, x1 - x0, y_mid_end - y0, FLANGE_T),
-        box(x0, y_mid_end, ARM_TOP_Z - FLANGE_T,
-            plate_x0 - x0, y1 - y_mid_end, FLANGE_T),
-        box(plate_x1, y_mid_end, ARM_TOP_Z - FLANGE_T,
-            x1 - plate_x1, y1 - y_mid_end, FLANGE_T),
-        box(-64.0, y0, ARM_BOTTOM_Z + FLANGE_T,
-            128.0, y_mid_end - y0, web_h),
+        box(x0, y0, ARM_BOTTOM_Z, x1-x0, y1-y0, FLANGE_T),
+        box(x0, y0, ARM_TOP_Z-FLANGE_T, plate_x0-x0, y1-y0, FLANGE_T),
+        box(plate_x1, y0, ARM_TOP_Z-FLANGE_T, x1-plate_x1, y1-y0, FLANGE_T),
+        box(x0, y0, ARM_BOTTOM_Z+FLANGE_T, plate_x0-x0, 4.0, web_h),
+        box(plate_x1, y0, ARM_BOTTOM_Z+FLANGE_T, x1-plate_x1, 4.0, web_h),
     ], 'crosshead')
 
 
@@ -165,7 +174,7 @@ def make_right_core():
         make_upper_station(FRONT_CLAMP_X),
         make_clamp_wall(),
         make_upper_station(REAR_CLAMP_X),
-        make_i_beam_y(FRONT_CLAMP_X, ARM_Y0, ARM_Y1),
+        make_front_support(),
         make_crosshead(),
         make_i_beam_y(REAR_SUPPORT_X, 0.0, ARM_Y1),
         make_backstop(),
@@ -278,7 +287,6 @@ V = {
 
 with open(os.path.join(OUT, 'VALIDATION_v60.json'), 'w', encoding='utf-8') as f:
     json.dump(V, f, indent=2)
-
 if failures:
     print(json.dumps(V, indent=2), flush=True)
     raise SystemExit('V60 HARD CHECKS FAILED: ' + ' | '.join(failures))
