@@ -32,9 +32,20 @@ if not _final_backstop_drop_patch.is_file():
 exec(compile(_final_backstop_drop_patch.read_text(encoding='utf-8'),
              str(_final_backstop_drop_patch), 'exec'))
 
-# Finally tie the two fixed rack-clamp stations together on the frame side. A
-# straight top member plus DROP uses the same saddle radius as the upper clamps,
-# so it may bear on the Ø12.42 rack tube while the moving lower clamps stay free.
+# Apply the measured real-bike longitudinal layout BEFORE the final rack-side
+# wall. This is deliberate: the layout moves/retire-rebuilds the support holms;
+# the clamp wall and its end caps must therefore be fused only afterwards, so
+# the layout pass cannot cut them away again.
+_measured_layout_patch = Path('scripts/apply_v50_rack_layout_20mm_indx.py')
+if not _measured_layout_patch.is_file():
+    raise SystemExit('Missing measured rack-layout / INDX patch')
+exec(compile(_measured_layout_patch.read_text(encoding='utf-8'),
+             str(_measured_layout_patch), 'exec'))
+
+# Final operation: tie the two actual fixed rack-clamp stations together on the
+# frame side with the full-height wall, Ø12.42 saddle and flush frame-side caps.
+# Because this source transform runs after the measured-layout transform, its
+# runtime geometry is inserted after the holm relocation and remains intact.
 _final_clamp_frame_patch = Path('scripts/apply_v50_clamp_frame_bridge.py')
 if not _final_clamp_frame_patch.is_file():
     raise SystemExit('Missing final clamp-frame saddle bridge patch')
@@ -62,4 +73,4 @@ if old_tail not in vs:
 vs = vs.replace(old_tail, new_tail, 1)
 wv.write_text(vs, encoding='utf-8')
 
-print('Deferred requested BASE geometry until after final width cleanup, including backstop, holm DROP and clamp-frame saddle bridge')
+print('Deferred requested BASE geometry until after final width cleanup; measured 20 mm/160 mm rack layout runs before final clamp wall/caps')
