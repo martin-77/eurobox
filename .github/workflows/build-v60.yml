@@ -3,7 +3,7 @@ name: Build Eurobox v60
 on:
   workflow_dispatch:
   push:
-    branches: [v60-clean]
+    branches: [main, v60-clean]
     paths:
       - "scripts/build_v60.py"
       - "scripts/build_v60_full.py"
