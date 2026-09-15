@@ -28,6 +28,24 @@ def traced_require_single(shape, label):
 C.require_single = traced_require_single
 
 
+def baked_mirror_x(sh):
+    """Return a coordinate-baked X mirror, not a mirrored OCC location."""
+    matrix = App.Matrix()
+    matrix.A11 = -1.0
+    matrix.A22 = 1.0
+    matrix.A33 = 1.0
+    matrix.A44 = 1.0
+    out = sh.transformGeometry(matrix).removeSplitter()
+    C.require_single(out, 'baked X-mirror')
+    return out
+
+
+# Part.Shape.mirror() can preserve the reflection as a shape/location state that
+# STEP understands but tessellation does not: that produced byte-identical LEFT
+# and RIGHT STL meshes. Full v60 construction must use a baked affine mirror.
+C.mirror_x = baked_mirror_x
+
+
 def direct_export_shape(name, sh):
     """Export the exact handed BREP and tessellate that shape directly."""
     C.require_single(sh, name + ' export source')
@@ -54,8 +72,6 @@ def direct_export_shape(name, sh):
     mesh.write(stl_path)
 
 
-# The former Mesh.export([Part::Feature]) path could emit identical handed base
-# meshes even though the STEP BREPs were different. Override it before exports.
 C.export_shape = direct_export_shape
 
 print('V60_CHECKPOINT core import complete', flush=True)
@@ -111,9 +127,9 @@ if not mesh_mirror_ok:
         f'facets={rm.CountFacets}/{lm.CountFacets}'
     )
 
-# Validate installed orientation. RIGHT sits on +Y and both longitudinal box
-# carriers must extend farther +Y than its rack tube; LEFT sits on -Y and both
-# carriers must extend farther -Y. This checks the front and moved rear carrier.
+# Installed orientation: RIGHT is on +Y and both longitudinal carriers extend
+# outward +Y. LEFT is on -Y; after the required 180-degree installation rotation
+# both carriers extend outward -Y. We verify the front and moved rear carrier.
 RY = C.RACK_CTC / 2.0
 LY = -C.RACK_CTC / 2.0
 right_installed = F.RIGHT_FULL.copy()
