@@ -91,7 +91,9 @@ jobs:
           assert full['base']['mirror_delta_mm3'] <= 0.0001
           assert full['box_clamp']['effective_total_width_mm'] <= 600.02
           assert full['handed_stl_export']['byte_distinct']
-          assert full['handed_stl_export']['mirror_bounds_and_facets_ok']
+          assert full['handed_stl_export']['mirror_geometry_ok']
+          assert full['handed_stl_export']['mirror_bounds_ok']
+          assert full['handed_stl_export']['mirror_vertex_set_ok']
           checks = full['installed_support_orientation']['checks']
           assert len(checks) == 2
           for q in checks:
@@ -147,7 +149,7 @@ jobs:
           - `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
           - `validation/` — machine-readable hard-check reports
 
-          The production gate verifies that LEFT/RIGHT STL files are distinct X-mirrored exports and that, in installed orientation, both longitudinal carrier stations project outward from the rack: RIGHT toward +Y and LEFT toward -Y.
+          The production gate verifies that LEFT/RIGHT STL files are distinct geometrically X-mirrored exports and that, in installed orientation, both longitudinal carrier stations project outward from the rack: RIGHT toward +Y and LEFT toward -Y.
           EOF
 
           cat > preview-stl/v60/README.md <<'EOF'
