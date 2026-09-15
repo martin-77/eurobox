@@ -6,6 +6,7 @@ on:
     branches: [v60-clean]
     paths:
       - "scripts/build_v60.py"
+      - "scripts/build_v60_full.py"
       - "docs/V60_**"
       - ".github/workflows/build-v60.yml"
 
@@ -17,16 +18,16 @@ permissions:
   contents: read
 
 jobs:
-  structural-core:
+  full-direct-build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
 
       - name: Install runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfuse2 xvfb
+          sudo apt-get install -y openscad libfuse2 xvfb
 
       - name: Cache FreeCAD AppImage
         id: freecad-cache
@@ -54,39 +55,48 @@ jobs:
           echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
           "$FREECADCMD" -c 'import FreeCAD,Part; print(FreeCAD.Version()); assert Part.makeBox(1,1,1).isValid()'
 
-      - name: Compile v60 builder
+      - name: Compile v60 builders
         run: |
           set -euo pipefail
-          python3 -m py_compile scripts/build_v60.py
+          python3 -m py_compile scripts/build_v60.py scripts/build_v60_full.py
 
-      - name: Build and hard-check clean structural core
+      - name: Build and hard-check complete direct v60
         run: |
           set -euo pipefail
-          "$FREECADCMD" scripts/build_v60.py | tee build_v60.log
+          START=$(date +%s)
+          "$FREECADCMD" scripts/build_v60_full.py | tee build_v60.log
+          END=$(date +%s)
+          echo $((END-START)) > build_v60/build_seconds.txt
           test -s build_v60/VALIDATION_v60.json
-          test -s build_v60/eurobox_v60_base_right_core.step
-          test -s build_v60/eurobox_v60_base_left_core.step
+          test -s build_v60/VALIDATION_v60_full.json
+          test -s build_v60/eurobox_v60_base_right.step
+          test -s build_v60/eurobox_v60_base_left.step
+          test -s build_v60/eurobox_v60_assembly.FCStd
           python3 - <<'PY'
           import json
-          v = json.load(open('build_v60/VALIDATION_v60.json'))
-          assert not v['failures'], v['failures']
-          assert v['datums']['clamp_spacing_mm'] == 160.0
-          assert v['geometry']['right_bbox_mm'][0] <= 296.0
-          assert v['geometry']['right_bbox_mm'][1] <= 275.0
-          assert v['geometry']['mirror_delta_mm3'] <= 0.0001
+          core = json.load(open('build_v60/VALIDATION_v60.json'))
+          full = json.load(open('build_v60/VALIDATION_v60_full.json'))
+          assert not core['failures'], core['failures']
+          assert not full['failures'], full['failures']
+          assert core['datums']['clamp_spacing_mm'] == 160.0
+          assert full['rack']['clamp_spacing_mm'] == 160.0
+          assert full['base']['right_bbox_mm'][0] <= 296.0
+          assert full['base']['right_bbox_mm'][1] <= 275.0
+          assert full['base']['mirror_delta_mm3'] <= 0.0001
+          assert full['box_clamp']['effective_total_width_mm'] <= 600.02
           PY
 
-      - name: Upload v60 structural proof
+      - name: Upload complete v60 proof
         uses: actions/upload-artifact@v6
         with:
-          name: eurobox-v60-structural-core
+          name: eurobox-v60-complete
           path: |
             build_v60/VALIDATION_v60.json
+            build_v60/VALIDATION_v60_full.json
             build_v60/README_BUILD_v60.txt
-            build_v60/eurobox_v60_base_right_core.step
-            build_v60/eurobox_v60_base_left_core.step
-            build_v60/eurobox_v60_base_right_core.FCStd
-            build_v60/eurobox_v60_base_left_core.FCStd
-            build_v60/eurobox_v60_base_right_core.stl
-            build_v60/eurobox_v60_base_left_core.stl
+            build_v60/README_BUILD_v60_full.txt
+            build_v60/eurobox_v60_*.step
+            build_v60/eurobox_v60_*.FCStd
+            build_v60/eurobox_v60_*.stl
+            build_v60/build_seconds.txt
             build_v60.log
