@@ -7,6 +7,7 @@ on:
     paths:
       - "scripts/build_v60.py"
       - "scripts/build_v60_full.py"
+      - "scripts/run_v60_full_ci.py"
       - "docs/V60_**"
       - ".github/workflows/build-v60.yml"
 
@@ -58,13 +59,13 @@ jobs:
       - name: Compile v60 builders
         run: |
           set -euo pipefail
-          python3 -m py_compile scripts/build_v60.py scripts/build_v60_full.py
+          python3 -m py_compile scripts/build_v60.py scripts/build_v60_full.py scripts/run_v60_full_ci.py
 
       - name: Build and hard-check complete direct v60
         run: |
           set -euo pipefail
           START=$(date +%s)
-          "$FREECADCMD" scripts/build_v60_full.py | tee build_v60.log
+          "$FREECADCMD" scripts/run_v60_full_ci.py 2>&1 | tee build_v60.log
           END=$(date +%s)
           echo $((END-START)) > build_v60/build_seconds.txt
           test -s build_v60/VALIDATION_v60.json
