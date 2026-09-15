@@ -33,13 +33,23 @@ exec(compile(_final_backstop_drop_patch.read_text(encoding='utf-8'),
              str(_final_backstop_drop_patch), 'exec'))
 
 # Finally tie the two fixed rack-clamp stations together on the frame side. A
-# straight top member plus DROP uses the same saddle radius as the upper clamps,
-# so it may bear on the Ø12.42 rack tube while the moving lower clamps stay free.
+# full-height wall reaches BOX_SUPPORT_Z, bears near the Ø12.42 rack tube saddle
+# and leaves the moving lower clamps clear.
 _final_clamp_frame_patch = Path('scripts/apply_v50_clamp_frame_bridge.py')
 if not _final_clamp_frame_patch.is_file():
     raise SystemExit('Missing final clamp-frame saddle bridge patch')
 exec(compile(_final_clamp_frame_patch.read_text(encoding='utf-8'),
              str(_final_clamp_frame_patch), 'exec'))
+
+# Apply the real-bike longitudinal layout last. It shortens the two actual rack
+# clamp centres to 160 mm, keeps the front fixed body 20 mm from the rack front,
+# moves the rear box-support holm to the backstop rear edge and hard-checks the
+# final handed BASE against the 298 x 275 mm CORE One L + INDX build volume.
+_measured_layout_patch = Path('scripts/apply_v50_rack_layout_20mm_indx.py')
+if not _measured_layout_patch.is_file():
+    raise SystemExit('Missing measured rack-layout / INDX patch')
+exec(compile(_measured_layout_patch.read_text(encoding='utf-8'),
+             str(_measured_layout_patch), 'exec'))
 '''
     wc.write_text(s + hook, encoding='utf-8')
 
@@ -62,4 +72,4 @@ if old_tail not in vs:
 vs = vs.replace(old_tail, new_tail, 1)
 wv.write_text(vs, encoding='utf-8')
 
-print('Deferred requested BASE geometry until after final width cleanup, including backstop, holm DROP and clamp-frame saddle bridge')
+print('Deferred requested BASE geometry until after final width cleanup, including measured 20 mm rack-front / INDX layout')
