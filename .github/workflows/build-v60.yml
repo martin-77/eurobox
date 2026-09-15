@@ -10,6 +10,7 @@ on:
       - "scripts/build_v60.py"
       - "scripts/build_v60_full.py"
       - "scripts/run_v60_full_ci.py"
+      - "scripts/preview_v60.scad"
       - "docs/V60_**"
       - ".github/workflows/build-v60.yml"
 
@@ -56,7 +57,7 @@ jobs:
           FREECADCMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) | head -n1)
           test -n "$FREECADCMD"
           echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
-          "$FREECADCMD" -c 'import FreeCAD,Part; print(FreeCAD.Version()); assert Part.makeBox(1,1,1).isValid()'
+          "$FREECADCMD" -c 'import FreeCAD,Part,Mesh,MeshPart; print(FreeCAD.Version()); assert Part.makeBox(1,1,1).isValid()'
 
       - name: Compile v60 builders
         run: |
@@ -74,6 +75,8 @@ jobs:
           test -s build_v60/VALIDATION_v60_full.json
           test -s build_v60/eurobox_v60_base_right.step
           test -s build_v60/eurobox_v60_base_left.step
+          test -s build_v60/eurobox_v60_base_right.stl
+          test -s build_v60/eurobox_v60_base_left.stl
           test -s build_v60/eurobox_v60_assembly.FCStd
           python3 - <<'PY'
           import json
@@ -87,7 +90,29 @@ jobs:
           assert full['base']['right_bbox_mm'][1] <= 275.0
           assert full['base']['mirror_delta_mm3'] <= 0.0001
           assert full['box_clamp']['effective_total_width_mm'] <= 600.02
+          assert full['handed_stl_export']['byte_distinct']
+          assert full['handed_stl_export']['mirror_bounds_and_facets_ok']
+          checks = full['installed_support_orientation']['checks']
+          assert len(checks) == 2
+          for q in checks:
+              assert q['right_outward_common_mm3'] >= 500.0, q
+              assert q['left_outward_common_mm3'] >= 500.0, q
+              assert q['right_inward_common_mm3'] <= 1.0, q
+              assert q['left_inward_common_mm3'] <= 1.0, q
           PY
+
+      - name: Render installed-orientation v60 preview PNG
+        run: |
+          set -euo pipefail
+          xvfb-run -a openscad \
+            --imgsize=1600,1000 \
+            --projection=ortho \
+            --viewall \
+            --autocenter \
+            --camera=0,0,0,58,0,32,720 \
+            -o build_v60/eurobox_v60_preview.png \
+            scripts/preview_v60.scad
+          test -s build_v60/eurobox_v60_preview.png
 
       - name: Publish validated v60 CAD into repository
         if: github.ref == 'refs/heads/main'
@@ -107,6 +132,8 @@ jobs:
           cp build_v60/eurobox_v60_*.step cad/v60/STEP/
           cp build_v60/eurobox_v60_*.stl cad/v60/STL/
           cp build_v60/eurobox_v60_*.stl preview-stl/v60/
+          cp build_v60/eurobox_v60_preview.png cad/v60/assembly/eurobox_v60_preview.png
+          cp build_v60/eurobox_v60_preview.png preview-stl/v60/eurobox_v60_preview.png
           cp build_v60/VALIDATION_v60.json build_v60/VALIDATION_v60_full.json cad/v60/validation/
 
           cat > cad/v60/README.md <<'EOF'
@@ -116,17 +143,19 @@ jobs:
 
           - `FCStd/` — individual editable FreeCAD parts
           - `STEP/` — neutral CAD exports
-          - `STL/` — printable meshes
-          - `assembly/` — complete FreeCAD assembly
+          - `STL/` — printable handed meshes
+          - `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
           - `validation/` — machine-readable hard-check reports
 
-          Core layout: 160 mm rack-clamp spacing, 20 mm front reserve, handed rear stop/support layout, CORE One L INDX envelope checks.
+          The production gate verifies that LEFT/RIGHT STL files are distinct X-mirrored exports and that, in installed orientation, both longitudinal carrier stations project outward from the rack: RIGHT toward +Y and LEFT toward -Y.
           EOF
 
           cat > preview-stl/v60/README.md <<'EOF'
           # v60 preview/print meshes
 
           Validated v60 STL exports mirrored from `cad/v60/STL/` by the production v60 workflow.
+
+          `eurobox_v60_preview.png` shows the actual installed orientation: RIGHT is translated to the +Y rack tube; LEFT is the handed printable STL rotated 180 degrees about Z and translated to the -Y rack tube. The long carriers therefore point outward on both sides.
           EOF
 
           git config user.name "github-actions[bot]"
@@ -135,7 +164,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Validated v60 repository outputs already current"
           else
-            git commit -m "Publish validated v60 CAD outputs"
+            git commit -m "Publish corrected handed v60 meshes and preview"
             git push
           fi
 
@@ -151,5 +180,6 @@ jobs:
             build_v60/eurobox_v60_*.step
             build_v60/eurobox_v60_*.FCStd
             build_v60/eurobox_v60_*.stl
+            build_v60/eurobox_v60_preview.png
             build_v60/build_seconds.txt
             build_v60.log
