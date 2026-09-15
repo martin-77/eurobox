@@ -49,6 +49,17 @@ if not _measured_layout_compat.is_file():
 exec(compile(_measured_layout_compat.read_text(encoding='utf-8'),
              str(_measured_layout_compat), 'exec'))
 
+# OCC topology stabilizer for the measured layout. The INDX front trim must
+# retain a real 0.5 mm volumetric overlap with the surviving front holm, and the
+# moved rear holm/crosshead/caps/drops are fused into one structural solid before
+# being joined to each handed BASE. This addresses the actual FreeCAD topology
+# failure without weakening any geometry/mesh gates.
+_measured_layout_topology = Path('scripts/apply_v50_rack_layout_topology_fix.py')
+if not _measured_layout_topology.is_file():
+    raise SystemExit('Missing measured rack-layout topology stabilizer')
+exec(compile(_measured_layout_topology.read_text(encoding='utf-8'),
+             str(_measured_layout_topology), 'exec'))
+
 # Final operation: tie the two actual fixed rack-clamp stations together on the
 # frame side with the full-height wall, Ø12.42 saddle and flush frame-side caps.
 # It executes after the measured support relocation and therefore cannot be
@@ -80,4 +91,4 @@ if old_tail not in vs:
 vs = vs.replace(old_tail, new_tail, 1)
 wv.write_text(vs, encoding='utf-8')
 
-print('Deferred requested BASE geometry until after final width cleanup; measured rack layout is repaired before final clamp wall/caps')
+print('Deferred requested BASE geometry until after final width cleanup; measured rack layout is repaired and topology-stabilized before final clamp wall/caps')
