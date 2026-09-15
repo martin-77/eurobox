@@ -26,8 +26,6 @@ UNDERHOOK = 4.2
 UNDERHOOK_T = 4.0
 SPINDLE_X = (-42.0, 42.0)
 SPINDLE_Z = 31.0
-GUIDE_SIDE_CLEAR = 0.4
-GUIDE_Z_CLEAR = 0.4
 
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
@@ -42,8 +40,7 @@ SPINDLE_LOCAL_SHOULDER = 1.8
 HEX_LEN = 4.5
 OUTER_STUD_LEN = 7.0
 
-# Final inboard v50 envelope, now expressed directly rather than rebuilt by a
-# width-cleanup source transform.
+# Final inboard architecture, expressed directly.
 PLATE_SPINDLE_Y = C.BOX_RIM_INNER_Y
 NUT_ANCHOR_OFFSET = 15.8
 NUT_Y0 = PLATE_SPINDLE_Y - NUT_ANCHOR_OFFSET
@@ -62,7 +59,6 @@ FINAL_DECK_Z0 = C.ARM_BOTTOM_Z
 FINAL_DECK_Z1 = PRINT_GUIDE_Z0
 
 LOWER_SADDLE_R = 6.15
-PIN_D = 4.0
 
 
 def cyl_y(r, length, x=0.0, y=0.0, z=0.0):
@@ -82,6 +78,12 @@ def z_to_y(shape, x=0.0, y=0.0, z=0.0):
     q.rotate(App.Vector(0, 0, 0), App.Vector(1, 0, 0), -90.0)
     q.translate(App.Vector(x, y, z))
     return q
+
+
+def rotate_z180(shape):
+    q = shape.copy()
+    q.rotate(App.Vector(0, 0, 0), App.Vector(0, 0, 1), 180.0)
+    return q.removeSplitter()
 
 
 def write_thread_scad(path, core_r, major_r, pitch, length, root_w, crest_w):
@@ -116,14 +118,17 @@ def import_scad_shape(path):
     return sh
 
 
-def rotate_z180(shape):
-    q = shape.copy()
-    q.rotate(App.Vector(0, 0, 0), App.Vector(0, 0, 1), 180.0)
-    return q.removeSplitter()
+def make_c_clip(outer_r, inner_r, thickness, opening_w):
+    ring = Part.makeCylinder(outer_r, thickness).cut(Part.makeCylinder(inner_r, thickness))
+    opening = C.box(-opening_w/2.0, 0.0, -0.2,
+                    opening_w, outer_r+1.0, thickness+0.4)
+    q = ring.cut(opening).removeSplitter()
+    C.require_single(q, 'c-clip')
+    return q
 
 
 # -----------------------------------------------------------------------------
-# Proven lower rack jaw and pivot pin architecture
+# Lower rack jaw and pivot hardware
 # -----------------------------------------------------------------------------
 lower_shell = C.box(-12.6, -7.0, -14.5, 25.2, 24.0, 14.5)
 lower_pivot = C.cyl_x(5.0, 25.2, -12.6, C.PIN_Y, C.PIN_Z)
@@ -139,43 +144,28 @@ PIN = C.fuse_seq([
     C.cyl_x(2.0, 1.7, 16.6, 0, 0),
     C.cyl_x(3.75, 2.4, -20.8, 0, 0),
 ], 'rack-pin')
-
-
-def make_c_clip(outer_r, inner_r, thickness, opening_w):
-    ring = Part.makeCylinder(outer_r, thickness).cut(Part.makeCylinder(inner_r, thickness))
-    opening = C.box(-opening_w/2.0, 0.0, -0.2, opening_w, outer_r+1.0, thickness+0.4)
-    q = ring.cut(opening).removeSplitter()
-    C.require_single(q, 'c-clip')
-    return q
-
-
 PIN_CLIP = make_c_clip(4.2, 1.65, 1.5, 3.0)
 PLATE_CLIP = make_c_clip(5.4, 2.45, 1.4, 3.8)
 
 # -----------------------------------------------------------------------------
-# Direct final inboard box-clamp cage. Built once on RIGHT, then mirrored.
+# Direct final inboard box-clamp cage
 # -----------------------------------------------------------------------------
 def make_cage_structure():
     parts = [
-        # outer guide walls
         C.box(-78.0, PRINT_GUIDE_Y0, PRINT_GUIDE_Z0, 7.6,
               PRINT_GUIDE_Y1-PRINT_GUIDE_Y0, PRINT_GUIDE_Z1-PRINT_GUIDE_Z0),
         C.box(70.4, PRINT_GUIDE_Y0, PRINT_GUIDE_Z0, 7.6,
               PRINT_GUIDE_Y1-PRINT_GUIDE_Y0, PRINT_GUIDE_Z1-PRINT_GUIDE_Z0),
-        # transverse upper tie
         C.box(-78.0, CAGE_Y0-0.10, PRINT_GUIDE_Z1-PRINT_FRAME_TIE_T,
               156.0, CAGE_Y1-CAGE_Y0+0.20, PRINT_FRAME_TIE_T),
-        # continuous support-free lower deck
         C.box(-70.4, CAGE_Y0, FINAL_DECK_Z0,
               140.8, PRINT_GUIDE_Y1-CAGE_Y0, FINAL_DECK_Z1-FINAL_DECK_Z0),
-        # planar head-side extensions under tie ends
         C.box(-78.0, CAGE_Y0-0.10, PRINT_GUIDE_Z0,
               7.6, PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35, PRINT_GUIDE_Z1-PRINT_GUIDE_Z0),
         C.box(70.4, CAGE_Y0-0.10, PRINT_GUIDE_Z0,
               7.6, PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35, PRINT_GUIDE_Z1-PRINT_GUIDE_Z0),
     ]
     for sx in SPINDLE_X:
-        # fixed lead-nut boss plus broad underbuild into deck
         parts.append(C.box(sx-11.0, CAGE_Y0, PRINT_FRAME_BOSS_Z0,
                            22.0, CAGE_Y1-CAGE_Y0, PRINT_FRAME_BOSS_Z1-PRINT_FRAME_BOSS_Z0))
         parts.append(C.box(sx-11.35, CAGE_Y0, FINAL_DECK_Z1-0.35,
@@ -204,31 +194,38 @@ MALE_Z = import_scad_shape(MALE_SCAD).common(Part.makeCylinder(4.06, LEAD_THREAD
 FEMALE_Z = import_scad_shape(FEMALE_SCAD).common(Part.makeCylinder(4.28, NUT_THREAD_LEN)).removeSplitter()
 CAP_FEMALE_Z = import_scad_shape(CAP_FEMALE_SCAD).common(Part.makeCylinder(4.38, 5.4)).removeSplitter()
 
-# Female thread points toward -Y in the final inboard architecture.
 FEMALE_NEGY = rotate_z180(z_to_y(FEMALE_Z, 0, 0, 0))
 for sx in SPINDLE_X:
-    # moving shoulder clearance from plate side
     y0 = CAGE_Y1 - 0.20
     RIGHT_FULL = RIGHT_FULL.cut(cyl_y(SHOULDER_D/2.0 + 0.30,
                                        PLATE_SPINDLE_Y-y0+0.5,
                                        sx, y0-0.5, SPINDLE_Z)).removeSplitter()
-    # actual integral thread
     cutter = FEMALE_NEGY.copy()
     cutter.translate(App.Vector(sx, NUT_Y0, SPINDLE_Z))
     RIGHT_FULL = RIGHT_FULL.cut(cutter).removeSplitter()
-    # smooth runout behind thread
     RIGHT_FULL = RIGHT_FULL.cut(cyl_y(4.45, NUT_THREAD_Y0-CAGE_Y0+0.7,
                                        sx, CAGE_Y0-0.5, SPINDLE_Z)).removeSplitter()
 C.require_single(RIGHT_FULL, 'RIGHT full after integral lead threads')
 
-# Re-cut rack pin bores after cage fusion, though the cage is remote from them.
+# The structural core already contains both final rack-pin bores. The cage and
+# lead-thread machining are far away in Y and cannot close them, so do NOT cut
+# the same cylinders a second time. Re-cutting an exactly coincident bore was
+# the cause of the invalid OCC BREP in v60 run #2.
+pin_bore_clearance = []
 for xc in C.CLAMP_X:
-    RIGHT_FULL = RIGHT_FULL.cut(C.cyl_x(C.PIN_HOLE_D/2.0, 40.0,
-                                        xc-20.0, C.PIN_Y, C.PIN_Z)).removeSplitter()
+    probe = C.cyl_x(C.PIN_HOLE_D/2.0 - 0.05, 38.0,
+                    xc-19.0, C.PIN_Y, C.PIN_Z)
+    common = RIGHT_FULL.common(probe).Volume
+    pin_bore_clearance.append({'x_mm': xc, 'probe_common_mm3': round(common, 9)})
+    if common > 1e-5:
+        raise RuntimeError(f'Rack pin bore was closed by final v60 geometry at X={xc}: {common:.6f} mm3')
+
 C.require_single(RIGHT_FULL, 'RIGHT full final')
 LEFT_FULL = C.mirror_x(RIGHT_FULL)
 
-# Clamp plate: closed body is fully inboard; only hook reaches under rim.
+# -----------------------------------------------------------------------------
+# Clamp plate
+# -----------------------------------------------------------------------------
 PLATE_BODY_Y0 = C.BOX_RIM_INNER_Y - PLATE_Y
 PLATE_HOOK_Y0 = C.BOX_RIM_INNER_Y - WIDTH_RIM_CLEAR
 PLATE_HOOK_Y1 = C.BOX_RIM_INNER_Y + UNDERHOOK
@@ -244,7 +241,9 @@ for sx in SPINDLE_X:
 PLATE = PLATE.removeSplitter()
 C.require_single(PLATE, 'box-clamp-plate')
 
-# Lead screw generated in +Y locally then rotated into final -Y direction.
+# -----------------------------------------------------------------------------
+# Lead screw, knob, retainer
+# -----------------------------------------------------------------------------
 SPINDLE_POSY = C.fuse_seq([
     cyl_y(3.0, 0.4, 0, 0.0, 0),
     cyl_y(2.5, 1.4, 0, 0.4, 0),
@@ -254,8 +253,6 @@ SPINDLE_POSY = C.fuse_seq([
     z_to_y(hex_z(10.0, HEX_LEN), 0,
            SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN, 0),
 ], 'lead-spindle-positive-y')
-# Short threaded outer stud is represented with the same RH 8x2 master clipped
-# to OUTER_STUD_LEN.
 STUD_SCAD = os.path.join(OUT, 'v60_thread_RH_8x2_stud.scad')
 write_thread_scad(STUD_SCAD, THREAD_CORE_R, THREAD_MAJOR/2.0,
                   THREAD_PITCH, OUTER_STUD_LEN, 0.58, 0.24)
@@ -303,7 +300,7 @@ full_mirror_delta = abs(RIGHT_FULL.Volume + left_back.Volume - 2.0*common)
 if abs(RIGHT_FULL.Volume-LEFT_FULL.Volume) > 1e-4 or full_mirror_delta > 1e-4:
     fail(f'full handed bases are not exact mirrors: {full_mirror_delta:.6f} mm3')
 
-# Lower-clamp articulated sweep on both fixed stations.
+# Lower-clamp articulated sweep.
 tube = C.cyl_x(C.RACK_R, 400.0, -200.0, 0.0, 0.0)
 lower_sweep = []
 for xc in C.CLAMP_X:
@@ -323,7 +320,7 @@ for xc in C.CLAMP_X:
     if at45['tube_common_mm3'] > 0.05:
         fail(f'lower jaw has not released tube by -45 deg at X={xc}')
 
-# Pivot pin must pass through base and lower jaw clearance bores.
+# Pivot pin must pass through both bores.
 pin_checks = []
 for xc in C.CLAMP_X:
     p = PIN.copy(); p.translate(App.Vector(xc, C.PIN_Y, C.PIN_Z))
@@ -335,7 +332,7 @@ for xc in C.CLAMP_X:
     if bc > 1e-4 or lc > 1e-4:
         fail(f'pivot pin blocked at X={xc}')
 
-# Box-clamp plate travel: positive opening is -Y.
+# Plate travel.
 rim = C.box(-220.0, C.BOX_RIM_INNER_Y, RIM_BOTTOM_Z,
             440.0, C.RIM_Y, C.RIM_H)
 plate_motion = []
@@ -351,8 +348,7 @@ for d in (0, 1, 2, 3, 4, 4.5, 5.0, 5.5):
     if rc > 1e-4:
         fail(f'plate/rim collision at open={d}: {rc:.6f} mm3')
 
-# Placed spindle states. Female/solid thread mating may have tiny tessellation
-# witness volume, but gross base collision is forbidden.
+# Spindle kinematics.
 thread_motion = []
 for d in (0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.5):
     q = SPINDLE.copy()
@@ -364,12 +360,13 @@ for d in (0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.5):
     if bc > 1.0:
         fail(f'lead screw grossly collides with base at open={d}: {bc:.6f} mm3')
 
-# Width envelope including moving hardware in its worst checked state.
+# Width envelope.
 def local_y_extent(d):
     pl = PLATE.copy(); pl.translate(App.Vector(0, -d, 0))
     sp = SPINDLE.copy(); sp.rotate(App.Vector(0,0,0), App.Vector(0,1,0), 360.0*d/THREAD_PITCH)
     sp.translate(App.Vector(0, PLATE_SPINDLE_Y-d, SPINDLE_Z))
     return max(RIGHT_FULL.BoundBox.YMax, pl.BoundBox.YMax, sp.BoundBox.YMax)
+
 width_states = {str(d): local_y_extent(d) for d in (0.0, 5.5)}
 holder_half = C.RACK_CTC/2.0 + max(width_states.values())
 if holder_half > C.BOX_W/2.0 + 0.02:
@@ -383,6 +380,7 @@ V = {
         'right_bbox_mm': [round(RIGHT_FULL.BoundBox.XLength,3), round(RIGHT_FULL.BoundBox.YLength,3), round(RIGHT_FULL.BoundBox.ZLength,3)],
         'left_bbox_mm': [round(LEFT_FULL.BoundBox.XLength,3), round(LEFT_FULL.BoundBox.YLength,3), round(LEFT_FULL.BoundBox.ZLength,3)],
         'mirror_delta_mm3': round(full_mirror_delta, 9),
+        'pin_bore_clearance': pin_bore_clearance,
     },
     'rack': {
         'clamp_spacing_mm': C.CLAMP_SPACING,
@@ -432,7 +430,9 @@ for name, sh in parts.items():
 # Assembly uses dedicated mirrored printable LEFT base, then Z180 placement.
 doc = App.newDocument('Eurobox_v60_assembly')
 def add_obj(name, sh):
-    o = doc.addObject('Part::Feature', name); o.Shape = sh; return o
+    o = doc.addObject('Part::Feature', name)
+    o.Shape = sh
+    return o
 
 RY = C.RACK_CTC/2.0
 LY = -C.RACK_CTC/2.0
@@ -444,7 +444,10 @@ for sx in SPINDLE_X:
     sp = SPINDLE.copy(); sp.translate(App.Vector(sx, RY+PLATE_SPINDLE_Y, SPINDLE_Z)); add_obj('RIGHT_spindle_'+str(int(sx)), sp)
 
 def left_transform(sh):
-    q = sh.copy(); q.rotate(App.Vector(0,0,0), App.Vector(0,0,1), 180.0); q.translate(App.Vector(0, LY, 0)); return q
+    q = sh.copy()
+    q.rotate(App.Vector(0,0,0), App.Vector(0,0,1), 180.0)
+    q.translate(App.Vector(0, LY, 0))
+    return q
 
 add_obj('LEFT_base', left_transform(LEFT_FULL))
 add_obj('LEFT_plate', left_transform(PLATE))
