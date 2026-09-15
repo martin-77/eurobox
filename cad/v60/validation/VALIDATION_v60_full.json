@@ -1,0 +1,234 @@
+{
+  "version": "v60",
+  "stage": "full_direct_mechanism",
+  "architecture": "clean structural core + direct mechanics; no source rewriting",
+  "base": {
+    "right_bbox_mm": [
+      293.0,
+      246.015,
+      91.8
+    ],
+    "left_bbox_mm": [
+      293.0,
+      246.015,
+      91.8
+    ],
+    "mirror_delta_mm3": 0.0,
+    "mirror_bound_delta_mm": 0.0,
+    "mirror_face_delta": 0,
+    "pin_bore_clearance": [
+      {
+        "x_mm": -80.0,
+        "probe_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "probe_common_mm3": 0.0
+      }
+    ]
+  },
+  "rack": {
+    "clamp_spacing_mm": 160.0,
+    "lower_sweep": [
+      {
+        "x_mm": -80.0,
+        "deg": 0,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 29.355544
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -15,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 28.279366
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -30,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 14.686793
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -45,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -60,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -75,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -90,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 0,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 29.355544
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -15,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 28.279366
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -30,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 14.686793
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -45,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -60,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -75,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -90,
+        "base_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      }
+    ],
+    "pin_checks": [
+      {
+        "x_mm": -80.0,
+        "base_common_mm3": 0.0,
+        "lower_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "base_common_mm3": 0.0,
+        "lower_common_mm3": 0.0
+      }
+    ]
+  },
+  "box_clamp": {
+    "plate_travel_mm": 5.5,
+    "plate_motion": [
+      {
+        "open_mm": 0,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": -4.2
+      },
+      {
+        "open_mm": 1,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": -3.2
+      },
+      {
+        "open_mm": 2,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": -2.2
+      },
+      {
+        "open_mm": 3,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": -1.2
+      },
+      {
+        "open_mm": 4,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": -0.2
+      },
+      {
+        "open_mm": 4.5,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": 0.3
+      },
+      {
+        "open_mm": 5.0,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": 0.8
+      },
+      {
+        "open_mm": 5.5,
+        "base_common_mm3": 0.0,
+        "rim_common_mm3": 0.0,
+        "rim_release_clearance_mm": 1.3
+      }
+    ],
+    "spindle_x_mm": [
+      -42.0,
+      42.0
+    ],
+    "spindle_z_mm": 31.0,
+    "thread": "RH 8x2",
+    "integral_female_threads": true,
+    "thread_motion": [
+      {
+        "open_mm": 0,
+        "rotation_deg": 0.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "open_mm": 0.5,
+        "rotation_deg": 90.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "open_mm": 1.0,
+        "rotation_deg": 180.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "open_mm": 2.0,
+        "rotation_deg": 360.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "open_mm": 3.0,
+        "rotation_deg": 540.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "open_mm": 4.0,
+        "rotation_deg": 720.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "open_mm": 5.5,
+        "rotation_deg": 990.0,
+        "base_common_mm3": 0.0
+      }
+    ],
+    "width_states_local_y_mm": {
+      "0.0": 232.415,
+      "5.5": 228.015
+    },
+    "effective_total_width_mm": 600.0
+  },
+  "failures": []
+}
