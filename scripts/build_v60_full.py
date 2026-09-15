@@ -184,16 +184,14 @@ for sx in SPINDLE_X:
         NUT_THREAD_Y0-inner_y0+0.20, sx, inner_y0, SPINDLE_Z)).removeSplitter()
     cutter = FEMALE_NEGY.copy(); cutter.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z))
     RIGHT_FULL = RIGHT_FULL.cut(cutter).removeSplitter()
+    # From the outer end of the fixed RH8x2 nut to the plate, the spindle must
+    # translate 5.5 mm while its 11 mm thrust shoulder passes through.  Keep
+    # the 14 mm female thread intact and make the rest one continuous service
+    # bore sized for the shoulder; this also clears journal and thread runout.
     outer_y0 = NUT_Y0
-    RIGHT_FULL = RIGHT_FULL.cut(cyl_y(4.45,
-        (PLATE_SPINDLE_Y-SPINDLE_LOCAL_JOURNAL-SPINDLE_LOCAL_SHOULDER)-outer_y0+0.40,
+    RIGHT_FULL = RIGHT_FULL.cut(cyl_y(SHOULDER_D/2+0.35,
+        PLATE_SPINDLE_Y-outer_y0+0.70,
         sx, outer_y0, SPINDLE_Z)).removeSplitter()
-    shoulder_y0 = PLATE_SPINDLE_Y-SPINDLE_LOCAL_JOURNAL-SPINDLE_LOCAL_SHOULDER-0.35
-    RIGHT_FULL = RIGHT_FULL.cut(cyl_y(SHOULDER_D/2+0.30,
-        SPINDLE_LOCAL_SHOULDER+0.70, sx, shoulder_y0, SPINDLE_Z)).removeSplitter()
-    journal_y0 = PLATE_SPINDLE_Y-SPINDLE_LOCAL_JOURNAL-0.35
-    RIGHT_FULL = RIGHT_FULL.cut(cyl_y(3.35,
-        SPINDLE_LOCAL_JOURNAL+0.70, sx, journal_y0, SPINDLE_Z)).removeSplitter()
 C.require_single(RIGHT_FULL, 'RIGHT full after integral lead threads')
 
 pin_bore_clearance = []
