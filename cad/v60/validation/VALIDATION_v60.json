@@ -2,7 +2,7 @@
   "version": "v60",
   "stage": "clean_structural_core_continuous_carrier",
   "freecad_version": "1.1.3",
-  "architecture": "one continuous rack-side carrier; two rack clamps and 50 mm backstop hang from it; long box holms fuse into same carrier",
+  "architecture": "one closed-box continuous rack-side carrier; two rack clamps and 50 mm backstop hang from it; long box holms fuse into same carrier",
   "datums": {
     "rack_tube_diameter_mm": 12.42,
     "rack_center_distance_mm": 110.67,
@@ -78,8 +78,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 501374.554,
-    "left_volume_mm3": 501374.554,
+    "right_volume_mm3": 522535.234,
+    "left_volume_mm3": 522535.234,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -105,6 +105,7 @@
       }
     ],
     "continuous_carrier": {
+      "section": "closed_box_with_internal_saddle_web",
       "x_mm": [
         -96.0,
         196.0
@@ -121,22 +122,31 @@
         9.54,
         14.04
       ],
+      "side_wall_thickness_mm": 3.2,
+      "side_wall_z_mm": [
+        14.04,
+        35.04
+      ],
+      "side_wall_material_fractions": {
+        "y0": 1.0,
+        "y1": 1.0
+      },
       "saddle_radius_mm": 6.31,
-      "material_fraction": 0.999752,
+      "material_fraction": 0.999781,
       "rack_tube_common_mm3": 0.0,
-      "front_holm_common_mm3": 576.0,
-      "rear_holm_common_mm3": 9324.8,
+      "front_holm_common_mm3": 1100.8,
+      "rear_holm_common_mm3": 10164.48,
       "clamp_overlaps": [
         {
           "station": "front",
-          "carrier_common_mm3": 8496.269
+          "carrier_common_mm3": 8634.869
         },
         {
           "station": "rear",
-          "carrier_common_mm3": 9226.64
+          "carrier_common_mm3": 9377.12
         }
       ],
-      "backstop_common_mm3": 19939.0
+      "backstop_common_mm3": 23299.0
     }
   },
   "failures": []

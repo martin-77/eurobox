@@ -35,24 +35,25 @@
     "upper_pivot_width_mm": 18.0,
     "lower_fork_outer_width_mm": 28.0,
     "lower_fork_ear_thickness_mm": 4.6,
+    "lower_web_top_z_mm": -1.5,
     "lower_sweep": [
       {
         "x_mm": -80.0,
         "deg": 0,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 27.352987
+        "tube_common_mm3": 24.031589
       },
       {
         "x_mm": -80.0,
         "deg": -15,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 10.324213
+        "tube_common_mm3": 0.336673
       },
       {
         "x_mm": -80.0,
         "deg": -30,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 5.361845
+        "tube_common_mm3": 0.0
       },
       {
         "x_mm": -80.0,
@@ -82,19 +83,19 @@
         "x_mm": 80.0,
         "deg": 0,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 27.352987
+        "tube_common_mm3": 24.031589
       },
       {
         "x_mm": 80.0,
         "deg": -15,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 10.324213
+        "tube_common_mm3": 0.336673
       },
       {
         "x_mm": 80.0,
         "deg": -30,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 5.361845
+        "tube_common_mm3": 0.0
       },
       {
         "x_mm": 80.0,
@@ -119,6 +120,58 @@
         "deg": -90,
         "base_common_mm3": 0.0,
         "tube_common_mm3": 0.0
+      }
+    ],
+    "tightening_sweep": [
+      {
+        "x_mm": -80.0,
+        "deg": 0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 0.5,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 1.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 2.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 3.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 0.5,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 1.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 2.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 3.0,
+        "base_common_mm3": 0.0
       }
     ],
     "pin_checks": [
@@ -146,7 +199,36 @@
         "lower_probe_common_mm3": 0.0,
         "tube_common_mm3": 0.0
       }
-    ]
+    ],
+    "m4_closure": {
+      "mode": "M4x20 from below into side-loaded captive M4 nut",
+      "screw_length_mm": 20.0,
+      "lower_clearance_d_mm": 5.0,
+      "base_clearance_d_mm": 4.6,
+      "base_bore_z_mm": [
+        -1.0,
+        13.0
+      ],
+      "nut_pocket_af_mm": 7.4,
+      "nut_pocket_height_mm": 3.6,
+      "closure_pad_x_mm": 24.0,
+      "closure_pad_y_mm": [
+        4.0,
+        18.0
+      ],
+      "closure_pad_z_mm": [
+        -8.0,
+        -3.5
+      ],
+      "closure_pad_material_fraction": 0.930887,
+      "nominal_gap_mm": 3.5,
+      "mapped_tube_adjustment_mm": 1.826,
+      "required_tube_adjustment_mm": 0.42,
+      "nut_engagement_mm": 3.6,
+      "tip_clearance_mm": 1.0,
+      "front_ligament_mm": 4.5,
+      "side_ligament_mm": 9.5
+    }
   },
   "box_clamp": {
     "plate_travel_mm": 5.5,
@@ -253,8 +335,8 @@
   },
   "failures": [],
   "handed_stl_export": {
-    "right_sha256": "cf9c2120bdba8e8f69dad4b9ab0b2f8de9499a77df899ac097fce7ef2ddbdf8b",
-    "left_sha256": "b7d77d0f4904f1c5ff292f113abcb061f1f0c28cfe45c398b9fadac2a4df9775",
+    "right_sha256": "6155a12922ef0f3009033e3210756e409ac739e658dd116b66b2e1e5cc458ca1",
+    "left_sha256": "3b82f4e9fd0a407e2b99e2cbb6c0685ae351b9da455b5c35e46e65c35523ba39",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -277,13 +359,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 10016,
-    "left_facets": 10016,
-    "right_volume_mm3": 562605.655672,
-    "left_volume_mm3": 562605.655672,
+    "right_facets": 10120,
+    "left_facets": 10120,
+    "right_volume_mm3": 583700.032103,
+    "left_volume_mm3": 583700.032103,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 183866.276231,
-    "left_area_mm2": 183866.276231,
+    "right_area_mm2": 190999.315911,
+    "left_area_mm2": 190999.315911,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
