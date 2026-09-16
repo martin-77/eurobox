@@ -10,4 +10,4 @@ Structural principle: one continuous rack-side carrier. The two rack clamps and 
 - `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
 - `validation/` — machine-readable hard-check reports
 
-The production gate verifies the continuous carrier load path, distinct geometrically X-mirrored LEFT/RIGHT STL files and outward carrier orientation on both installed sides.
+The production gate verifies the continuous carrier load path, the 160 mm box clamp plate with +/-65 mm spindle axes and support-free DROPs beside the rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and outward carrier orientation on both installed sides.
