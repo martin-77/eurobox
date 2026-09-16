@@ -2,7 +2,7 @@
 
 The historical v60 full builder is preserved in ``build_v60_full_baseline.py``.
 This canonical module loads that proven base mechanism first, then applies the
-current rack closure architecture *inside the canonical build import* so every
+current rack closure architecture inside the canonical build import so every
 consumer of ``build_v60_full`` sees and exports the final geometry directly.
 
 Rack closure architecture:
@@ -16,26 +16,15 @@ Rack closure architecture:
 - separate rack hand knob with 6.90 mm AF metal-nut pocket
 """
 
-# Load the already-proven box clamp, rack pivot and carrier mechanics.  Keeping
-# this baseline in its own file means the canonical module below can own the
-# current closure without carrying a second post-build repair step in CI.
 from build_v60_full_baseline import *  # noqa: F401,F403
-
-# The closure module executes against the baseline symbols that are already
-# present in this module.  It rebuilds the rack closure, runs its hard checks,
-# re-exports the canonical parts and rewrites the assembly/validation report.
 import apply_v60_rack_closure as _rack_closure
 
-# Publish the final closure geometry through this canonical module so downstream
-# validators import one authoritative v60 builder and never see the obsolete
-# M4x20 / side-loaded-nut geometry.
 RIGHT_FULL = _rack_closure.RIGHT
 LEFT_FULL = _rack_closure.LEFT
 LOWER = _rack_closure.LOWER
 RACK_NUT_RETAINER = _rack_closure.RACK_NUT_RETAINER
 RACK_HAND_KNOB = _rack_closure.RACK_HAND_KNOB
 
-# Canonical rack-closure datums exposed for CI and future CAD work.
 RACK_M4_SCREW_LENGTH = _rack_closure.RACK_SCREW_LENGTH
 RACK_M4_LOWER_CLEAR_D = _rack_closure.LOWER_CLEAR_D
 RACK_M4_NUT_AF = _rack_closure.RACK_NUT_AF
