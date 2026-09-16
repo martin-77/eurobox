@@ -60,8 +60,11 @@ REAR_SUPPORT_PHYS_X = REAR_SUPPORT_X + PHYSICAL_X_ORIGIN
 
 UPPER_SADDLE_R = 6.31
 PIN_HOLE_D = 4.6
-PIN_Y = 3.0
-PIN_Z = -10.5
+# Final v50/v51 pivot datum.  The raw early v50 builder still contains the
+# obsolete (3,-10.5) point, but the proven fork/gusset geometry and sweep are
+# based on the service pivot at Y=-12, Z=-5.5.
+PIN_Y = -12.0
+PIN_Z = -5.5
 UPPER_PIVOT_W = 18.0
 UPPER_PIVOT_R = 7.0
 UPPER_BRIDGE_Y0 = -8.0
@@ -205,8 +208,6 @@ def make_clamp_frame_bridge():
 
 
 def make_crosshead():
-    # Preserve the moving 140 mm plate corridor, but unlike the broken first v60
-    # the outer long holm heads themselves are fully closed by cap + DROPs.
     x0 = FRONT_CLAMP_X - ARM_W/2.0
     x1 = REAR_SUPPORT_X + ARM_W/2.0
     y0 = 216.0
