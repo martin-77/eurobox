@@ -1,15 +1,15 @@
 {
   "version": "v60",
-  "stage": "full_direct_mechanism_v50_solutions_restored",
-  "architecture": "clean structural core + proven v50 rack joint/backstop/drop/cage solutions",
+  "stage": "full_direct_mechanism_top_retained_m4x30_rack_closure",
+  "architecture": "continuous BASE/Upper + hinged replaceable Lower; M4x30 hand screw into top-loaded replaceable metal M4 nut retained by hollow 12x2 printed service plug",
   "base": {
     "right_bbox_mm": [
-      295.0,
-      247.015,
+      295.5,
+      247.013,
       81.54
     ],
     "left_bbox_mm": [
-      295.0,
+      295.5,
       247.015,
       81.54
     ],
@@ -31,7 +31,7 @@
   },
   "rack": {
     "clamp_spacing_mm": 160.0,
-    "joint": "v51 broad central Upper bearing + replaceable Lower fork",
+    "joint": "integral fixed Upper + hinged replaceable Lower + top-retained metal M4 closure nut",
     "upper_pivot_width_mm": 18.0,
     "lower_fork_outer_width_mm": 28.0,
     "lower_fork_ear_thickness_mm": 4.6,
@@ -189,45 +189,138 @@
     "m4_closure_checks": [
       {
         "x_mm": -80.0,
-        "base_probe_common_mm3": 0.0,
-        "lower_probe_common_mm3": 0.0,
-        "tube_common_mm3": 0.0
+        "deg": 0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -15,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -30,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -45,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -60,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -75,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": -90,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 0.5,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 1.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 2.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": -80.0,
+        "deg": 3.0,
+        "base_common_mm3": 0.0
       },
       {
         "x_mm": 80.0,
-        "base_probe_common_mm3": 0.0,
-        "lower_probe_common_mm3": 0.0,
-        "tube_common_mm3": 0.0
+        "deg": 0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -15,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -30,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -45,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -60,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -75,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": -90,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 0.5,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 1.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 2.0,
+        "base_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "deg": 3.0,
+        "base_common_mm3": 0.0
       }
     ],
     "m4_closure": {
-      "mode": "M4x20 from below into side-loaded captive M4 nut",
-      "screw_length_mm": 20.0,
+      "mode": "M4x30 hand screw from below into top-loaded captive metal M4 nut",
+      "screw_length_mm": 30.0,
       "lower_clearance_d_mm": 5.0,
-      "base_clearance_d_mm": 4.6,
-      "base_bore_z_mm": [
-        -1.0,
-        13.0
-      ],
-      "nut_pocket_af_mm": 7.4,
-      "nut_pocket_height_mm": 3.6,
-      "closure_pad_x_mm": 24.0,
-      "closure_pad_y_mm": [
-        4.0,
-        18.0
-      ],
-      "closure_pad_z_mm": [
-        -8.0,
-        -3.5
-      ],
-      "closure_pad_material_fraction": 0.930887,
-      "nominal_gap_mm": 3.5,
-      "mapped_tube_adjustment_mm": 1.826,
-      "required_tube_adjustment_mm": 0.42,
-      "nut_engagement_mm": 3.6,
-      "tip_clearance_mm": 1.0,
-      "front_ligament_mm": 4.5,
-      "side_ligament_mm": 9.5
+      "lower_closure_thickness_mm": 7.0,
+      "upper_nut_pocket_af_mm": 6.9,
+      "measured_nut_af_mm": 6.81,
+      "measured_nut_max_corner_mm": 7.8,
+      "upper_nut_pocket_height_mm": 3.6,
+      "upper_nut_floor_z_mm": 3.0,
+      "retainer_thread": "printed coarse 12x2-class service thread",
+      "retainer_pitch_mm": 2.0,
+      "retainer_male_major_d_mm": 11.56,
+      "retainer_female_major_d_mm": 11.96,
+      "retainer_length_mm": 10.5,
+      "retainer_through_bore_d_mm": 5.0,
+      "retainer_adjustable_from_top": true,
+      "screw_overrun_path": "open through metal nut and hollow retainer",
+      "knob_nut_pocket_af_mm": 6.9,
+      "knob_plastic_web_mm": 4.4,
+      "usable_screw_length_above_knob_mm": 22.4,
+      "calculated_screw_tip_z_mm": 11.9,
+      "base_tube_common_mm3": 0.0
     }
   },
   "box_clamp": {
@@ -335,16 +428,16 @@
   },
   "failures": [],
   "handed_stl_export": {
-    "right_sha256": "6155a12922ef0f3009033e3210756e409ac739e658dd116b66b2e1e5cc458ca1",
-    "left_sha256": "3b82f4e9fd0a407e2b99e2cbb6c0685ae351b9da455b5c35e46e65c35523ba39",
+    "right_sha256": "f8c6f25df6c320e5944de537d333f8c07481ce89ed3ced4698ff8ce22eb6a375",
+    "left_sha256": "2d3a987142528baccb47386ee7e2509a70e06d4b316f238f6da4983f950e13cd",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
     "mirror_vertex_set_ok": true,
     "mirror_facet_count_ok": true,
-    "left_stl_generation": "exact binary STL X-mirror of validated RIGHT print triangle mesh",
+    "left_stl_generation": "exact binary STL X-mirror of final revised RIGHT print triangle mesh",
     "right_bbox_mm": [
-      -99.0,
+      -99.5,
       196.0,
       -18.998,
       228.015,
@@ -353,19 +446,19 @@
     ],
     "left_bbox_mm": [
       -196.0,
-      99.0,
+      99.5,
       -18.998,
       228.015,
       -42.0,
       39.54
     ],
-    "right_facets": 10120,
-    "left_facets": 10120,
-    "right_volume_mm3": 583700.032103,
-    "left_volume_mm3": 583700.032103,
+    "right_facets": 15096,
+    "left_facets": 15096,
+    "right_volume_mm3": 584531.627229,
+    "left_volume_mm3": 584531.627229,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 190999.315911,
-    "left_area_mm2": 190999.315911,
+    "right_area_mm2": 191530.552663,
+    "left_area_mm2": 191530.552663,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
@@ -408,5 +501,10 @@
         "left_inward_extent_mm": 8.0
       }
     ]
+  },
+  "final_rack_closure_exports": {
+    "retainer_stl": "eurobox_v60_rack_nut_retainer.stl",
+    "rack_hand_knob_stl": "eurobox_v60_rack_hand_knob.stl",
+    "checked_after_final_reexport": true
   }
 }
