@@ -1,16 +1,16 @@
 {
   "version": "v60",
-  "stage": "full_direct_mechanism",
-  "architecture": "clean structural core + direct mechanics; no source rewriting",
+  "stage": "full_direct_mechanism_v50_solutions_restored",
+  "architecture": "clean structural core + proven v50 rack joint/backstop/drop/cage solutions",
   "base": {
     "right_bbox_mm": [
-      293.0,
-      246.015,
+      295.0,
+      247.015,
       91.8
     ],
     "left_bbox_mm": [
-      293.0,
-      246.015,
+      295.0,
+      247.015,
       91.8
     ],
     "mirror_delta_mm3": 0.0,
@@ -25,28 +25,33 @@
         "x_mm": 80.0,
         "probe_common_mm3": 0.0
       }
-    ]
+    ],
+    "guide_stitch_overlap_mm": 0.2
   },
   "rack": {
     "clamp_spacing_mm": 160.0,
+    "joint": "v51 broad central Upper bearing + replaceable Lower fork",
+    "upper_pivot_width_mm": 18.0,
+    "lower_fork_outer_width_mm": 28.0,
+    "lower_fork_ear_thickness_mm": 4.6,
     "lower_sweep": [
       {
         "x_mm": -80.0,
         "deg": 0,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 29.355544
+        "tube_common_mm3": 27.352987
       },
       {
         "x_mm": -80.0,
         "deg": -15,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 28.279366
+        "tube_common_mm3": 10.324213
       },
       {
         "x_mm": -80.0,
         "deg": -30,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 14.686793
+        "tube_common_mm3": 5.361845
       },
       {
         "x_mm": -80.0,
@@ -76,19 +81,19 @@
         "x_mm": 80.0,
         "deg": 0,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 29.355544
+        "tube_common_mm3": 27.352987
       },
       {
         "x_mm": 80.0,
         "deg": -15,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 28.279366
+        "tube_common_mm3": 10.324213
       },
       {
         "x_mm": 80.0,
         "deg": -30,
         "base_common_mm3": 0.0,
-        "tube_common_mm3": 14.686793
+        "tube_common_mm3": 5.361845
       },
       {
         "x_mm": 80.0,
@@ -125,6 +130,20 @@
         "x_mm": 80.0,
         "base_common_mm3": 0.0,
         "lower_common_mm3": 0.0
+      }
+    ],
+    "m4_closure_checks": [
+      {
+        "x_mm": -80.0,
+        "base_probe_common_mm3": 0.0,
+        "lower_probe_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
+      },
+      {
+        "x_mm": 80.0,
+        "base_probe_common_mm3": 0.0,
+        "lower_probe_common_mm3": 0.0,
+        "tube_common_mm3": 0.0
       }
     ]
   },
@@ -232,8 +251,8 @@
   },
   "failures": [],
   "handed_stl_export": {
-    "right_sha256": "a3970704ab1d93ddfaa9769f14069d5d1798e2852b03f8712787d143f0ae3c2d",
-    "left_sha256": "c80c2485517b2b2da563245cae347ffca3937c61fe3d30855a80e19b8b98d04c",
+    "right_sha256": "54c264a7139d101b7f55fb2293e023d9dcb5ce01796040676c6e55e464c53b35",
+    "left_sha256": "65f7b7711555719d470df065298733657e7bf7dc042b76f8513373e07d5ddaed",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -241,28 +260,28 @@
     "mirror_facet_count_ok": true,
     "left_stl_generation": "exact binary STL X-mirror of validated RIGHT print triangle mesh",
     "right_bbox_mm": [
-      -97.0,
+      -99.0,
       196.0,
-      -17.995,
+      -18.998,
       228.015,
       -42.0,
       49.8
     ],
     "left_bbox_mm": [
       -196.0,
-      97.0,
-      -17.995,
+      99.0,
+      -18.998,
       228.015,
       -42.0,
       49.8
     ],
-    "right_facets": 9294,
-    "left_facets": 9294,
-    "right_volume_mm3": 478534.489329,
-    "left_volume_mm3": 478534.489329,
+    "right_facets": 10260,
+    "left_facets": 10260,
+    "right_volume_mm3": 503716.636665,
+    "left_volume_mm3": 503716.636665,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 176030.459371,
-    "left_area_mm2": 176030.459371,
+    "right_area_mm2": 176854.66548,
+    "left_area_mm2": 176854.66548,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
@@ -292,17 +311,17 @@
         "station": "rear",
         "installed_x_mm": 180.0,
         "right_y_range_mm": [
-          39.335,
+          55.335,
           283.35
         ],
         "left_y_range_mm": [
           -283.35,
-          -39.335
+          -55.335
         ],
         "right_outward_extent_mm": 228.015,
-        "right_inward_extent_mm": 16.0,
+        "right_inward_extent_mm": 0.0,
         "left_outward_extent_mm": 228.015,
-        "left_inward_extent_mm": 16.0
+        "left_inward_extent_mm": 0.0
       }
     ]
   }

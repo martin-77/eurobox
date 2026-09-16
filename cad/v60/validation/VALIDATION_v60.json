@@ -1,8 +1,8 @@
 {
   "version": "v60",
-  "stage": "clean_structural_core",
+  "stage": "clean_structural_core_v50_mechanics_restored",
   "freecad_version": "1.1.3",
-  "architecture": "direct geometry; no apply_v60 source-rewriting patches",
+  "architecture": "direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting",
   "datums": {
     "rack_tube_diameter_mm": 12.42,
     "rack_center_distance_mm": 110.67,
@@ -21,8 +21,38 @@
       249.0,
       299.0
     ],
+    "backstop_panel_y_mm": [
+      8.0,
+      12.0
+    ],
+    "backstop_panel_clearance_from_tube_crown_mm": 1.79,
     "rear_support_local_x_mm": 180.0,
     "rear_support_physical_x_mm": 299.0,
+    "pivot_yz_mm": [
+      -12.0,
+      -5.5
+    ],
+    "upper_pivot_width_mm": 18.0,
+    "upper_pivot_diameter_mm": 14.0,
+    "holm_head_face_y_mm": 228.01500000000001,
+    "holm_head_drop_y_mm": [
+      219.8,
+      225.01500000000001
+    ],
+    "plate_sweep_xyz_mm": [
+      [
+        -70.4,
+        70.4
+      ],
+      [
+        214.315,
+        228.615
+      ],
+      [
+        15.6,
+        46.4
+      ]
+    ],
     "indx_build_xy_mm": [
       298.0,
       275.0
@@ -31,29 +61,49 @@
   },
   "geometry": {
     "right_bbox_mm": [
-      293.0,
-      246.015,
+      295.0,
+      247.015,
       81.54
     ],
     "left_bbox_mm": [
-      293.0,
-      246.015,
+      295.0,
+      247.015,
       81.54
     ],
     "right_bounds_x_mm": [
-      -97.0,
+      -99.0,
       196.0
     ],
     "left_bounds_x_mm": [
-      -97.0,
+      -99.0,
       196.0
     ],
-    "right_volume_mm3": 407517.066,
-    "left_volume_mm3": 407517.066,
+    "right_volume_mm3": 433371.262,
+    "left_volume_mm3": 433371.262,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
-    "rear_support_backstop_common_mm3": 4224.0,
-    "rear_support_crosshead_common_mm3": 1689.6
+    "plate_sweep_common_mm3": 0.0,
+    "front_support_crosshead_common_mm3": 2910.898,
+    "rear_support_backstop_common_mm3": 5251.2,
+    "rear_support_crosshead_common_mm3": 3486.644,
+    "holm_head_closures": [
+      {
+        "x_mm": -80.0,
+        "cap_fraction": 1.0,
+        "drop_fractions": [
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "x_mm": 180.0,
+        "cap_fraction": 1.0,
+        "drop_fractions": [
+          1.0,
+          1.0
+        ]
+      }
+    ]
   },
   "failures": []
 }
