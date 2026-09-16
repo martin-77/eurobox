@@ -1,6 +1,6 @@
 {
   "version": "v60",
-  "stage": "full_direct_mechanism_flush_carrier_m4x30_rack_closure",
+  "stage": "full_direct_mechanism_actual_front_and_explicit_retainer_threads",
   "architecture": "continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow 12x2 printed service plug",
   "base": {
     "right_bbox_mm": [
@@ -315,10 +315,10 @@
       "upper_nut_pocket_height_mm": 3.6,
       "upper_nut_floor_z_mm": 11.04,
       "upper_nut_floor_thickness_mm": 1.5,
-      "retainer_thread": "printed coarse 12x2-class service thread",
+      "retainer_thread": "explicit matched printable 12x2 service thread; final BRep witnessed",
       "retainer_pitch_mm": 2.0,
-      "retainer_male_major_d_mm": 11.56,
-      "retainer_female_major_d_mm": 11.96,
+      "retainer_male_major_d_mm": 12.0,
+      "retainer_female_major_d_mm": 12.44,
       "retainer_length_mm": 24.3,
       "retainer_top_z_mm": 39.34,
       "retainer_top_recess_mm": 0.2,
@@ -329,7 +329,37 @@
       "knob_plastic_web_mm": 3.2,
       "usable_screw_length_above_knob_mm": 23.6,
       "calculated_screw_tip_z_mm": 15.1,
-      "base_tube_common_mm3": 0.0
+      "base_tube_common_mm3": 0.0,
+      "retainer_male_core_d_mm": 10.0,
+      "retainer_female_core_d_mm": 10.4,
+      "retainer_thread_top_overrun_mm": 2.0,
+      "male_helical_material_mm3": 25.227951,
+      "female_thread_removed_mm3": [
+        38.32552,
+        38.325498
+      ],
+      "female_helical_witness": [
+        {
+          "x_mm": -80.0,
+          "annular_material_fraction": 0.943919
+        },
+        {
+          "x_mm": 80.0,
+          "annular_material_fraction": 0.943919
+        }
+      ],
+      "retainer_phase_fit_checks": [
+        {
+          "x_mm": -80.0,
+          "nominal_common_mm3": 0.953753,
+          "half_pitch_wrong_phase_common_mm3": 24.514743
+        },
+        {
+          "x_mm": 80.0,
+          "nominal_common_mm3": 0.953753,
+          "half_pitch_wrong_phase_common_mm3": 24.514743
+        }
+      ]
     }
   },
   "box_clamp": {
@@ -479,14 +509,19 @@
           -76.35
         ],
         "apex_x_mm": -80.4,
+        "depth_y_mm": 23.935,
         "y_mm": [
           190.68,
-          193.88
+          214.615
         ],
         "rise_mm": 19.54,
-        "max_horizontal_run_mm": 7.6,
-        "flank_angle_from_horizontal_deg": 68.747,
-        "material_fraction": 1.0
+        "flank_angle_from_horizontal_deg": 70.812,
+        "material_fraction": 1.0,
+        "front_mid_back_material_fraction": [
+          1.0,
+          1.0,
+          1.0
+        ]
       },
       {
         "index": 1,
@@ -495,14 +530,19 @@
           -17.883
         ],
         "apex_x_mm": -35.767,
+        "depth_y_mm": 23.935,
         "y_mm": [
           190.68,
-          193.88
+          214.615
         ],
         "rise_mm": 19.54,
-        "max_horizontal_run_mm": 17.883,
-        "flank_angle_from_horizontal_deg": 47.535,
-        "material_fraction": 1.0
+        "flank_angle_from_horizontal_deg": 48.838,
+        "material_fraction": 1.0,
+        "front_mid_back_material_fraction": [
+          1.0,
+          1.0,
+          1.0
+        ]
       },
       {
         "index": 2,
@@ -511,14 +551,19 @@
           17.883
         ],
         "apex_x_mm": 0.0,
+        "depth_y_mm": 23.935,
         "y_mm": [
           190.68,
-          193.88
+          214.615
         ],
         "rise_mm": 19.54,
-        "max_horizontal_run_mm": 17.883,
-        "flank_angle_from_horizontal_deg": 47.535,
-        "material_fraction": 1.0
+        "flank_angle_from_horizontal_deg": 48.838,
+        "material_fraction": 1.0,
+        "front_mid_back_material_fraction": [
+          1.0,
+          1.0,
+          1.0
+        ]
       },
       {
         "index": 3,
@@ -527,14 +572,19 @@
           53.65
         ],
         "apex_x_mm": 35.767,
+        "depth_y_mm": 23.935,
         "y_mm": [
           190.68,
-          193.88
+          214.615
         ],
         "rise_mm": 19.54,
-        "max_horizontal_run_mm": 17.883,
-        "flank_angle_from_horizontal_deg": 47.535,
-        "material_fraction": 1.0
+        "flank_angle_from_horizontal_deg": 48.838,
+        "material_fraction": 1.0,
+        "front_mid_back_material_fraction": [
+          1.0,
+          1.0,
+          1.0
+        ]
       },
       {
         "index": 4,
@@ -543,23 +593,30 @@
           88.0
         ],
         "apex_x_mm": 80.4,
+        "depth_y_mm": 23.935,
         "y_mm": [
           190.68,
-          193.88
+          214.615
         ],
         "rise_mm": 19.54,
-        "max_horizontal_run_mm": 7.6,
-        "flank_angle_from_horizontal_deg": 68.747,
-        "material_fraction": 1.0
+        "flank_angle_from_horizontal_deg": 70.812,
+        "material_fraction": 1.0,
+        "front_mid_back_material_fraction": [
+          1.0,
+          1.0,
+          1.0
+        ]
       }
     ],
     "lead_screw_clearance_y0_mm": 178.415,
-    "lead_screw_clearance_radius_mm": 5.9
+    "lead_screw_clearance_radius_mm": 5.9,
+    "drop_architecture": "full-depth structural X/Z webs across CAGE_Y0..CAGE_Y1; never inside screw blocks",
+    "drop_depth_y_mm": 23.935
   },
   "failures": [],
   "handed_stl_export": {
-    "right_sha256": "f25ace5947dd259159a1e873a2e862fc5b2bad4691f1b62806f506409778f1ae",
-    "left_sha256": "233e4ba3d656a265a72019e641fc74e3807a2a0d5220e9e1aeb1cba0feefcb44",
+    "right_sha256": "614757c0ceda2650f9dce1e0aa23c0df5bb7e1031777d1221b7322a6aacf44e5",
+    "left_sha256": "152cb37237e4e8fd8b9a5f1a6df26a0efce8ebc260993e11db578d2e7b008bdc",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -582,13 +639,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 21040,
-    "left_facets": 21040,
-    "right_volume_mm3": 583285.093043,
-    "left_volume_mm3": 583285.093043,
+    "right_facets": 73866,
+    "left_facets": 73866,
+    "right_volume_mm3": 608080.430413,
+    "left_volume_mm3": 608080.430413,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 193784.34584,
-    "left_area_mm2": 193784.34584,
+    "right_area_mm2": 195177.959103,
+    "left_area_mm2": 195177.959103,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {

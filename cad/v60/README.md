@@ -7,7 +7,10 @@ Structural principle: one continuous rack-side carrier. The two rack clamps and 
 - `FCStd/` — individual editable FreeCAD parts
 - `STEP/` — neutral CAD exports
 - `STL/` — printable handed meshes
-- `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
+- `assembly/` — installed-orientation PNG
 - `validation/` — machine-readable hard-check reports
+- workflow artifact `eurobox-v60-complete` — complete generated FreeCAD assembly and all proof outputs
 
-The production gate verifies the continuous carrier load path, the 160 mm box clamp plate with +/-65 mm spindle axes and support-free DROPs beside the rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and outward carrier orientation on both installed sides.
+The complete assembly is deliberately not committed to normal Git: detailed thread geometry can push the generated FCStd above GitHub's 100 MB object limit. Keeping it in the workflow artifact also prevents an old assembly from remaining beside newer STEP/STL outputs.
+
+The production gate verifies the continuous carrier load path, the actual 160 mm box-clamp front with +/-65 mm spindle axes and full-depth support-free DROPs only beside/between rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and an explicit matched 12x2 rack-retainer thread pair with final-BRep helix witnesses.
