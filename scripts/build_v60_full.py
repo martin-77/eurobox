@@ -81,6 +81,11 @@ RACK_CLOSURE_PAD_Y0 = 4.0
 RACK_CLOSURE_PAD_Y1 = 18.0
 RACK_CLOSURE_PAD_Z0 = -8.0
 RACK_CLOSURE_PAD_Z1 = -3.5
+# The M4x20 starts at the underside of the Lower tongue (Z=-8) and ends at Z=12.
+# Keep 1 mm blind-tip clearance above it while retaining 5 mm of fixed bridge
+# material above the bore.  This prevents the screw tip from bottoming in BASE.
+RACK_M4_BASE_BORE_Z0 = -1.0
+RACK_M4_BASE_BORE_Z1 = 13.0
 
 
 def stage(msg):
@@ -197,7 +202,21 @@ def make_cage_structure():
 
 
 stage('cage fusion')
-CAGE=make_cage_structure(); RIGHT_FULL=C.RIGHT.fuse(CAGE).removeSplitter(); C.require_single(RIGHT_FULL,'RIGHT full before thread machining')
+CAGE=make_cage_structure(); RIGHT_FULL=C.RIGHT.fuse(CAGE).removeSplitter(); C.require_single(RIGHT_FULL,'RIGHT full before rack-closure machining')
+
+# Re-machine the complete blind M4 path after all structural fusions.  The core
+# station originally only needed a short closure guide; the final M4x20 needs a
+# deeper blind clearance above the captive nut so its tip cannot bottom out.
+for xc in C.CLAMP_X:
+    RIGHT_FULL = RIGHT_FULL.cut(
+        Part.makeCylinder(
+            C.RACK_M4_BASE_CLEAR_D/2.0,
+            RACK_M4_BASE_BORE_Z1-RACK_M4_BASE_BORE_Z0,
+            App.Vector(xc,C.RACK_CLOSURE_Y,RACK_M4_BASE_BORE_Z0),
+            App.Vector(0,0,1),
+        )
+    ).removeSplitter()
+C.require_single(RIGHT_FULL,'RIGHT full after rack-closure machining')
 
 stage('thread solids')
 MALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_male.scad'); FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_female.scad'); CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female.scad')
@@ -280,11 +299,13 @@ required_tube_adjustment = C.RACK_D - RACK_TUBE_MIN_D
 rack_screw_tip_z = RACK_CLOSURE_PAD_Z0 + RACK_M4_SCREW_LENGTH
 rack_nut_z1 = C.RACK_M4_NUT_Z0 + C.RACK_M4_NUT_H
 rack_nut_engagement = max(0.0, min(rack_screw_tip_z, rack_nut_z1) - C.RACK_M4_NUT_Z0)
+rack_tip_clearance = RACK_M4_BASE_BORE_Z1 - rack_screw_tip_z
 closure_front_ligament = RACK_CLOSURE_PAD_Y1 - C.RACK_CLOSURE_Y - RACK_M4_LOWER_CLEAR_D/2.0
 closure_side_ligament = (RACK_CLOSURE_PAD_X - RACK_M4_LOWER_CLEAR_D)/2.0
 if closure_nominal_gap < 3.0: fail('Rack M4 closure lost its tightening gap')
 if closure_mapped_tube_adjustment < required_tube_adjustment: fail('Rack M4 closure cannot cover measured rack-tube diameter range')
 if rack_nut_engagement < 3.2: fail(f'M4x20 does not fully engage captive nut: {rack_nut_engagement:.3f} mm')
+if rack_tip_clearance < 0.8: fail(f'M4x20 tip clearance in fixed BASE is too small: {rack_tip_clearance:.3f} mm')
 if closure_front_ligament < 3.0: fail('Rack M4 closure tongue has insufficient material ahead of screw')
 if closure_side_ligament < 6.0: fail('Rack M4 closure tongue has insufficient material beside screw')
 
@@ -302,7 +323,9 @@ for xc in C.CLAMP_X:
         lower_sweep.append({'x_mm':xc,'deg':deg,'base_common_mm3':round(bc,6),'tube_common_mm3':round(tc,6)})
         if bc>1e-4: fail(f'lower jaw/base collision X={xc} deg={deg}: {bc:.6f} mm3')
 for xc in C.CLAMP_X:
-    if next(q for q in lower_sweep if q['x_mm']==xc and q['deg']==-45')['tube_common_mm3']>0.05: fail(f'lower jaw has not released tube by -45 deg at X={xc}')
+    released = next(q for q in lower_sweep if q['x_mm']==xc and q['deg']==-45)
+    if released['tube_common_mm3'] > 0.05:
+        fail(f"lower jaw has not released tube by -45 deg at X={xc}")
 stage('lower sweep complete')
 
 # The previous full-depth Lower could only open: any positive closing movement
@@ -327,14 +350,17 @@ stage('pin checks complete')
 
 closure_checks=[]
 for xc in C.CLAMP_X:
-    screw_probe=Part.makeCylinder(C.RACK_M4_BASE_CLEAR_D/2.0-0.05,8.0,App.Vector(xc,C.RACK_CLOSURE_Y,-1.0),App.Vector(0,0,1))
+    # Model the complete Ø4 metal screw shank from the underside of the Lower
+    # tongue to the M4x20 tip.  BASE must be completely clear along that path;
+    # the separate captive nut is intentionally not part of RIGHT_FULL.
+    screw_probe=Part.makeCylinder(2.0,RACK_M4_SCREW_LENGTH,App.Vector(xc,C.RACK_CLOSURE_Y,RACK_CLOSURE_PAD_Z0),App.Vector(0,0,1))
     base_cv=RIGHT_FULL.common(screw_probe).Volume
     lo=LOWER.copy(); lo.translate(App.Vector(xc,0,0))
     lower_probe=Part.makeCylinder(RACK_M4_LOWER_CLEAR_D/2.0-0.05,16.0,App.Vector(xc,C.RACK_CLOSURE_Y,-15.0),App.Vector(0,0,1))
     lower_cv=lo.common(lower_probe).Volume
     tube_cv=tube.common(screw_probe).Volume
     closure_checks.append({'x_mm':xc,'base_probe_common_mm3':round(base_cv,6),'lower_probe_common_mm3':round(lower_cv,6),'tube_common_mm3':round(tube_cv,6)})
-    if base_cv>1e-4: fail(f'M4 fixed closure bore blocked at X={xc}')
+    if base_cv>1e-4: fail(f'M4x20 full screw path blocked in fixed BASE at X={xc}')
     if lower_cv>1e-4: fail(f'M4 Lower closure bore blocked at X={xc}')
     if tube_cv>1e-4: fail(f'M4 closure path intersects rack tube at X={xc}')
 
@@ -358,7 +384,7 @@ def local_y_extent(d):
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
-V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'guide_stitch_overlap_mm':GUIDE_STITCH_OVERLAP,'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'spindle_x_mm':list(SPINDLE_X),'spindle_spacing_mm':SPINDLE_X[1]-SPINDLE_X[0],'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':True,'thread_motion':thread_motion,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'guide_stitch_overlap_mm':GUIDE_STITCH_OVERLAP,'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'spindle_x_mm':list(SPINDLE_X),'spindle_spacing_mm':SPINDLE_X[1]-SPINDLE_X[0],'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':True,'thread_motion':thread_motion,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60_full.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 FULL HARD CHECKS FAILED: '+' | '.join(failures))
@@ -389,7 +415,7 @@ doc.recompute(); doc.saveAs(os.path.join(OUT,'eurobox_v60_assembly.FCStd')); App
 with open(os.path.join(OUT,'README_BUILD_v60_full.txt'),'w',encoding='utf-8') as f:
     f.write('Eurobox v60 direct build with proven v50 mechanical solutions restored.\n')
     f.write('Broad fixed Upper pivot, replaceable Lower fork, positive M4 closure with dedicated tightening tongue and side-loaded captive nut.\n')
-    f.write('Rack closure is dimensioned for an M4x20 from below with full captive-nut engagement and positive tightening travel.\n')
+    f.write('Rack closure is dimensioned for an M4x20 from below with full captive-nut engagement, blind-tip clearance and positive tightening travel.\n')
     f.write('Outboard rear-stop contact wall, closed holm heads with DROPs, stitched cage/deck seams.\n')
     f.write('Final cage top is exactly the 39.54 mm box support plane; lead screws widened to +/-55 mm.\n')
     f.write('160 mm rack-clamp spacing; CORE One L INDX hard envelope 298 x 275 mm.\n')
