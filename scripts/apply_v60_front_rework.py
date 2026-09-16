@@ -38,6 +38,27 @@ DROP_RISE = DROP_Z1 - DROP_Z0
 DROP_Y0 = F.CAGE_Y0
 DROP_T = C.WEB_T
 
+# At X=-65 the widened lead screw sits immediately beside the structural holm
+# centred at X=-80.  The complete screw is ~43.5 mm long and moves another
+# 5.5 mm inward while opening.  The old thread-bore started only at CAGE_Y0,
+# which left the rear screw/stud section running into that holm.  Cut the real
+# swept shank/hex envelope all the way to the minimum Y reached at full travel.
+SPINDLE_TOTAL_LEN = (
+    F.SPINDLE_LOCAL_JOURNAL
+    + F.SPINDLE_LOCAL_SHOULDER
+    + F.LEAD_THREAD_LEN
+    + F.HEX_LEN
+    + F.OUTER_STUD_LEN
+)
+LEAD_CLEARANCE_MARGIN = 0.80
+LEAD_CLEAR_Y0 = (
+    F.PLATE_SPINDLE_Y
+    - F.PLATE_OPEN
+    - SPINDLE_TOTAL_LEN
+    - LEAD_CLEARANCE_MARGIN
+)
+LEAD_CLEAR_R = 5.90
+
 
 def stage(msg):
     print('V60_FRONT_REWORK ' + msg, flush=True)
@@ -146,10 +167,14 @@ for xc in C.CLAMP_X:
 
 stage('machine lead screw blocks at +/-65 mm')
 for sx in SPINDLE_X:
-    inner_y0 = F.CAGE_Y0 - 0.50
     RIGHT_FULL = RIGHT_FULL.cut(
-        F.cyl_y(5.90, F.NUT_THREAD_Y0-inner_y0+0.20,
-                sx, inner_y0, F.SPINDLE_Z)
+        F.cyl_y(
+            LEAD_CLEAR_R,
+            F.NUT_THREAD_Y0-LEAD_CLEAR_Y0+0.20,
+            sx,
+            LEAD_CLEAR_Y0,
+            F.SPINDLE_Z,
+        )
     ).removeSplitter()
     cutter = F.FEMALE_NEGY.copy()
     cutter.translate(App.Vector(sx, F.NUT_Y0, F.SPINDLE_Z))
@@ -264,11 +289,13 @@ validation['box_clamp']['rectangular_screw_blocks']=True
 validation['box_clamp']['drops_only_beside_blocks']=True
 validation['box_clamp']['drop_rib_thickness_y_mm']=DROP_T
 validation['box_clamp']['support_free_drop_checks']=drop_checks
+validation['box_clamp']['lead_screw_clearance_y0_mm']=round(LEAD_CLEAR_Y0,3)
+validation['box_clamp']['lead_screw_clearance_radius_mm']=LEAD_CLEAR_R
 validation['box_clamp']['plate_motion']=plate_motion
 validation['box_clamp']['thread_motion']=thread_motion
 validation['failures']=[]
 with open(validation_path,'w',encoding='utf-8') as fh: json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFront rework: 160 mm clamp plate, lead screws +/-65 mm (130 mm spacing), rectangular screw blocks; rear support-free DROPs only beside/between blocks; widened 160.8 mm plate corridor retained.\n')
+    fh.write('\nFront rework: 160 mm clamp plate, lead screws +/-65 mm (130 mm spacing), rectangular screw blocks; rear support-free DROPs only beside/between blocks; widened 160.8 mm plate corridor retained; full 5.5 mm lead-screw sweep clearance machined beside front holm.\n')
 stage('complete')
