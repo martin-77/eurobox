@@ -19,7 +19,7 @@ import build_v60 as C
 CARRIER_X0 = C.FRONT_CLAMP_X - C.ARM_W / 2.0       # -96
 CARRIER_X1 = C.REAR_SUPPORT_X + C.ARM_W / 2.0      # +196
 CARRIER_Y0 = -8.0
-CARRIER_Y1 = C.ARM_Y0 + 0.30                         # overlap front long holm
+CARRIER_Y1 = C.ARM_Y0 + 2.00                         # deliberate structural overlap into front long holm
 CARRIER_TOP_T = C.FLANGE_T
 CARRIER_BOTTOM_T = C.FLANGE_T
 CARRIER_WEB_Y0 = -7.0
