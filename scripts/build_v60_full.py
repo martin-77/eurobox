@@ -1,9 +1,17 @@
 """Canonical v60 full mechanism builder.
 
 The historical v60 full builder is preserved in ``build_v60_full_baseline.py``.
-This canonical module loads that proven base mechanism first, then applies the
-current rack closure architecture inside the canonical build import so every
-consumer of ``build_v60_full`` sees and exports the final geometry directly.
+This canonical module loads that proven mechanism, replaces the box-clamp front
+with the current wider support-free v60 front, and then applies the current
+rack-closure architecture.  Every consumer of ``build_v60_full`` therefore sees
+and exports the final geometry directly.
+
+Front architecture:
+- 160 mm clamp plate
+- lead-screw axes at +/-65 mm (130 mm spacing)
+- rectangular screw blocks retained
+- DROPs only in the free fields beside/between those blocks
+- all DROP flanks >=45 degrees from horizontal in canonical print Z
 
 Rack closure architecture:
 - integral BASE/Upper
@@ -17,6 +25,18 @@ Rack closure architecture:
 """
 
 from build_v60_full_baseline import *  # noqa: F401,F403
+
+# Rebuild the complete box-clamp front from the clean structural core before the
+# rack closure is applied.  Assign these canonical variables first because the
+# rack module imports this partially-initialized module and must see the final
+# wider plate/spindle datums while rebuilding the assembly.
+import apply_v60_front_rework as _front
+
+RIGHT_FULL = _front.RIGHT_FULL
+LEFT_FULL = _front.LEFT_FULL
+PLATE = _front.PLATE
+SPINDLE_X = _front.SPINDLE_X
+
 import apply_v60_rack_closure as _rack_closure
 
 RIGHT_FULL = _rack_closure.RIGHT
@@ -36,4 +56,4 @@ RACK_RETAINER_MALE_MAJOR_D = 2.0 * _rack_closure.RETAINER_MALE_MAJOR_R
 RACK_RETAINER_FEMALE_MAJOR_D = 2.0 * _rack_closure.RETAINER_FEMALE_MAJOR_R
 RACK_LOWER_CLOSURE_THICKNESS = _rack_closure.LOWER_PAD_Z1 - _rack_closure.LOWER_PAD_Z0
 
-print('V60_STAGE canonical top-retained M4x30 rack closure active', flush=True)
+print('V60_STAGE canonical wider support-free front + top-retained M4x30 rack closure active', flush=True)
