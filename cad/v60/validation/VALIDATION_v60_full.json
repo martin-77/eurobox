@@ -253,8 +253,8 @@
   },
   "failures": [],
   "handed_stl_export": {
-    "right_sha256": "aa413128f41c67e44c28ae9f6fe55ce67ab3d14d3c87d6ed7a7c26a65e42da33",
-    "left_sha256": "f1354a8d82195a766bdc6ff6e551f00e048fe0360da90bc86deba81a1cefe1b1",
+    "right_sha256": "cf9c2120bdba8e8f69dad4b9ab0b2f8de9499a77df899ac097fce7ef2ddbdf8b",
+    "left_sha256": "b7d77d0f4904f1c5ff292f113abcb061f1f0c28cfe45c398b9fadac2a4df9775",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -277,13 +277,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 10288,
-    "left_facets": 10288,
-    "right_volume_mm3": 501009.528337,
-    "left_volume_mm3": 501009.528337,
+    "right_facets": 10016,
+    "left_facets": 10016,
+    "right_volume_mm3": 562605.655672,
+    "left_volume_mm3": 562605.655672,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 170931.868183,
-    "left_area_mm2": 170931.868183,
+    "right_area_mm2": 183866.276231,
+    "left_area_mm2": 183866.276231,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
@@ -313,17 +313,17 @@
         "station": "rear",
         "installed_x_mm": 180.0,
         "right_y_range_mm": [
-          55.335,
+          47.335,
           283.35
         ],
         "left_y_range_mm": [
           -283.35,
-          -55.335
+          -47.335
         ],
         "right_outward_extent_mm": 228.015,
-        "right_inward_extent_mm": 0.0,
+        "right_inward_extent_mm": 8.0,
         "left_outward_extent_mm": 228.015,
-        "left_inward_extent_mm": 0.0
+        "left_inward_extent_mm": 8.0
       }
     ]
   }

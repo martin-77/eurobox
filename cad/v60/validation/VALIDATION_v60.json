@@ -1,8 +1,8 @@
 {
   "version": "v60",
-  "stage": "clean_structural_core_v50_mechanics_and_root_closures_restored",
+  "stage": "clean_structural_core_continuous_carrier",
   "freecad_version": "1.1.3",
-  "architecture": "direct v60 geometry + v50 closed clamp roots, full wall splice, closed backstop/support load path",
+  "architecture": "one continuous rack-side carrier; two rack clamps and 50 mm backstop hang from it; long box holms fuse into same carrier",
   "datums": {
     "rack_tube_diameter_mm": 12.42,
     "rack_center_distance_mm": 110.67,
@@ -78,8 +78,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 439793.181,
-    "left_volume_mm3": 439793.181,
+    "right_volume_mm3": 501374.554,
+    "left_volume_mm3": 501374.554,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -104,26 +104,40 @@
         ]
       }
     ],
-    "station_root_closures": [
-      {
-        "x_mm": -80.0,
-        "material_fraction": 1.0
-      },
-      {
-        "x_mm": 80.0,
-        "material_fraction": 1.0
-      }
-    ],
-    "backstop_support_closure_fraction": 1.0,
-    "root_face_y_mm": [
-      -8.0,
-      -4.8
-    ],
-    "inner_wall_splice_width_mm": 6.4,
-    "backstop_support_splice_x_mm": [
-      172.0,
-      196.0
-    ]
+    "continuous_carrier": {
+      "x_mm": [
+        -96.0,
+        196.0
+      ],
+      "y_mm": [
+        -8.0,
+        26.0
+      ],
+      "top_z_mm": [
+        35.04,
+        39.54
+      ],
+      "bottom_z_mm": [
+        9.54,
+        14.04
+      ],
+      "saddle_radius_mm": 6.31,
+      "material_fraction": 0.999752,
+      "rack_tube_common_mm3": 0.0,
+      "front_holm_common_mm3": 576.0,
+      "rear_holm_common_mm3": 9324.8,
+      "clamp_overlaps": [
+        {
+          "station": "front",
+          "carrier_common_mm3": 8496.269
+        },
+        {
+          "station": "rear",
+          "carrier_common_mm3": 9226.64
+        }
+      ],
+      "backstop_common_mm3": 19939.0
+    }
   },
   "failures": []
 }
