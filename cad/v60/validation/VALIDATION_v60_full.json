@@ -1,15 +1,15 @@
 {
   "version": "v60",
-  "stage": "full_direct_mechanism_top_retained_m4x30_rack_closure",
-  "architecture": "continuous BASE/Upper + hinged replaceable Lower; M4x30 hand screw into top-loaded replaceable metal M4 nut retained by hollow 12x2 printed service plug",
+  "stage": "full_direct_mechanism_flush_carrier_m4x30_rack_closure",
+  "architecture": "continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow 12x2 printed service plug",
   "base": {
     "right_bbox_mm": [
-      295.5,
+      295.0,
       247.013,
       81.54
     ],
     "left_bbox_mm": [
-      295.5,
+      295.0,
       247.015,
       81.54
     ],
@@ -31,7 +31,7 @@
   },
   "rack": {
     "clamp_spacing_mm": 160.0,
-    "joint": "integral fixed Upper + hinged replaceable Lower + top-retained metal M4 closure nut",
+    "joint": "integral fixed Upper in common carrier envelope + hinged replaceable Lower + raised top-retained metal M4 closure nut",
     "upper_pivot_width_mm": 18.0,
     "lower_fork_outer_width_mm": 28.0,
     "lower_fork_ear_thickness_mm": 4.6,
@@ -299,27 +299,36 @@
       }
     ],
     "m4_closure": {
-      "mode": "M4x30 hand screw from below into top-loaded captive metal M4 nut",
+      "mode": "M4x30 hand screw from below into raised top-loaded captive metal M4 nut",
       "screw_length_mm": 30.0,
+      "carrier_bottom_plane_z_mm": 9.54,
+      "carrier_top_plane_z_mm": 39.54,
       "lower_clearance_d_mm": 5.0,
       "lower_closure_thickness_mm": 7.0,
+      "lower_closure_z_mm": [
+        -8.5,
+        -1.5
+      ],
       "upper_nut_pocket_af_mm": 6.9,
       "measured_nut_af_mm": 6.81,
       "measured_nut_max_corner_mm": 7.8,
       "upper_nut_pocket_height_mm": 3.6,
-      "upper_nut_floor_z_mm": 3.0,
+      "upper_nut_floor_z_mm": 11.04,
+      "upper_nut_floor_thickness_mm": 1.5,
       "retainer_thread": "printed coarse 12x2-class service thread",
       "retainer_pitch_mm": 2.0,
       "retainer_male_major_d_mm": 11.56,
       "retainer_female_major_d_mm": 11.96,
-      "retainer_length_mm": 10.5,
+      "retainer_length_mm": 24.3,
+      "retainer_top_z_mm": 39.34,
+      "retainer_top_recess_mm": 0.2,
       "retainer_through_bore_d_mm": 5.0,
       "retainer_adjustable_from_top": true,
-      "screw_overrun_path": "open through metal nut and hollow retainer",
+      "screw_overrun_path": "open through metal nut and tall hollow retainer to common carrier top plane",
       "knob_nut_pocket_af_mm": 6.9,
-      "knob_plastic_web_mm": 4.4,
-      "usable_screw_length_above_knob_mm": 22.4,
-      "calculated_screw_tip_z_mm": 11.9,
+      "knob_plastic_web_mm": 3.2,
+      "usable_screw_length_above_knob_mm": 23.6,
+      "calculated_screw_tip_z_mm": 15.1,
       "base_tube_common_mm3": 0.0
     }
   },
@@ -428,8 +437,8 @@
   },
   "failures": [],
   "handed_stl_export": {
-    "right_sha256": "f8c6f25df6c320e5944de537d333f8c07481ce89ed3ced4698ff8ce22eb6a375",
-    "left_sha256": "2d3a987142528baccb47386ee7e2509a70e06d4b316f238f6da4983f950e13cd",
+    "right_sha256": "3a6c4261b92535549a359620c061b1dd726497ea09ee14e31093a3f74fcfdbbf",
+    "left_sha256": "f3a06d989ef21746ff227cc7edcd8a9e55e54a6326452ff6ad0b3630a43d4abe",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -437,7 +446,7 @@
     "mirror_facet_count_ok": true,
     "left_stl_generation": "exact binary STL X-mirror of final revised RIGHT print triangle mesh",
     "right_bbox_mm": [
-      -99.5,
+      -99.0,
       196.0,
       -18.998,
       228.015,
@@ -446,19 +455,19 @@
     ],
     "left_bbox_mm": [
       -196.0,
-      99.5,
+      99.0,
       -18.998,
       228.015,
       -42.0,
       39.54
     ],
-    "right_facets": 15096,
-    "left_facets": 15096,
-    "right_volume_mm3": 584531.627229,
-    "left_volume_mm3": 584531.627229,
+    "right_facets": 20932,
+    "left_facets": 20932,
+    "right_volume_mm3": 582676.673688,
+    "left_volume_mm3": 582676.673688,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 191530.552663,
-    "left_area_mm2": 191530.552663,
+    "right_area_mm2": 192307.981058,
+    "left_area_mm2": 192307.981058,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
