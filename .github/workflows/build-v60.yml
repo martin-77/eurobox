@@ -12,7 +12,9 @@ on:
       - "scripts/build_v60_full.py"
       - "scripts/build_v60_full_baseline.py"
       - "scripts/apply_v60_front_rework.py"
+      - "scripts/apply_v60_front_final.py"
       - "scripts/apply_v60_rack_closure.py"
+      - "scripts/apply_v60_retainer_thread_final.py"
       - "scripts/check_v60_rack_closure_exports.py"
       - "scripts/run_v60_full_ci.py"
       - "scripts/run_v60_continuous_ci.py"
@@ -74,7 +76,9 @@ jobs:
             scripts/build_v60_full.py \
             scripts/build_v60_full_baseline.py \
             scripts/apply_v60_front_rework.py \
+            scripts/apply_v60_front_final.py \
             scripts/apply_v60_rack_closure.py \
+            scripts/apply_v60_retainer_thread_final.py \
             scripts/check_v60_rack_closure_exports.py \
             scripts/run_v60_full_ci.py \
             scripts/run_v60_continuous_ci.py
@@ -92,6 +96,7 @@ jobs:
           test -s build_v60/eurobox_v60_base_left.step
           test -s build_v60/eurobox_v60_base_right.stl
           test -s build_v60/eurobox_v60_base_left.stl
+          test -s build_v60/eurobox_v60_rack_nut_retainer.stl
           test -s build_v60/eurobox_v60_assembly.FCStd
           python3 - <<'PY'
           import json
@@ -100,7 +105,7 @@ jobs:
           assert not core['failures'], core['failures']
           assert not full['failures'], full['failures']
           assert core['stage'] == 'clean_structural_core_continuous_carrier', core['stage']
-          assert full['stage'] == 'full_direct_mechanism_flush_carrier_m4x30_rack_closure', full['stage']
+          assert full['stage'] == 'full_direct_mechanism_actual_front_and_explicit_retainer_threads', full['stage']
           assert core['datums']['clamp_spacing_mm'] == 160.0
           assert full['rack']['clamp_spacing_mm'] == 160.0
           assert full['base']['right_bbox_mm'][0] <= 296.0
@@ -112,6 +117,8 @@ jobs:
           assert full['handed_stl_export']['mirror_bounds_ok']
           assert full['handed_stl_export']['mirror_vertex_set_ok']
 
+          # FRONT: do not accept metadata alone. The finalization pass writes
+          # front/middle/back material witnesses through the REAL drop depth.
           front = full['box_clamp']
           assert front['plate_width_mm'] == 160.0, front
           assert front['spindle_x_mm'] == [-65.0, 65.0], front
@@ -119,10 +126,15 @@ jobs:
           assert front['plate_screw_edge_margin_mm'] == 15.0, front
           assert front['rectangular_screw_blocks'] is True, front
           assert front['drops_only_beside_blocks'] is True, front
+          assert front['drop_architecture'].startswith('full-depth structural'), front
+          assert front['drop_depth_y_mm'] >= 20.0, front
           drops = front['support_free_drop_checks']
           assert len(drops) == 5, drops
           assert all(q['flank_angle_from_horizontal_deg'] >= 45.0 for q in drops), drops
           assert all(q['material_fraction'] >= 0.999 for q in drops), drops
+          assert all(q['depth_y_mm'] >= 20.0 for q in drops), drops
+          assert all(len(q['front_mid_back_material_fraction']) == 3 for q in drops), drops
+          assert all(min(q['front_mid_back_material_fraction']) >= 0.995 for q in drops), drops
 
           closure = full['rack']['m4_closure']
           assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
@@ -131,6 +143,24 @@ jobs:
           assert closure['retainer_top_recess_mm'] <= 0.35, closure
           assert closure['upper_nut_pocket_af_mm'] == 6.9, closure
           assert closure['screw_length_mm'] == 30.0, closure
+
+          # RETAINER THREAD: require actual helical male material, material
+          # removed from the final BASE, retained female lands, and a
+          # phase-sensitive wrong-position interference witness.
+          assert closure['retainer_pitch_mm'] == 2.0, closure
+          assert closure['retainer_male_major_d_mm'] == 12.0, closure
+          assert closure['retainer_female_major_d_mm'] >= 12.4, closure
+          assert closure['male_helical_material_mm3'] >= 12.0, closure
+          assert len(closure['female_thread_removed_mm3']) == 2, closure
+          assert all(v >= 8.0 for v in closure['female_thread_removed_mm3']), closure
+          fw = closure['female_helical_witness']
+          assert len(fw) == 2, fw
+          assert all(0.35 <= q['annular_material_fraction'] <= 0.995 for q in fw), fw
+          pf = closure['retainer_phase_fit_checks']
+          assert len(pf) == 2, pf
+          assert all(q['nominal_common_mm3'] <= 2.0 for q in pf), pf
+          assert all(q['half_pitch_wrong_phase_common_mm3'] >= q['nominal_common_mm3'] + 2.0 for q in pf), pf
+
           cc = core['geometry']['continuous_carrier']
           assert cc['material_fraction'] >= 0.995, cc
           assert cc['rack_tube_common_mm3'] <= 0.0001, cc
@@ -196,7 +226,7 @@ jobs:
           - `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
           - `validation/` — machine-readable hard-check reports
 
-          The production gate verifies the continuous carrier load path, the 160 mm box clamp plate with +/-65 mm spindle axes and support-free DROPs beside the rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and outward carrier orientation on both installed sides.
+          The production gate verifies the continuous carrier load path, the actual 160 mm box-clamp front with +/-65 mm spindle axes and full-depth support-free DROPs only beside/between rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and an explicit matched 12x2 rack-retainer thread pair with final-BRep helix witnesses.
           EOF
 
           cat > preview-stl/v60/README.md <<'EOF'
