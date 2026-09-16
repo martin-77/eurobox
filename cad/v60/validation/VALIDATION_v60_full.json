@@ -253,8 +253,8 @@
   },
   "failures": [],
   "handed_stl_export": {
-    "right_sha256": "dba85987f439f469db10e7f9352f3e8b22c92168c61a97c856acb0697792161c",
-    "left_sha256": "8e4fd99ba3203799226edb4a599c51c1b0de6ffc8a3ed221b712c42258a0b054",
+    "right_sha256": "aa413128f41c67e44c28ae9f6fe55ce67ab3d14d3c87d6ed7a7c26a65e42da33",
+    "left_sha256": "f1354a8d82195a766bdc6ff6e551f00e048fe0360da90bc86deba81a1cefe1b1",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -277,13 +277,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 10300,
-    "left_facets": 10300,
-    "right_volume_mm3": 494587.356736,
-    "left_volume_mm3": 494587.356736,
+    "right_facets": 10288,
+    "left_facets": 10288,
+    "right_volume_mm3": 501009.528337,
+    "left_volume_mm3": 501009.528337,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 170959.517393,
-    "left_area_mm2": 170959.517393,
+    "right_area_mm2": 170931.868183,
+    "left_area_mm2": 170931.868183,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {

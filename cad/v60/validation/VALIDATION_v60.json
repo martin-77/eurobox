@@ -1,8 +1,8 @@
 {
   "version": "v60",
-  "stage": "clean_structural_core_v50_mechanics_restored",
+  "stage": "clean_structural_core_v50_mechanics_and_root_closures_restored",
   "freecad_version": "1.1.3",
-  "architecture": "direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting",
+  "architecture": "direct v60 geometry + v50 closed clamp roots, full wall splice, closed backstop/support load path",
   "datums": {
     "rack_tube_diameter_mm": 12.42,
     "rack_center_distance_mm": 110.67,
@@ -78,8 +78,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 433371.262,
-    "left_volume_mm3": 433371.262,
+    "right_volume_mm3": 439793.181,
+    "left_volume_mm3": 439793.181,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -103,6 +103,26 @@
           1.0
         ]
       }
+    ],
+    "station_root_closures": [
+      {
+        "x_mm": -80.0,
+        "material_fraction": 1.0
+      },
+      {
+        "x_mm": 80.0,
+        "material_fraction": 1.0
+      }
+    ],
+    "backstop_support_closure_fraction": 1.0,
+    "root_face_y_mm": [
+      -8.0,
+      -4.8
+    ],
+    "inner_wall_splice_width_mm": 6.4,
+    "backstop_support_splice_x_mm": [
+      172.0,
+      196.0
     ]
   },
   "failures": []
