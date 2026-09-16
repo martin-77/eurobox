@@ -13,8 +13,10 @@ import build_v60 as C
 # rear stop hang below / from this carrier; they are not separate structural
 # towers.  The two long box-support holms fuse into the same carrier.
 #
-# This replaces the station/root repair concept with the actual mechanical
-# intent established during v50 discussions.
+# The carrier is a closed box section on both Y faces.  The former open side
+# windows were not useful here: this part is still the primary rack carrier and
+# therefore keeps continuous outer walls, while the central saddle web remains
+# as an internal load path around the rack tube.
 
 CARRIER_X0 = C.FRONT_CLAMP_X - C.ARM_W / 2.0       # -96
 CARRIER_X1 = C.REAR_SUPPORT_X + C.ARM_W / 2.0      # +196
@@ -30,6 +32,9 @@ CARRIER_TOP_Z0 = CARRIER_TOP_Z1 - CARRIER_TOP_T
 CARRIER_BOTTOM_Z0 = C.ARM_BOTTOM_Z
 CARRIER_BOTTOM_Z1 = CARRIER_BOTTOM_Z0 + CARRIER_BOTTOM_T
 CARRIER_SADDLE_R = C.UPPER_SADDLE_R
+CARRIER_SIDE_T = C.WEB_T
+CARRIER_SIDE_Z0 = CARRIER_BOTTOM_Z1
+CARRIER_SIDE_Z1 = CARRIER_TOP_Z0
 
 
 def make_continuous_carrier():
@@ -55,8 +60,23 @@ def make_continuous_carrier():
         0.0,
     )
     web = web_raw.cut(saddle).removeSplitter()
-    q = C.fuse_seq([top, bottom, web], 'continuous-rack-carrier')
-    C.require_single(q, 'continuous-rack-carrier')
+
+    # Close the visible carrier section on both sides.  Keep the original outer
+    # envelope: the walls grow inward from Y0/Y1 and bridge only between the
+    # lower and upper flanges, so there is no additional tyre/box-side growth.
+    side_y0 = C.box(
+        CARRIER_X0, CARRIER_Y0, CARRIER_SIDE_Z0,
+        dx, CARRIER_SIDE_T, CARRIER_SIDE_Z1 - CARRIER_SIDE_Z0,
+    )
+    side_y1 = C.box(
+        CARRIER_X0, CARRIER_Y1 - CARRIER_SIDE_T, CARRIER_SIDE_Z0,
+        dx, CARRIER_SIDE_T, CARRIER_SIDE_Z1 - CARRIER_SIDE_Z0,
+    )
+    q = C.fuse_seq(
+        [top, bottom, web, side_y0, side_y1],
+        'continuous-rack-carrier-closed-box',
+    )
+    C.require_single(q, 'continuous-rack-carrier-closed-box')
     return q
 
 
@@ -203,6 +223,27 @@ carrier_fraction = RIGHT.common(CARRIER).Volume / CARRIER.Volume
 if carrier_fraction < 0.995:
     failures.append(f'continuous carrier not fully incorporated: {carrier_fraction:.6f}')
 
+# The two outside faces are structural walls, not visual openings.  Probe the
+# exact wall solids so any future regression back to an open section hard-fails.
+side_wall_probes = {
+    'y0': C.box(
+        CARRIER_X0, CARRIER_Y0, CARRIER_SIDE_Z0,
+        CARRIER_X1-CARRIER_X0, CARRIER_SIDE_T,
+        CARRIER_SIDE_Z1-CARRIER_SIDE_Z0,
+    ),
+    'y1': C.box(
+        CARRIER_X0, CARRIER_Y1-CARRIER_SIDE_T, CARRIER_SIDE_Z0,
+        CARRIER_X1-CARRIER_X0, CARRIER_SIDE_T,
+        CARRIER_SIDE_Z1-CARRIER_SIDE_Z0,
+    ),
+}
+side_wall_fractions = {}
+for label, probe in side_wall_probes.items():
+    frac = RIGHT.common(probe).Volume / probe.Volume
+    side_wall_fractions[label] = round(frac, 6)
+    if frac < 0.999:
+        failures.append(f'continuous carrier {label} side wall is not closed: {frac:.6f}')
+
 station_overlaps = []
 for label, station in [('front', FRONT_CLAMP), ('rear', REAR_CLAMP)]:
     ov = CARRIER.common(station).Volume
@@ -240,16 +281,20 @@ report_path = os.path.join(C.OUT, 'VALIDATION_v60.json')
 with open(report_path, 'r', encoding='utf-8') as f:
     report = json.load(f)
 report['stage'] = 'clean_structural_core_continuous_carrier'
-report['architecture'] = 'one continuous rack-side carrier; two rack clamps and 50 mm backstop hang from it; long box holms fuse into same carrier'
+report['architecture'] = 'one closed-box continuous rack-side carrier; two rack clamps and 50 mm backstop hang from it; long box holms fuse into same carrier'
 report['geometry']['right_bbox_mm'] = [round(RIGHT.BoundBox.XLength,3), round(RIGHT.BoundBox.YLength,3), round(RIGHT.BoundBox.ZLength,3)]
 report['geometry']['left_bbox_mm'] = [round(LEFT.BoundBox.XLength,3), round(LEFT.BoundBox.YLength,3), round(LEFT.BoundBox.ZLength,3)]
 report['geometry']['right_volume_mm3'] = round(RIGHT.Volume,3)
 report['geometry']['left_volume_mm3'] = round(LEFT.Volume,3)
 report['geometry']['continuous_carrier'] = {
+    'section': 'closed_box_with_internal_saddle_web',
     'x_mm': [CARRIER_X0, CARRIER_X1],
     'y_mm': [CARRIER_Y0, CARRIER_Y1],
     'top_z_mm': [CARRIER_TOP_Z0, CARRIER_TOP_Z1],
     'bottom_z_mm': [CARRIER_BOTTOM_Z0, CARRIER_BOTTOM_Z1],
+    'side_wall_thickness_mm': CARRIER_SIDE_T,
+    'side_wall_z_mm': [CARRIER_SIDE_Z0, CARRIER_SIDE_Z1],
+    'side_wall_material_fractions': side_wall_fractions,
     'saddle_radius_mm': CARRIER_SADDLE_R,
     'material_fraction': round(carrier_fraction,6),
     'rack_tube_common_mm3': round(tube_common,9),
