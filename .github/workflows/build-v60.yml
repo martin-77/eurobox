@@ -10,6 +10,9 @@ on:
       - "scripts/build_v60.py"
       - "scripts/build_v60_continuous_carrier.py"
       - "scripts/build_v60_full.py"
+      - "scripts/build_v60_full_baseline.py"
+      - "scripts/apply_v60_rack_closure.py"
+      - "scripts/check_v60_rack_closure_exports.py"
       - "scripts/run_v60_full_ci.py"
       - "scripts/run_v60_continuous_ci.py"
       - "scripts/preview_v60.scad"
@@ -68,6 +71,9 @@ jobs:
             scripts/build_v60.py \
             scripts/build_v60_continuous_carrier.py \
             scripts/build_v60_full.py \
+            scripts/build_v60_full_baseline.py \
+            scripts/apply_v60_rack_closure.py \
+            scripts/check_v60_rack_closure_exports.py \
             scripts/run_v60_full_ci.py \
             scripts/run_v60_continuous_ci.py
 
@@ -92,6 +98,7 @@ jobs:
           assert not core['failures'], core['failures']
           assert not full['failures'], full['failures']
           assert core['stage'] == 'clean_structural_core_continuous_carrier', core['stage']
+          assert full['stage'] == 'full_direct_mechanism_flush_carrier_m4x30_rack_closure', full['stage']
           assert core['datums']['clamp_spacing_mm'] == 160.0
           assert full['rack']['clamp_spacing_mm'] == 160.0
           assert full['base']['right_bbox_mm'][0] <= 296.0
@@ -102,6 +109,13 @@ jobs:
           assert full['handed_stl_export']['mirror_geometry_ok']
           assert full['handed_stl_export']['mirror_bounds_ok']
           assert full['handed_stl_export']['mirror_vertex_set_ok']
+          closure = full['rack']['m4_closure']
+          assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
+          assert closure['carrier_top_plane_z_mm'] == 39.54, closure
+          assert closure['lower_closure_thickness_mm'] == 7.0, closure
+          assert closure['retainer_top_recess_mm'] <= 0.35, closure
+          assert closure['upper_nut_pocket_af_mm'] == 6.9, closure
+          assert closure['screw_length_mm'] == 30.0, closure
           cc = core['geometry']['continuous_carrier']
           assert cc['material_fraction'] >= 0.995, cc
           assert cc['rack_tube_common_mm3'] <= 0.0001, cc
