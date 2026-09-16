@@ -8,8 +8,10 @@ on:
     branches: [main, v60-clean]
     paths:
       - "scripts/build_v60.py"
+      - "scripts/build_v60_core_final.py"
       - "scripts/build_v60_full.py"
       - "scripts/run_v60_full_ci.py"
+      - "scripts/run_v60_final_ci.py"
       - "scripts/preview_v60.scad"
       - "docs/V60_**"
       - ".github/workflows/build-v60.yml"
@@ -62,13 +64,18 @@ jobs:
       - name: Compile v60 builders
         run: |
           set -euo pipefail
-          python3 -m py_compile scripts/build_v60.py scripts/build_v60_full.py scripts/run_v60_full_ci.py
+          python3 -m py_compile \
+            scripts/build_v60.py \
+            scripts/build_v60_core_final.py \
+            scripts/build_v60_full.py \
+            scripts/run_v60_full_ci.py \
+            scripts/run_v60_final_ci.py
 
       - name: Build and hard-check complete direct v60
         run: |
           set -euo pipefail
           START=$(date +%s)
-          "$FREECADCMD" scripts/run_v60_full_ci.py 2>&1 | tee build_v60.log
+          "$FREECADCMD" scripts/run_v60_final_ci.py 2>&1 | tee build_v60.log
           END=$(date +%s)
           echo $((END-START)) > build_v60/build_seconds.txt
           test -s build_v60/VALIDATION_v60.json
@@ -94,6 +101,10 @@ jobs:
           assert full['handed_stl_export']['mirror_geometry_ok']
           assert full['handed_stl_export']['mirror_bounds_ok']
           assert full['handed_stl_export']['mirror_vertex_set_ok']
+          closures = core['geometry']['station_root_closures']
+          assert len(closures) == 2
+          assert all(q['material_fraction'] >= 0.995 for q in closures), closures
+          assert core['geometry']['backstop_support_closure_fraction'] >= 0.995
           checks = full['installed_support_orientation']['checks']
           assert len(checks) == 2
           for q in checks:
@@ -141,7 +152,7 @@ jobs:
           cat > cad/v60/README.md <<'EOF'
           # Eurobox carrier v60
 
-          Canonical clean rebuild generated and hard-validated by `scripts/build_v60.py` and `scripts/build_v60_full.py`.
+          Canonical clean rebuild generated and hard-validated by `scripts/build_v60.py`, `scripts/build_v60_core_final.py` and `scripts/build_v60_full.py`.
 
           - `FCStd/` — individual editable FreeCAD parts
           - `STEP/` — neutral CAD exports
@@ -149,7 +160,7 @@ jobs:
           - `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
           - `validation/` — machine-readable hard-check reports
 
-          The production gate verifies that LEFT/RIGHT STL files are distinct geometrically X-mirrored exports and that, in installed orientation, both longitudinal carrier stations project outward from the rack: RIGHT toward +Y and LEFT toward -Y.
+          The production gate verifies closed clamp-root/wall joints, a closed rectangular backstop-to-rear-support load path, distinct geometrically X-mirrored LEFT/RIGHT STL files and outward carrier orientation on both installed sides.
           EOF
 
           cat > preview-stl/v60/README.md <<'EOF'
@@ -166,7 +177,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Validated v60 repository outputs already current"
           else
-            git commit -m "Publish corrected handed v60 meshes and preview"
+            git commit -m "Publish closed-root v60 meshes and preview"
             git push
           fi
 
