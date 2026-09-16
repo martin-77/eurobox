@@ -32,7 +32,7 @@ permissions:
 jobs:
   full-direct-build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
 
@@ -198,13 +198,18 @@ jobs:
           rm -rf cad/v60 preview-stl/v60
           mkdir -p cad/v60/FCStd cad/v60/STEP cad/v60/STL cad/v60/assembly cad/v60/validation preview-stl/v60
 
+          # Individual FCStd parts remain small enough for normal Git. The complete
+          # assembly is a reproducible proof artifact and can exceed GitHub's
+          # 100 MB normal Git object limit once detailed thread geometry is present.
           for f in build_v60/eurobox_v60_*.FCStd; do
             base=$(basename "$f")
             if [ "$base" = "eurobox_v60_assembly.FCStd" ]; then
-              cp "$f" "cad/v60/assembly/$base"
-            else
-              cp "$f" "cad/v60/FCStd/$base"
+              bytes=$(stat -c '%s' "$f")
+              mib=$(awk -v bytes="$bytes" 'BEGIN { printf "%.2f", bytes / 1048576 }')
+              echo "::notice title=Assembly kept in workflow artifact::$base is ${mib} MiB (${bytes} bytes); not committing it to normal Git"
+              continue
             fi
+            cp "$f" "cad/v60/FCStd/$base"
           done
           cp build_v60/eurobox_v60_*.step cad/v60/STEP/
           cp build_v60/eurobox_v60_*.stl cad/v60/STL/
@@ -223,8 +228,11 @@ jobs:
           - `FCStd/` — individual editable FreeCAD parts
           - `STEP/` — neutral CAD exports
           - `STL/` — printable handed meshes
-          - `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
+          - `assembly/` — installed-orientation PNG
           - `validation/` — machine-readable hard-check reports
+          - workflow artifact `eurobox-v60-complete` — complete generated FreeCAD assembly and all proof outputs
+
+          The complete assembly is deliberately not committed to normal Git: detailed thread geometry can push the generated FCStd above GitHub's 100 MB object limit. Keeping it in the workflow artifact also prevents an old assembly from remaining beside newer STEP/STL outputs.
 
           The production gate verifies the continuous carrier load path, the actual 160 mm box-clamp front with +/-65 mm spindle axes and full-depth support-free DROPs only beside/between rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and an explicit matched 12x2 rack-retainer thread pair with final-BRep helix witnesses.
           EOF
@@ -237,6 +245,17 @@ jobs:
           `eurobox_v60_preview.png` shows the actual installed orientation: RIGHT is translated to the +Y rack tube; LEFT is the handed printable STL rotated 180 degrees about Z and translated to the -Y rack tube. The long carriers therefore point outward on both sides.
           EOF
 
+          # Fail before commit/push with a useful error if another generated file
+          # grows beyond GitHub's normal Git object limit in the future.
+          max_git_bytes=$((100 * 1024 * 1024))
+          while IFS= read -r -d '' generated; do
+            bytes=$(stat -c '%s' "$generated")
+            if (( bytes > max_git_bytes )); then
+              echo "::error title=Generated repository file too large::$generated is $bytes bytes; keep it in the workflow artifact or move the repository to Git LFS"
+              exit 1
+            fi
+          done < <(find cad/v60 preview-stl/v60 -type f -print0)
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add cad/v60 preview-stl/v60
@@ -248,6 +267,7 @@ jobs:
           fi
 
       - name: Upload complete v60 proof
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: eurobox-v60-complete
