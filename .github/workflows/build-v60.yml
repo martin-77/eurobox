@@ -11,6 +11,7 @@ on:
       - "scripts/build_v60_continuous_carrier.py"
       - "scripts/build_v60_full.py"
       - "scripts/build_v60_full_baseline.py"
+      - "scripts/apply_v60_front_rework.py"
       - "scripts/apply_v60_rack_closure.py"
       - "scripts/check_v60_rack_closure_exports.py"
       - "scripts/run_v60_full_ci.py"
@@ -72,6 +73,7 @@ jobs:
             scripts/build_v60_continuous_carrier.py \
             scripts/build_v60_full.py \
             scripts/build_v60_full_baseline.py \
+            scripts/apply_v60_front_rework.py \
             scripts/apply_v60_rack_closure.py \
             scripts/check_v60_rack_closure_exports.py \
             scripts/run_v60_full_ci.py \
@@ -109,6 +111,19 @@ jobs:
           assert full['handed_stl_export']['mirror_geometry_ok']
           assert full['handed_stl_export']['mirror_bounds_ok']
           assert full['handed_stl_export']['mirror_vertex_set_ok']
+
+          front = full['box_clamp']
+          assert front['plate_width_mm'] == 160.0, front
+          assert front['spindle_x_mm'] == [-65.0, 65.0], front
+          assert front['spindle_spacing_mm'] == 130.0, front
+          assert front['plate_screw_edge_margin_mm'] == 15.0, front
+          assert front['rectangular_screw_blocks'] is True, front
+          assert front['drops_only_beside_blocks'] is True, front
+          drops = front['support_free_drop_checks']
+          assert len(drops) == 5, drops
+          assert all(q['flank_angle_from_horizontal_deg'] >= 45.0 for q in drops), drops
+          assert all(q['material_fraction'] >= 0.999 for q in drops), drops
+
           closure = full['rack']['m4_closure']
           assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
           assert closure['carrier_top_plane_z_mm'] == 39.54, closure
@@ -181,7 +196,7 @@ jobs:
           - `assembly/` — complete FreeCAD assembly plus installed-orientation PNG
           - `validation/` — machine-readable hard-check reports
 
-          The production gate verifies the continuous carrier load path, distinct geometrically X-mirrored LEFT/RIGHT STL files and outward carrier orientation on both installed sides.
+          The production gate verifies the continuous carrier load path, the 160 mm box clamp plate with +/-65 mm spindle axes and support-free DROPs beside the rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and outward carrier orientation on both installed sides.
           EOF
 
           cat > preview-stl/v60/README.md <<'EOF'
