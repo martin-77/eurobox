@@ -2,11 +2,12 @@
 
 The structural v60 baseline is retained, but the production path applies the
 final mechanisms in this order:
-1. restore the proven v50 box-clamp function with a 160 mm moving plate,
+1. prepare the v50-derived box-clamp thread pair and complete spindle sweep;
+2. restore the proven v50 box-clamp function with a 160 mm moving plate,
    separate RH8x2 lead-nut cartridges and two outer Y/Z support DROPs;
-2. apply the M4x30 rack closure;
-3. rebuild/witness the explicit printable 12x2 rack-nut-retainer thread pair;
-4. rewrite the final assembly including the removable box-clamp hardware.
+3. apply the M4x30 rack closure;
+4. rebuild/witness the explicit printable 12x2 rack-nut-retainer thread pair;
+5. rewrite the final assembly including the removable box-clamp hardware.
 
 The previous v60 experiment with integral BASE lead threads and a row of
 triangular front DROPs is deliberately not part of the canonical output.
@@ -14,6 +15,11 @@ triangular front DROPs is deliberately not part of the canonical output.
 
 from build_v60_full_baseline import *  # noqa: F401,F403
 
+# The baseline spindle is retained, but the separate cartridge must use a
+# female profile derived from that exact male profile.  Also clear the complete
+# 43.5 mm spindle envelope over the full 5.5 mm opening travel before the front
+# cage is fused.  The hard checks in the front module still decide validity.
+import apply_v60_box_clamp_prereq as _box_clamp_prereq  # noqa: F401,E402
 import apply_v60_front_final as _front
 
 RIGHT_FULL = _front.RIGHT_FULL
