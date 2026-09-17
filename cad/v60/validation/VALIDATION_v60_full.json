@@ -1,6 +1,6 @@
 {
   "version": "v60",
-  "stage": "full_direct_mechanism_clean_modular_front_and_explicit_retainer_threads",
+  "stage": "full_direct_mechanism_clean_modular_front_v6_all_threads_accessible",
   "architecture": "continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow 12x2 printed service plug",
   "base": {
     "right_bbox_mm": [
@@ -368,7 +368,7 @@
     }
   },
   "box_clamp": {
-    "architecture": "closed_v60_front_carrier_with_two_replaceable_clamp_cassettes",
+    "architecture": "clean_modular_front_v6_full_handle_travel_and_all_RH8x2_service_access",
     "front_carrier_x_mm": [
       -96.0,
       196.0
@@ -617,23 +617,281 @@
     "final_assembly_lead_nut_pin_count": 4,
     "final_assembly_lead_nut_clip_count": 4,
     "final_assembly_replaceable_module_count": 4,
+    "rear_drive_service_open": true,
+    "rear_drive_service_checks": [
+      {
+        "x_mm": -48.0,
+        "rear_drive_service_base_common_mm3": 0.0,
+        "rear_drive_service_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "rear_drive_service_base_common_mm3": 0.0,
+        "rear_drive_service_module_common_mm3": 0.0
+      }
+    ],
+    "lead_nut_tail_local_y_mm": [
+      -15.0,
+      -8.0
+    ],
+    "lead_nut_tail_local_z_mm": [
+      -13.0,
+      -4.8
+    ],
+    "lead_nut_tail_to_hex_preload_clearance_mm": 0.7,
+    "lead_nut_body_tail_bridge_material_fraction": 1.0,
+    "lead_nut_pin_local_y_mm": -12.0,
+    "lead_nut_pin_local_z_mm": -9.25,
+    "handle_sweep_y_mm": [
+      183.415,
+      197.015
+    ],
+    "handle_clearance_d_mm": 31.2,
+    "handle_wall_access_checks": [
+      {
+        "x_mm": -48.0,
+        "travel_mm": -0.5,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": -48.0,
+        "travel_mm": 0.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": -48.0,
+        "travel_mm": 0.5,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": -48.0,
+        "travel_mm": 1.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": -48.0,
+        "travel_mm": 2.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": -48.0,
+        "travel_mm": 3.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": -48.0,
+        "travel_mm": 4.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": -48.0,
+        "travel_mm": 5.5,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": -0.5,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": 0.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": 0.5,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": 1.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": 2.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": 3.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": 4.0,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      },
+      {
+        "x_mm": 128.0,
+        "travel_mm": 5.5,
+        "knob_base_common_mm3": 0.0,
+        "knob_module_common_mm3": 0.0,
+        "cap_nut_base_common_mm3": 0.0,
+        "cap_nut_module_common_mm3": 0.0
+      }
+    ],
+    "knob_retainer_thread": {
+      "standard": "RH8x2 matched to production outer stud",
+      "open_ended": true,
+      "cutter_overrun_each_end_mm": 2.0,
+      "stud_engagement_mm": 4.5,
+      "core_blockage_mm3": 0.0,
+      "phase_fit_checks": [
+        {
+          "x_mm": -48.0,
+          "correct_phase_common_mm3": 0.0,
+          "half_pitch_wrong_phase_common_mm3": 0.981586
+        },
+        {
+          "x_mm": 128.0,
+          "correct_phase_common_mm3": 0.0,
+          "half_pitch_wrong_phase_common_mm3": 0.981586
+        }
+      ]
+    },
+    "final_assembly_box_clamp_knob_count": 4,
+    "final_assembly_knob_retainer_count": 4,
     "final_assembly_installed_spindle_x_mm": [
       -48.0,
       128.0
     ],
-    "final_assembly_left_hardware_transform": "rigid 180deg turnaround about clean-front centre for complete reusable cassette/spindle/cartridge/pin/clip stack; no RH8x2 reflection"
+    "final_assembly_left_hardware_transform": "rigid 180deg turnaround about clean-front centre for complete reusable cassette/spindle/cartridge/pin/clip/knob/retainer stack; no RH8x2 reflection"
   },
   "failures": [],
+  "thread_access_audit": {
+    "all_printed_threads_checked": true,
+    "printed_thread_interfaces": [
+      "RH8x2 clamp spindle to replaceable lead-nut cartridge",
+      "RH8x2 spindle outer stud to open-ended knob-retainer nut",
+      "12x2 rack-nut service retainer to final BASE"
+    ],
+    "metal_thread_interfaces": [
+      "M4x30 rack closure screw to captive metal M4 nut"
+    ],
+    "clamp_main_thread_full_motion_checked_by": "apply_v60_front_rebuild_v5",
+    "knob_retainer_thread_access_checked_by": "apply_v60_front_rebuild_v6",
+    "rack_retainer_top_recess_mm": 0.2,
+    "rack_retainer_unscrew_motion": [
+      {
+        "x_mm": -80.0,
+        "unscrew_mm": 0.0,
+        "rotation_deg": -0.0,
+        "base_common_mm3": 0.953753
+      },
+      {
+        "x_mm": -80.0,
+        "unscrew_mm": 0.5,
+        "rotation_deg": -90.0,
+        "base_common_mm3": 0.052547
+      },
+      {
+        "x_mm": -80.0,
+        "unscrew_mm": 1.0,
+        "rotation_deg": -180.0,
+        "base_common_mm3": 0.051446
+      },
+      {
+        "x_mm": -80.0,
+        "unscrew_mm": 2.0,
+        "rotation_deg": -360.0,
+        "base_common_mm3": 0.049234
+      },
+      {
+        "x_mm": -80.0,
+        "unscrew_mm": 4.0,
+        "rotation_deg": -720.0,
+        "base_common_mm3": 0.044784
+      },
+      {
+        "x_mm": 80.0,
+        "unscrew_mm": 0.0,
+        "rotation_deg": -0.0,
+        "base_common_mm3": 0.953753
+      },
+      {
+        "x_mm": 80.0,
+        "unscrew_mm": 0.5,
+        "rotation_deg": -90.0,
+        "base_common_mm3": 0.052547
+      },
+      {
+        "x_mm": 80.0,
+        "unscrew_mm": 1.0,
+        "rotation_deg": -180.0,
+        "base_common_mm3": 0.051446
+      },
+      {
+        "x_mm": 80.0,
+        "unscrew_mm": 2.0,
+        "rotation_deg": -360.0,
+        "base_common_mm3": 0.049234
+      },
+      {
+        "x_mm": 80.0,
+        "unscrew_mm": 4.0,
+        "rotation_deg": -720.0,
+        "base_common_mm3": 0.044784
+      }
+    ],
+    "no_thread_behind_closed_wall": true
+  },
   "final_assembly": {
     "representation": "tessellated exact-final-shape inspection proof",
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3433049
+    "file_bytes": 3572768
   },
   "handed_stl_export": {
-    "right_sha256": "9d1aed34f8dcd77d9628504ea918a1fe223992045f6a27a0b4f1cf12d353d1ae",
-    "left_sha256": "6e2b44dc50ab4a1d2bd70b5ebffe0cf65c790706cd4f67399baf2c5f643490bf",
+    "right_sha256": "7ee18c0509dc9784f66c337ce25b9c716ac49ad39013235108ba37d5d0383cbd",
+    "left_sha256": "6acb97a90c01c9e27eb43c81391015b2e1371d081f1b1c65d867e4fdca032d8b",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -656,13 +914,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 67900,
-    "left_facets": 67900,
-    "right_volume_mm3": 643570.435232,
-    "left_volume_mm3": 643570.435232,
+    "right_facets": 68108,
+    "left_facets": 68108,
+    "right_volume_mm3": 642511.249816,
+    "left_volume_mm3": 642511.249816,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 181593.719988,
-    "left_area_mm2": 181593.719988,
+    "right_area_mm2": 181606.691077,
+    "left_area_mm2": 181606.691077,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
