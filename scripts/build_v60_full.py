@@ -3,7 +3,7 @@
 Production order:
 1. structural full baseline;
 2. phase-matched RH8x2 cartridge prerequisite;
-3. clean closed v60 front carrier with two replaceable clamp cassettes;
+3. clean side-style v60 front with two replaceable clamp cassettes;
 4. M4x30 rack closure;
 5. explicit printable 12x2 rack-retainer thread pair;
 6. lightweight final inspection assembly.
@@ -22,12 +22,11 @@ _t = start_timer('full.apply_box_clamp_prerequisite')
 import apply_v60_box_clamp_prereq as _box_clamp_prereq  # noqa: F401,E402
 stop_timer('full.apply_box_clamp_prerequisite', _t)
 
-# The legacy front_final + position_fix stack is intentionally bypassed.  The
-# new builder recreates the fixed front from the continuous carrier and side
-# supports, then cuts only the two replaceable module bays.
-_t = start_timer('full.apply_clean_modular_front')
-import apply_v60_front_rebuild as _front  # noqa: E402
-stop_timer('full.apply_clean_modular_front', _t)
+# Do not import the former front_final/position-fix chain.  v2 builds the fixed
+# cross-carrier directly from the continuous carrier and side-support geometry.
+_t = start_timer('full.apply_clean_modular_front_v2')
+import apply_v60_front_rebuild_v2 as _front  # noqa: E402
+stop_timer('full.apply_clean_modular_front_v2', _t)
 
 RIGHT_FULL = _front.RIGHT_FULL
 LEFT_FULL = _front.LEFT_FULL
@@ -79,6 +78,6 @@ import apply_v60_final_assembly as _final_assembly  # noqa: F401,E402
 stop_timer('full.build_lightweight_final_assembly', _t)
 
 print(
-    'V60_STAGE clean closed modular front + replaceable v50 RH8x2 cassettes + explicit rack retainer threads active',
+    'V60_STAGE clean side-style modular front v2 + replaceable v50 RH8x2 cassettes + explicit rack retainer threads active',
     flush=True,
 )
