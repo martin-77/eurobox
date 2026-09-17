@@ -4,7 +4,7 @@ import os
 import FreeCAD as App
 import MeshPart
 
-import apply_v60_front_rebuild_v5 as P
+import apply_v60_front_rebuild_v6 as P
 import apply_v60_rack_closure as R
 import apply_v60_retainer_thread_final as T
 import build_v60 as C
@@ -58,9 +58,8 @@ def right_finish(shape, rack_y):
 
 
 def left_turnaround(shape, rack_y):
-    # Reusable clamp parts are turned around rigidly, never reflected.  The
-    # 180-degree turn about the clean-front centre preserves RH8x2 chirality and
-    # swaps the two cassette positions onto the same installed {-48,+128} set.
+    # Reusable clamp parts are turned around rigidly, never reflected. The
+    # 180-degree turn about the clean-front centre preserves RH8x2 chirality.
     shape.rotate(
         App.Vector(FRONT_CENTER_X, 0, 0),
         App.Vector(0, 0, 1),
@@ -105,6 +104,21 @@ def add_box_clamp_hardware(prefix, rack_y, left=False):
         clip.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), 90.0)
         clip.translate(App.Vector(sx + P.NUT_PIN_CLIP_X, P.PIN_Y, P.PIN_Z))
         add_obj(prefix + '_lead_nut_clip_' + str(int(sx)), finish(clip))
+
+        # Complete user-operable clamp hardware. These were previously omitted
+        # from the final assembly, which hid the fact that the Ø30 knob still
+        # intersected the rear front wall. v6 now hard-checks and shows them.
+        knob = P.KNOB.copy()
+        knob.translate(App.Vector(
+            sx, B.PLATE_SPINDLE_Y + P.KNOB_Y_LOCAL, B.SPINDLE_Z
+        ))
+        add_obj(prefix + '_box_clamp_knob_' + str(int(sx)), finish(knob))
+
+        cap = P.CAP_NUT.copy()
+        cap.translate(App.Vector(
+            sx, B.PLATE_SPINDLE_Y + P.CAP_Y_LOCAL, B.SPINDLE_Z
+        ))
+        add_obj(prefix + '_box_clamp_knob_retainer_' + str(int(sx)), finish(cap))
 
         installed_spindle_centres.append(
             2.0 * FRONT_CENTER_X - sx if left else sx
@@ -171,6 +185,8 @@ required_counts = {
     'lead_nut_': 4,
     'lead_nut_pin_': 4,
     'lead_nut_clip_': 4,
+    'box_clamp_knob_': 4,
+    'box_clamp_knob_retainer_': 4,
 }
 for token, expected in required_counts.items():
     matches = [name for name in object_names if token in name]
@@ -187,16 +203,18 @@ stage(f'assembly saved: {os.path.getsize(assembly_path)} bytes')
 validation_path = os.path.join(C.OUT, 'VALIDATION_v60_full.json')
 with open(validation_path, 'r', encoding='utf-8') as fh:
     validation = json.load(fh)
-validation['stage'] = 'full_direct_mechanism_clean_modular_front_v5_and_explicit_retainer_threads'
+validation['stage'] = 'full_direct_mechanism_clean_modular_front_v6_all_threads_accessible'
 validation['box_clamp']['final_assembly_contains_separate_lead_nut_hardware'] = True
 validation['box_clamp']['final_assembly_lead_nut_cartridge_count'] = 4
 validation['box_clamp']['final_assembly_lead_nut_pin_count'] = 4
 validation['box_clamp']['final_assembly_lead_nut_clip_count'] = 4
 validation['box_clamp']['final_assembly_replaceable_module_count'] = 4
+validation['box_clamp']['final_assembly_box_clamp_knob_count'] = 4
+validation['box_clamp']['final_assembly_knob_retainer_count'] = 4
 validation['box_clamp']['final_assembly_installed_spindle_x_mm'] = list(P.SPINDLE_X)
 validation['box_clamp']['final_assembly_left_hardware_transform'] = (
     'rigid 180deg turnaround about clean-front centre for complete reusable '
-    'cassette/spindle/cartridge/pin/clip stack; no RH8x2 reflection'
+    'cassette/spindle/cartridge/pin/clip/knob/retainer stack; no RH8x2 reflection'
 )
 validation['final_assembly'] = {
     'representation': 'tessellated exact-final-shape inspection proof',
@@ -209,9 +227,9 @@ with open(validation_path, 'w', encoding='utf-8') as fh:
     json.dump(validation, fh, indent=2)
 
 with open(os.path.join(C.OUT, 'README_BUILD_v60_full.txt'), 'a', encoding='utf-8') as fh:
-    fh.write('Front v5 uses rear-open spindle-drive service windows and spindle-envelope-clear replaceable RH8x2 cartridges.\n')
+    fh.write('Front v6 exposes the complete box-clamp handles and open-ended matched RH8x2 knob retainers through dedicated rear handle corridors.\n')
     fh.write('Each cassette contains a separately replaceable RH8x2 lead-nut cartridge retained by cross-pin and C-clip.\n')
-    fh.write('Assembly FCStd is a lightweight tessellated inspection proof; hard checks and neutral CAD exports use exact BRep geometry.\n')
+    fh.write('All printed service threads have explicit access/motion hard checks; assembly FCStd shows all user-operable threaded hardware.\n')
 
 stop_timer('assembly.total', _t_total, file_bytes=os.path.getsize(assembly_path))
 stage('complete')
