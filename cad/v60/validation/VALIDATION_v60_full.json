@@ -4,12 +4,12 @@
   "architecture": "continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow 12x2 printed service plug",
   "base": {
     "right_bbox_mm": [
-      295.35,
+      295.0,
       247.013,
       81.54
     ],
     "left_bbox_mm": [
-      295.35,
+      295.0,
       247.015,
       81.54
     ],
@@ -382,8 +382,8 @@
     "plate_travel_mm": 5.5,
     "plate_preload_mm": 0.5,
     "spindle_x_mm": [
-      -88.0,
-      88.0
+      -48.0,
+      128.0
     ],
     "spindle_spacing_mm": 176.0,
     "spindle_z_mm": 31.0,
@@ -632,6 +632,12 @@
       "5.5": 228.015
     },
     "effective_total_width_mm": 600.0,
+    "front_x_offset_mm": 40.0,
+    "main_face_x_mm": [
+      -40.0,
+      120.0
+    ],
+    "position_fix": "complete front topology translated +40 mm in X on canonical continuous carrier; left cartridge clears front support, right cartridge moved farther right; outer angles unchanged",
     "final_assembly_contains_separate_lead_nut_hardware": true,
     "final_assembly_lead_nut_cartridge_count": 4,
     "final_assembly_lead_nut_pin_count": 4,
@@ -643,11 +649,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3403543
+    "file_bytes": 3394406
   },
   "handed_stl_export": {
-    "right_sha256": "0ae922dc82e4482862e33b78df8aa8a950a0ac6053fa56bebf60c9aa5368eae4",
-    "left_sha256": "fd0492a4e941899d3ba818ae90abd1c56f86d5ee79930a45754df021e34ff072",
+    "right_sha256": "4bee868549a9f270881774073b9a731e088c4753fbf9f28835731bc01ac87357",
+    "left_sha256": "fb5ec4536b6e66d7ccba3405e372b896316c138668e0f53ec3ef6b140e7df773",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -655,7 +661,7 @@
     "mirror_facet_count_ok": true,
     "left_stl_generation": "exact binary STL X-mirror of final revised RIGHT print triangle mesh",
     "right_bbox_mm": [
-      -99.35,
+      -99.0,
       196.0,
       -18.998,
       228.015,
@@ -664,19 +670,19 @@
     ],
     "left_bbox_mm": [
       -196.0,
-      99.35,
+      99.0,
       -18.998,
       228.015,
       -42.0,
       39.54
     ],
-    "right_facets": 69026,
-    "left_facets": 69026,
-    "right_volume_mm3": 564450.427104,
-    "left_volume_mm3": 564450.427104,
+    "right_facets": 68700,
+    "left_facets": 68700,
+    "right_volume_mm3": 576575.214488,
+    "left_volume_mm3": 576575.214488,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 193969.76631,
-    "left_area_mm2": 193969.76631,
+    "right_area_mm2": 198534.837921,
+    "left_area_mm2": 198534.837921,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
