@@ -443,24 +443,66 @@
     ],
     "cartridge_checks": [
       {
-        "x_mm": -88.0,
-        "nut_base_common_mm3": 0.0,
-        "nut_base_distance_mm": 0.2,
+        "x_mm": -48.0,
+        "installed_base_common_mm3": 0.0,
         "pin_base_common_mm3": 0.0,
         "pin_nut_common_mm3": 0.0,
         "clip_base_common_mm3": 0.0,
-        "clip_pin_common_mm3": 0.0,
-        "clip_pin_distance_mm": 0.1
+        "service_mouth_base_common_mm3": 0.0,
+        "tail_lane_base_common_mm3": 0.0,
+        "extraction_path": [
+          {
+            "travel_y_mm": 0.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 2.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 5.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 10.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 16.0,
+            "base_common_mm3": 0.0
+          }
+        ]
       },
       {
-        "x_mm": 88.0,
-        "nut_base_common_mm3": 0.0,
-        "nut_base_distance_mm": 0.2,
+        "x_mm": 128.0,
+        "installed_base_common_mm3": 0.0,
         "pin_base_common_mm3": 0.0,
         "pin_nut_common_mm3": 0.0,
         "clip_base_common_mm3": 0.0,
-        "clip_pin_common_mm3": 0.0,
-        "clip_pin_distance_mm": 0.1
+        "service_mouth_base_common_mm3": 0.0,
+        "tail_lane_base_common_mm3": 0.0,
+        "extraction_path": [
+          {
+            "travel_y_mm": 0.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 2.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 5.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 10.0,
+            "base_common_mm3": 0.0
+          },
+          {
+            "travel_y_mm": 16.0,
+            "base_common_mm3": 0.0
+          }
+        ]
       }
     ],
     "thread_motion": [
@@ -637,7 +679,19 @@
       -40.0,
       120.0
     ],
-    "position_fix": "complete front topology translated +40 mm in X on canonical continuous carrier; left cartridge clears front support, right cartridge moved farther right; outer angles unchanged",
+    "position_fix": "complete front topology translated +40 mm in X on canonical continuous carrier; left cartridge clears front support and right cartridge is farther right",
+    "lead_nut_service_architecture": {
+      "mode": "v50_drop_in_RH8x2_cartridge_lower_tail_cross_pin_external_C_clip",
+      "working_thread_is_replaceable_part": true,
+      "base_contains_working_lead_thread": false,
+      "cartridge_extraction_axis": "+Y after spindle/pin removal",
+      "body_service_mouth_open": true,
+      "tail_extraction_lane_open": true,
+      "pin_head_external_service": true,
+      "c_clip_external_service": true,
+      "service_extraction_test_max_mm": 16.0
+    },
+    "serviceable_cartridge_count": 2,
     "final_assembly_contains_separate_lead_nut_hardware": true,
     "final_assembly_lead_nut_cartridge_count": 4,
     "final_assembly_lead_nut_pin_count": 4,
@@ -654,11 +708,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3394510
+    "file_bytes": 3387813
   },
   "handed_stl_export": {
-    "right_sha256": "4bee868549a9f270881774073b9a731e088c4753fbf9f28835731bc01ac87357",
-    "left_sha256": "fb5ec4536b6e66d7ccba3405e372b896316c138668e0f53ec3ef6b140e7df773",
+    "right_sha256": "f8103b49aa9021fe274906e87084ef12f19d012cae4a21ee16873cb275ed879e",
+    "left_sha256": "6dde41e242a79dc2064d56dc9dc28d5a6ea29e29f6b25c93822c9c47b2214db6",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -681,13 +735,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 68700,
-    "left_facets": 68700,
-    "right_volume_mm3": 576575.214488,
-    "left_volume_mm3": 576575.214488,
+    "right_facets": 68308,
+    "left_facets": 68308,
+    "right_volume_mm3": 574077.950686,
+    "left_volume_mm3": 574077.950686,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 198534.837921,
-    "left_area_mm2": 198534.837921,
+    "right_area_mm2": 198242.506713,
+    "left_area_mm2": 198242.506713,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
