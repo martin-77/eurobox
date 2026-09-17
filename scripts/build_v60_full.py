@@ -4,7 +4,7 @@ Production order:
 1. structural full baseline;
 2. phase-matched RH8x2 cartridge prerequisite;
 3. clean side-style v60 front with two replaceable clamp cassettes;
-4. rear-open drive access + thread-clear reinforced RH8x2 cartridge;
+4. rear-open drive access + spindle-envelope-clear reinforced RH8x2 cartridge;
 5. M4x30 rack closure;
 6. explicit printable 12x2 rack-retainer thread pair;
 7. lightweight final inspection assembly.
@@ -23,12 +23,12 @@ _t = start_timer('full.apply_box_clamp_prerequisite')
 import apply_v60_box_clamp_prereq as _box_clamp_prereq  # noqa: F401,E402
 stop_timer('full.apply_box_clamp_prerequisite', _t)
 
-# v4 preserves the validated v2 fixed carrier/plate and replaces only the
-# cassette and wear cartridge.  Reinforcement stays outside the RH8x2 swept
-# envelope instead of filling the thread space as the rejected v3 did.
-_t = start_timer('full.apply_clean_modular_front_v4')
-import apply_v60_front_rebuild_v4 as _front  # noqa: E402
-stop_timer('full.apply_clean_modular_front_v4', _t)
+# v5 preserves the validated v2 carrier/plate. The replaceable wear cartridge
+# is reinforced below the RH8x2 thread while its full-width retaining tail ends
+# ahead of the complete moving 10-AF spindle-drive envelope.
+_t = start_timer('full.apply_clean_modular_front_v5')
+import apply_v60_front_rebuild_v5 as _front  # noqa: E402
+stop_timer('full.apply_clean_modular_front_v5', _t)
 
 RIGHT_FULL = _front.RIGHT_FULL
 LEFT_FULL = _front.LEFT_FULL
@@ -80,6 +80,6 @@ import apply_v60_final_assembly as _final_assembly  # noqa: F401,E402
 stop_timer('full.build_lightweight_final_assembly', _t)
 
 print(
-    'V60_STAGE clean modular front v4 + rear-open spindle drives + thread-clear reinforced replaceable RH8x2 cartridges + explicit rack retainer threads active',
+    'V60_STAGE clean modular front v5 + rear-open spindle drives + spindle-envelope-clear replaceable RH8x2 cartridges + explicit rack retainer threads active',
     flush=True,
 )
