@@ -4,9 +4,10 @@ Production order:
 1. structural full baseline;
 2. phase-matched RH8x2 cartridge prerequisite;
 3. clean side-style v60 front with two replaceable clamp cassettes;
-4. M4x30 rack closure;
-5. explicit printable 12x2 rack-retainer thread pair;
-6. lightweight final inspection assembly.
+4. rear-open drive access + reinforced RH8x2 cartridge;
+5. M4x30 rack closure;
+6. explicit printable 12x2 rack-retainer thread pair;
+7. lightweight final inspection assembly.
 
 Each stage emits V60_TIMING records into build_v60/TIMING_v60.json so later
 runtime/cost work can target measured hotspots instead of guessing.
@@ -22,11 +23,11 @@ _t = start_timer('full.apply_box_clamp_prerequisite')
 import apply_v60_box_clamp_prereq as _box_clamp_prereq  # noqa: F401,E402
 stop_timer('full.apply_box_clamp_prerequisite', _t)
 
-# Do not import the former front_final/position-fix chain.  v2 builds the fixed
-# cross-carrier directly from the continuous carrier and side-support geometry.
-_t = start_timer('full.apply_clean_modular_front_v2')
-import apply_v60_front_rebuild_v2 as _front  # noqa: E402
-stop_timer('full.apply_clean_modular_front_v2', _t)
+# v3 imports and preserves the validated v2 fixed carrier/plate, then replaces
+# only the cassette and wear cartridge with the rear-open, reinforced geometry.
+_t = start_timer('full.apply_clean_modular_front_v3')
+import apply_v60_front_rebuild_v3 as _front  # noqa: E402
+stop_timer('full.apply_clean_modular_front_v3', _t)
 
 RIGHT_FULL = _front.RIGHT_FULL
 LEFT_FULL = _front.LEFT_FULL
@@ -78,6 +79,6 @@ import apply_v60_final_assembly as _final_assembly  # noqa: F401,E402
 stop_timer('full.build_lightweight_final_assembly', _t)
 
 print(
-    'V60_STAGE clean side-style modular front v2 + replaceable v50 RH8x2 cassettes + explicit rack retainer threads active',
+    'V60_STAGE clean modular front v3 + rear-open spindle drives + reinforced replaceable RH8x2 cartridges + explicit rack retainer threads active',
     flush=True,
 )
