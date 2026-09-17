@@ -1,26 +1,32 @@
 """Canonical v60 full mechanism builder.
 
-The structural v60 baseline is retained, but the production path applies the
-final mechanisms in this order:
-1. prepare the v50-derived box-clamp thread pair and complete spindle sweep;
-2. restore the proven v50 box-clamp function with a 160 mm moving plate,
-   separate RH8x2 lead-nut cartridges and two outer Y/Z support DROPs;
-3. apply the M4x30 rack closure;
-4. rebuild/witness the explicit printable 12x2 rack-nut-retainer thread pair;
-5. rewrite the final assembly including the removable box-clamp hardware.
+Production order:
+1. structural full baseline;
+2. phase-matched RH8x2 cartridge prerequisite + complete spindle sweep;
+3. 160 mm main clamp face with outboard drive ears and cartridge/drop load paths;
+4. M4x30 rack closure;
+5. explicit printable 12x2 rack-retainer thread pair;
+6. lightweight final inspection assembly.
 
-The previous v60 experiment with integral BASE lead threads and a row of
-triangular front DROPs is deliberately not part of the canonical output.
+Each stage emits V60_TIMING records into build_v60/TIMING_v60.json so later
+runtime/cost work can target measured hotspots instead of guessing.
 """
 
-from build_v60_full_baseline import *  # noqa: F401,F403
+from v60_timing import start_timer, stop_timer
 
-# The baseline spindle is retained, but the separate cartridge must use a
-# female profile derived from that exact male profile.  Also clear the complete
-# 43.5 mm spindle envelope over the full 5.5 mm opening travel before the front
-# cage is fused.  The hard checks in the front module still decide validity.
+_t = start_timer('full.import_structural_baseline')
+from build_v60_full_baseline import *  # noqa: F401,F403,E402
+stop_timer('full.import_structural_baseline', _t)
+
+# The separate cartridge uses a female profile derived from the exact spindle
+# master and clears the full spindle envelope at the final outboard axes.
+_t = start_timer('full.apply_box_clamp_prerequisite')
 import apply_v60_box_clamp_prereq as _box_clamp_prereq  # noqa: F401,E402
-import apply_v60_front_final as _front
+stop_timer('full.apply_box_clamp_prerequisite', _t)
+
+_t = start_timer('full.apply_outboard_box_clamp_front')
+import apply_v60_front_final as _front  # noqa: E402
+stop_timer('full.apply_outboard_box_clamp_front', _t)
 
 RIGHT_FULL = _front.RIGHT_FULL
 LEFT_FULL = _front.LEFT_FULL
@@ -35,9 +41,11 @@ NUT_PIN_CLIP_X = _front.NUT_PIN_CLIP_X
 PIN_Y_BOX_CLAMP = _front.PIN_Y
 PIN_Z_BOX_CLAMP = _front.PIN_Z
 
-# Rack closure consumes the canonical box-clamp front through this partially
-# initialized module, so the variables above must be assigned first.
-import apply_v60_rack_closure as _rack_closure
+# Rack closure consumes the canonical front through this partially initialized
+# module, so the variables above must be assigned first.
+_t = start_timer('full.apply_rack_closure')
+import apply_v60_rack_closure as _rack_closure  # noqa: E402
+stop_timer('full.apply_rack_closure', _t)
 
 RIGHT_FULL = _rack_closure.RIGHT
 LEFT_FULL = _rack_closure.LEFT
@@ -47,7 +55,9 @@ RACK_HAND_KNOB = _rack_closure.RACK_HAND_KNOB
 
 # Final rack service thread is rebuilt from one explicit matched pair and
 # witnessed in the final BRep.
-import apply_v60_retainer_thread_final as _retainer_final
+_t = start_timer('full.apply_final_retainer_thread')
+import apply_v60_retainer_thread_final as _retainer_final  # noqa: E402
+stop_timer('full.apply_final_retainer_thread', _t)
 
 RIGHT_FULL = _retainer_final.RIGHT
 LEFT_FULL = _retainer_final.LEFT
@@ -64,12 +74,11 @@ RACK_RETAINER_MALE_MAJOR_D = 2.0 * _retainer_final.MALE_MAJOR_R
 RACK_RETAINER_FEMALE_MAJOR_D = 2.0 * _retainer_final.FEMALE_MAJOR_R
 RACK_LOWER_CLOSURE_THICKNESS = _rack_closure.LOWER_PAD_Z1 - _rack_closure.LOWER_PAD_Z0
 
-# Both rack finalizers rebuild the assembly while they run.  Rewrite it one last
-# time after all geometry is final so the separate lead-nut cartridges, their
-# pins and their clips cannot silently disappear from the published FCStd.
+_t = start_timer('full.build_lightweight_final_assembly')
 import apply_v60_final_assembly as _final_assembly  # noqa: F401,E402
+stop_timer('full.build_lightweight_final_assembly', _t)
 
 print(
-    'V60_STAGE canonical v50 box-clamp cartridges + outer DROPs + explicit rack retainer threads active',
+    'V60_STAGE outboard box-clamp drive ears + integrated outer DROPs + explicit rack retainer threads active',
     flush=True,
 )
