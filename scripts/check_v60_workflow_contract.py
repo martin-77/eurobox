@@ -11,7 +11,7 @@ with open('build_v60/VALIDATION_v60_full.json', encoding='utf-8') as fh:
 assert not core['failures'], core['failures']
 assert not full['failures'], full['failures']
 assert core['stage'] == 'clean_structural_core_continuous_carrier', core['stage']
-assert full['stage'] == 'full_direct_mechanism_v50_box_clamp_and_explicit_retainer_threads', full['stage']
+assert full['stage'] == 'full_direct_mechanism_clean_modular_front_and_explicit_retainer_threads', full['stage']
 assert core['datums']['clamp_spacing_mm'] == 160.0
 assert full['rack']['clamp_spacing_mm'] == 160.0
 assert full['base']['right_bbox_mm'][0] <= 296.0
@@ -23,75 +23,53 @@ assert full['handed_stl_export']['mirror_geometry_ok']
 assert full['handed_stl_export']['mirror_bounds_ok']
 assert full['handed_stl_export']['mirror_vertex_set_ok']
 
-# BOX CLAMP: the complete front topology is translated +40 mm in X from the
-# mechanically validated outboard-clamp geometry. The 160 mm main face moves
-# from -80..+80 to -40..+120 and the +/-88 mm spindle pair therefore becomes
-# -48..+128.
+# CLEAN MODULAR FRONT: fixed front is one closed v60-style structural carrier.
+# It has two smooth cassette bays only; all spindle/cartridge service geometry
+# belongs to the separately printable modules.
 front = full['box_clamp']
+assert front['architecture'] == 'closed_v60_front_carrier_with_two_replaceable_clamp_cassettes', front
 assert front['plate_width_mm'] == 160.0, front
-assert front['front_x_offset_mm'] == 40.0, front
-assert front['main_face_x_mm'] == [-40.0, 120.0], front
+assert front['plate_main_x_mm'] == [-40.0, 120.0], front
 assert front['spindle_x_mm'] == [-48.0, 128.0], front
 assert front['spindle_spacing_mm'] == 176.0, front
-assert front['spindle_outboard_of_main_face_mm'] == 8.0, front
-assert front['plate_total_outer_x_mm'] == 98.0, front
-assert front['fixed_cartridge_boss_outer_x_mm'] == 99.0, front
-assert front['plate_drive_ear_x_mm'][0] < 80.0, front
-assert front['plate_drive_ear_x_mm'][1] > 88.0, front
-assert front['lead_nut_mode'] == 'separate_RH8x2_cartridge_cross_pin_external_C_clip', front
 assert front['integral_female_threads'] is False, front
 assert front['base_has_working_lead_thread'] is False, front
-assert front['triangular_front_drops'] is False, front
-assert front['cartridge_bosses_outside_main_plate_x'] is True, front
+assert front['module_has_working_lead_thread'] is False, front
+assert front['module_count_per_base'] == 2, front
+assert front['module_attachment'] == 'top-drop cassette, two M3 screws into heat-set inserts per module', front
+assert front['lead_nut_mode'] == 'separate_RH8x2_cartridge_cross_pin_external_C_clip_inside_replaceable_module', front
+assert front['final_assembly_replaceable_module_count'] == 4, front
 assert front['final_assembly_contains_separate_lead_nut_hardware'] is True, front
 assert front['final_assembly_lead_nut_cartridge_count'] == 4, front
 assert front['final_assembly_lead_nut_pin_count'] == 4, front
 assert front['final_assembly_lead_nut_clip_count'] == 4, front
+assert front['final_assembly_installed_spindle_x_mm'] == [-48.0, 128.0], front
 
-# v50 service architecture is a hard production requirement: the working RH8x2
-# female thread must be a replaceable wear cartridge. The BASE only provides a
-# smooth cradle, extraction mouth and lower-tail lane. Cross-pin head and C-clip
-# must be reachable externally and the cartridge must clear the BASE through the
-# complete tested +Y extraction stroke once spindle and pin are removed.
-svc = front['lead_nut_service_architecture']
-assert svc['mode'] == 'v50_drop_in_RH8x2_cartridge_lower_tail_cross_pin_external_C_clip', svc
-assert svc['working_thread_is_replaceable_part'] is True, svc
-assert svc['base_contains_working_lead_thread'] is False, svc
-assert svc['cartridge_extraction_axis'] == '+Y after spindle/pin removal', svc
-assert svc['body_service_mouth_open'] is True, svc
-assert svc['tail_extraction_lane_open'] is True, svc
-assert svc['pin_head_external_service'] is True, svc
-assert svc['c_clip_external_service'] is True, svc
-assert svc['service_extraction_test_max_mm'] >= 16.0, svc
-assert front['serviceable_cartridge_count'] == 2, front
+mods = front['module_checks']
+assert len(mods) == 2, mods
+assert all(q['base_common_mm3'] <= 0.0001 for q in mods), mods
 
 cartridges = front['cartridge_checks']
 assert len(cartridges) == 2, cartridges
-assert all(q['installed_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['pin_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['pin_nut_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['clip_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['service_mouth_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['tail_lane_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(len(q['extraction_path']) >= 5 for q in cartridges), cartridges
-assert all(
-    all(p['base_common_mm3'] <= 0.0001 for p in q['extraction_path'])
-    for q in cartridges
-), cartridges
+assert all(q['nut_module_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(q['pin_module_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(q['clip_module_common_mm3'] <= 0.0001 for q in cartridges), cartridges
 
-# The broad outboard support/drop concept remains mandatory. These witnesses are
-# generated in the pre-position mechanism at identical relative geometry.
-drops = front['outer_support_drops']
-assert len(drops) == 2, drops
-assert all(q['outside_main_plate_x'] for q in drops), drops
-assert all(q['flank_angle_from_horizontal_deg'] >= 45.0 for q in drops), drops
-assert all(q['material_fraction'] >= 0.995 for q in drops), drops
-assert all(q['integrated_with_cartridge_boss_common_mm3'] >= 20.0 for q in drops), drops
+# v50 service principle remains nested inside each replaceable cassette.  Once
+# spindle, C-clip and cross-pin are removed, the RH8x2 wear cartridge must slide
+# out through the module's +Y service mouth without touching the module housing.
+extract = front['cartridge_extraction_plus_y']
+assert len(extract) >= 5, extract
+assert extract[0]['travel_y_mm'] == 0.0, extract
+assert extract[-1]['travel_y_mm'] >= 16.0, extract
+assert all(q['module_common_mm3'] <= 0.0001 for q in extract), extract
 
 assert front['axial_slide_without_rotation_common_mm3'] >= 0.5, front
 assert front['half_pitch_wrong_phase_common_mm3'] >= 0.5, front
 assert any(q['travel_mm'] == -0.5 for q in front['plate_motion']), front['plate_motion']
 assert any(q['travel_mm'] == 5.5 for q in front['plate_motion']), front['plate_motion']
+assert any(q['travel_mm'] == -0.5 for q in front['thread_motion']), front['thread_motion']
+assert any(q['travel_mm'] == 5.5 for q in front['thread_motion']), front['thread_motion']
 
 closure = full['rack']['m4_closure']
 assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
@@ -101,8 +79,6 @@ assert closure['retainer_top_recess_mm'] <= 0.35, closure
 assert closure['upper_nut_pocket_af_mm'] == 6.9, closure
 assert closure['screw_length_mm'] == 30.0, closure
 
-# RETAINER THREAD: require real helical male material, material removed from
-# final BASE, retained female lands and a phase-sensitive interference witness.
 assert closure['retainer_pitch_mm'] == 2.0, closure
 assert closure['retainer_male_major_d_mm'] == 12.0, closure
 assert closure['retainer_female_major_d_mm'] >= 12.4, closure
