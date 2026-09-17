@@ -1,9 +1,4 @@
-"""Post-build contract checks for the canonical v60 GitHub Actions build.
-
-Keep these checks outside the workflow YAML so the FreeCAD invocation can stay
-small and changes to the CI entrypoint do not duplicate/obscure the actual CAD
-acceptance criteria.
-"""
+"""Post-build contract checks for the canonical v60 GitHub Actions build."""
 
 import json
 
@@ -28,18 +23,23 @@ assert full['handed_stl_export']['mirror_geometry_ok']
 assert full['handed_stl_export']['mirror_bounds_ok']
 assert full['handed_stl_export']['mirror_vertex_set_ok']
 
-# BOX CLAMP: v50 function, v60 dimensions. The working RH8x2 thread must exist
-# only in removable cartridges; the BASE corridor itself must remain smooth.
+# BOX CLAMP: 160 mm main clamp face, but the drive hardware itself is outside
+# that face. Narrow moving ears pick up the +/-88 mm spindle axes while the
+# fixed cartridge bosses merge directly into the broad outer Y/Z DROPs.
 front = full['box_clamp']
 assert front['plate_width_mm'] == 160.0, front
-assert front['spindle_x_mm'] == [-65.0, 65.0], front
-assert front['spindle_spacing_mm'] == 130.0, front
-assert front['plate_screw_edge_margin_mm'] == 15.0, front
+assert front['spindle_x_mm'] == [-88.0, 88.0], front
+assert front['spindle_spacing_mm'] == 176.0, front
+assert front['spindle_outboard_of_main_face_mm'] == 8.0, front
+assert front['plate_total_outer_x_mm'] == 98.0, front
+assert front['fixed_cartridge_boss_outer_x_mm'] == 99.0, front
+assert front['plate_drive_ear_x_mm'][0] < 80.0, front
+assert front['plate_drive_ear_x_mm'][1] > 88.0, front
 assert front['lead_nut_mode'] == 'separate_RH8x2_cartridge_cross_pin_external_C_clip', front
 assert front['integral_female_threads'] is False, front
 assert front['base_has_working_lead_thread'] is False, front
 assert front['triangular_front_drops'] is False, front
-assert front['outer_guide_blocks_outside_plate_x'] is True, front
+assert front['cartridge_bosses_outside_main_plate_x'] is True, front
 assert front['final_assembly_contains_separate_lead_nut_hardware'] is True, front
 assert front['final_assembly_lead_nut_cartridge_count'] == 4, front
 assert front['final_assembly_lead_nut_pin_count'] == 4, front
@@ -47,9 +47,10 @@ assert front['final_assembly_lead_nut_clip_count'] == 4, front
 
 drops = front['outer_support_drops']
 assert len(drops) == 2, drops
-assert all(q['outside_plate_x'] for q in drops), drops
+assert all(q['outside_main_plate_x'] for q in drops), drops
 assert all(q['flank_angle_from_horizontal_deg'] >= 45.0 for q in drops), drops
 assert all(q['material_fraction'] >= 0.995 for q in drops), drops
+assert all(q['integrated_with_cartridge_boss_common_mm3'] >= 20.0 for q in drops), drops
 
 voids = front['base_thread_void_checks']
 assert len(voids) == 2, voids
