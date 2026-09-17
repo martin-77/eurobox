@@ -59,16 +59,19 @@ DROP_RUN = DROP_SLOPE_Y1 - DROP_TOP_Y1
 DROP_FLANK_ANGLE = math.degrees(math.atan2(DROP_RISE, DROP_RUN))
 
 # Separate lead-nut cartridge, copied from the final v50 architecture and
-# re-oriented for the already-inboard v60 spindle direction.
+# re-oriented for the already-inboard v60 spindle direction.  v50's lower tail
+# cleared an 8x8 drive by 0.5 mm.  v60 uses the larger 10 AF hex drive, whose
+# vertex reaches 5.7735 mm below the spindle axis.  Lower the tail/pin together
+# so the retainer has >0.7 mm real clearance to that drive at nominal phase.
 LEAD_NUT_BODY_HALF_X = 8.0
 LEAD_NUT_BODY_HALF_Z = 7.0
 LEAD_NUT_TAIL_L = 5.5
 LEAD_NUT_TAIL_HALF_X = 6.0
-LEAD_NUT_TAIL_Z0 = -10.0
+LEAD_NUT_TAIL_Z0 = -12.0
 LEAD_NUT_TAIL_H = 5.5
 LEAD_NUT_PIN_HOLE_D = 3.4
 LEAD_NUT_PIN_LOCAL_Y = -(F.NUT_THREAD_LEN + 2.75)
-LEAD_NUT_PIN_LOCAL_Z = -7.25
+LEAD_NUT_PIN_LOCAL_Z = -9.25
 
 NUT_PIN_SHAFT_D = 3.0
 NUT_PIN_GROOVE_D = 2.4
