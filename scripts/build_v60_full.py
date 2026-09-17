@@ -2,12 +2,11 @@
 
 Production order:
 1. structural full baseline;
-2. phase-matched RH8x2 cartridge prerequisite + complete spindle sweep;
-3. 160 mm main clamp face with outboard drive ears and cartridge/drop load paths;
-4. position-only correction of the complete front topology;
-5. M4x30 rack closure;
-6. explicit printable 12x2 rack-retainer thread pair;
-7. lightweight final inspection assembly.
+2. phase-matched RH8x2 cartridge prerequisite;
+3. clean closed v60 front carrier with two replaceable clamp cassettes;
+4. M4x30 rack closure;
+5. explicit printable 12x2 rack-retainer thread pair;
+6. lightweight final inspection assembly.
 
 Each stage emits V60_TIMING records into build_v60/TIMING_v60.json so later
 runtime/cost work can target measured hotspots instead of guessing.
@@ -19,27 +18,22 @@ _t = start_timer('full.import_structural_baseline')
 from build_v60_full_baseline import *  # noqa: F401,F403,E402
 stop_timer('full.import_structural_baseline', _t)
 
-# The separate cartridge uses a female profile derived from the exact spindle
-# master and clears the full spindle envelope at the final outboard axes.
 _t = start_timer('full.apply_box_clamp_prerequisite')
 import apply_v60_box_clamp_prereq as _box_clamp_prereq  # noqa: F401,E402
 stop_timer('full.apply_box_clamp_prerequisite', _t)
 
-_t = start_timer('full.apply_outboard_box_clamp_front')
-import apply_v60_front_final as _front  # noqa: E402
-stop_timer('full.apply_outboard_box_clamp_front', _t)
+# The legacy front_final + position_fix stack is intentionally bypassed.  The
+# new builder recreates the fixed front from the continuous carrier and side
+# supports, then cuts only the two replaceable module bays.
+_t = start_timer('full.apply_clean_modular_front')
+import apply_v60_front_rebuild as _front  # noqa: E402
+stop_timer('full.apply_clean_modular_front', _t)
 
-# Installed-orientation inspection showed that the complete clamp front was
-# centred too far left on the asymmetric carrier.  Apply only the X-position
-# correction here; clamp geometry/kinematics remain unchanged.
-_t = start_timer('full.apply_front_position_fix')
-import apply_v60_front_position_fix as _front_position  # noqa: E402
-stop_timer('full.apply_front_position_fix', _t)
-
-RIGHT_FULL = _front_position.RIGHT_FULL
-LEFT_FULL = _front_position.LEFT_FULL
-PLATE = _front_position.PLATE
-SPINDLE_X = _front_position.SPINDLE_X
+RIGHT_FULL = _front.RIGHT_FULL
+LEFT_FULL = _front.LEFT_FULL
+PLATE = _front.PLATE
+SPINDLE_X = _front.SPINDLE_X
+CLAMP_MODULE = _front.MODULE
 LEAD_NUT = _front.LEAD_NUT
 NUT_PIN = _front.NUT_PIN
 NUT_PIN_CLIP = _front.NUT_PIN_CLIP
@@ -61,8 +55,6 @@ LOWER = _rack_closure.LOWER
 RACK_NUT_RETAINER = _rack_closure.RACK_NUT_RETAINER
 RACK_HAND_KNOB = _rack_closure.RACK_HAND_KNOB
 
-# Final rack service thread is rebuilt from one explicit matched pair and
-# witnessed in the final BRep.
 _t = start_timer('full.apply_final_retainer_thread')
 import apply_v60_retainer_thread_final as _retainer_final  # noqa: E402
 stop_timer('full.apply_final_retainer_thread', _t)
@@ -87,6 +79,6 @@ import apply_v60_final_assembly as _final_assembly  # noqa: F401,E402
 stop_timer('full.build_lightweight_final_assembly', _t)
 
 print(
-    'V60_STAGE repositioned outboard box-clamp front + integrated outer DROPs + explicit rack retainer threads active',
+    'V60_STAGE clean closed modular front + replaceable v50 RH8x2 cassettes + explicit rack retainer threads active',
     flush=True,
 )
