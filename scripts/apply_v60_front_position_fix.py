@@ -2,9 +2,11 @@ import json
 import os
 
 import FreeCAD as App
+import Part
 
 import apply_v60_front_final as P
 import build_v60 as C
+import build_v60_continuous_carrier as CC
 import build_v60_full_baseline as F
 from v60_timing import start_timer, stop_timer
 
@@ -40,31 +42,49 @@ def shifted_ear_sweep(sx):
 
 
 def rebuild_raw_structural_core():
+    # Rebuild from the *canonical continuous-carrier* architecture.  The former
+    # position stage accidentally reconstructed the pre-continuous v60 tree,
+    # while run_v60_continuous_ci has already made the hanging stations/carrier
+    # canonical.  That omitted the rack-side carrier which is the structural
+    # bridge between the two halves, hence the shifted front produced two valid
+    # but disconnected solids.
+    carrier = CC.make_continuous_carrier()
     front_support = C.make_long_support(C.FRONT_CLAMP_X, C.ARM_Y0)
     rear_support = C.make_long_support(C.REAR_SUPPORT_X, 0.0)
     raw = C.fuse_seq([
-        C.make_upper_station(C.FRONT_CLAMP_X),
-        C.make_clamp_frame_bridge(),
-        C.make_upper_station(C.REAR_CLAMP_X),
+        carrier,
         front_support,
-        C.make_crosshead(),
         rear_support,
-        C.make_backstop(),
-    ], 'RIGHT raw structural core for shifted box clamp')
+        CC.make_hanging_upper_station(C.FRONT_CLAMP_X),
+        CC.make_hanging_upper_station(C.REAR_CLAMP_X),
+        CC.make_hanging_backstop(),
+        C.make_crosshead(),
+    ], 'RIGHT continuous structural core for shifted box clamp')
+
     raw = raw.cut(shifted_main_plate_sweep()).removeSplitter()
     for sx in SPINDLE_X:
         raw = raw.cut(shifted_ear_sweep(sx)).removeSplitter()
-    # The shifted moving corridor can temporarily split the raw structural
-    # primitive into two solids.  The production cage is the intended bridge
-    # across that corridor, so single-solid validity belongs after cage fusion,
-    # not before it.  Keep the intermediate state observable in CI.
+
+    # Structural fusions can refill the rack-clamp service bores.  Re-open the
+    # same canonical functional paths used by build_clean_right().
+    for xc in C.CLAMP_X:
+        raw = raw.cut(C.cyl_x(C.UPPER_SADDLE_R, 40.0, xc - 20.0, 0.0, 0.0)).removeSplitter()
+        raw = raw.cut(C.cyl_x(C.PIN_HOLE_D / 2.0, 40.0, xc - 20.0, C.PIN_Y, C.PIN_Z)).removeSplitter()
+        raw = raw.cut(
+            Part.makeCylinder(
+                C.RACK_M4_BASE_CLEAR_D / 2.0,
+                12.0,
+                App.Vector(xc, C.RACK_CLOSURE_Y, -1.0),
+                App.Vector(0, 0, 1),
+            )
+        ).removeSplitter()
+
     print(
-        'V60_FRONT_POSITION shifted raw core solids=' + str(len(raw.Solids)) +
+        'V60_FRONT_POSITION shifted continuous core solids=' + str(len(raw.Solids)) +
         ' volumes=' + str([round(s.Volume, 3) for s in raw.Solids]),
         flush=True,
     )
-    if raw.isNull() or not raw.isValid() or len(raw.Solids) < 1:
-        raise RuntimeError('shifted raw structural core is invalid')
+    C.require_single(raw, 'RIGHT continuous structural core with shifted box-clamp corridor')
     return raw
 
 
@@ -74,7 +94,7 @@ CORE = rebuild_raw_structural_core()
 CAGE = P.CAGE.copy()
 CAGE.translate(App.Vector(FRONT_X_OFFSET, 0, 0))
 RIGHT_FULL = CORE.fuse(CAGE).removeSplitter()
-C.require_single(RIGHT_FULL, 'RIGHT shifted structural core after cage reconnection')
+C.require_single(RIGHT_FULL, 'RIGHT shifted continuous core after cage fusion')
 
 for sx in SPINDLE_X:
     nut_pocket = C.box(
@@ -169,8 +189,8 @@ validation['box_clamp']['main_face_x_mm'] = [-40.0, 120.0]
 validation['box_clamp']['spindle_x_mm'] = list(SPINDLE_X)
 validation['box_clamp']['spindle_spacing_mm'] = SPINDLE_X[1] - SPINDLE_X[0]
 validation['box_clamp']['position_fix'] = (
-    'complete front topology translated +40 mm in X; left cartridge clears front support, '
-    'right cartridge moved farther right; outer angles unchanged'
+    'complete front topology translated +40 mm in X on canonical continuous carrier; '
+    'left cartridge clears front support, right cartridge moved farther right; outer angles unchanged'
 )
 validation['failures'] = []
 with open(validation_path, 'w', encoding='utf-8') as fh:
