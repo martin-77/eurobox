@@ -641,7 +641,12 @@
     "final_assembly_contains_separate_lead_nut_hardware": true,
     "final_assembly_lead_nut_cartridge_count": 4,
     "final_assembly_lead_nut_pin_count": 4,
-    "final_assembly_lead_nut_clip_count": 4
+    "final_assembly_lead_nut_clip_count": 4,
+    "final_assembly_installed_spindle_x_mm": [
+      -48.0,
+      128.0
+    ],
+    "final_assembly_left_hardware_transform": "rigid 180deg turnaround about shifted front centre for plate/spindle/lead-nut; Y mirror only for non-threaded cross-pin and C-clip service hardware"
   },
   "failures": [],
   "final_assembly": {
@@ -649,7 +654,7 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3394406
+    "file_bytes": 3394510
   },
   "handed_stl_export": {
     "right_sha256": "4bee868549a9f270881774073b9a731e088c4753fbf9f28835731bc01ac87357",
