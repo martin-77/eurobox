@@ -2,6 +2,7 @@ import json
 import os
 
 import FreeCAD as App
+import MeshPart
 
 import apply_v60_front_final as P
 import apply_v60_rack_closure as R
@@ -14,7 +15,22 @@ def stage(msg):
     print('V60_FINAL_ASSEMBLY ' + msg, flush=True)
 
 
-stage('rewrite final assembly including separate box-clamp hardware')
+# The production hard-checks above operate on the exact BRep geometry.  The
+# complete assembly is only an installed-orientation proof/inspection artifact.
+# Storing every detailed threaded BRep again in one FCStd made that document
+# >100 MiB and, more importantly, spent tens of seconds serialising huge OCC
+# shapes at the very end of an already long GitHub Actions job.  Hosted runners
+# were repeatedly shut down during that final save even though every mechanical
+# check had already passed.
+#
+# Keep the exact final shapes for all validation and STEP/STL exports, but make
+# the assembly FCStd a tessellated representation of those same final shapes.
+# This changes no design geometry and keeps the assembly useful for visual
+# inspection while making the last stage fast and compact.
+ASSEMBLY_LINEAR_DEFLECTION = 0.12
+ASSEMBLY_ANGULAR_DEFLECTION = 0.35
+
+stage('rewrite lightweight final assembly including separate box-clamp hardware')
 assembly_path = os.path.join(C.OUT, 'eurobox_v60_assembly.FCStd')
 try:
     if App.ActiveDocument:
@@ -26,8 +42,15 @@ doc = App.newDocument('Eurobox_v60_assembly')
 
 
 def add_obj(name, shape):
-    obj = doc.addObject('Part::Feature', name)
-    obj.Shape = shape
+    obj = doc.addObject('Mesh::Feature', name)
+    obj.Mesh = MeshPart.meshFromShape(
+        Shape=shape,
+        LinearDeflection=ASSEMBLY_LINEAR_DEFLECTION,
+        AngularDeflection=ASSEMBLY_ANGULAR_DEFLECTION,
+        Relative=False,
+    )
+    if obj.Mesh.CountFacets <= 0:
+        raise RuntimeError(f'Final assembly mesh is empty for {name}')
     return obj
 
 
@@ -119,6 +142,10 @@ for token in required_tokens:
 doc.saveAs(assembly_path)
 App.closeDocument(doc.Name)
 
+if not os.path.isfile(assembly_path) or os.path.getsize(assembly_path) <= 0:
+    raise RuntimeError('Final lightweight assembly FCStd was not written')
+stage(f'assembly saved: {os.path.getsize(assembly_path)} bytes')
+
 validation_path = os.path.join(C.OUT, 'VALIDATION_v60_full.json')
 with open(validation_path, 'r', encoding='utf-8') as fh:
     validation = json.load(fh)
@@ -127,10 +154,18 @@ validation['box_clamp']['final_assembly_contains_separate_lead_nut_hardware'] = 
 validation['box_clamp']['final_assembly_lead_nut_cartridge_count'] = 4
 validation['box_clamp']['final_assembly_lead_nut_pin_count'] = 4
 validation['box_clamp']['final_assembly_lead_nut_clip_count'] = 4
+validation['final_assembly'] = {
+    'representation': 'tessellated exact-final-shape inspection proof',
+    'linear_deflection_mm': ASSEMBLY_LINEAR_DEFLECTION,
+    'angular_deflection_rad': ASSEMBLY_ANGULAR_DEFLECTION,
+    'mechanical_validation_uses_exact_brep': True,
+    'file_bytes': os.path.getsize(assembly_path),
+}
 with open(validation_path, 'w', encoding='utf-8') as fh:
     json.dump(validation, fh, indent=2)
 
 with open(os.path.join(C.OUT, 'README_BUILD_v60_full.txt'), 'a', encoding='utf-8') as fh:
     fh.write('Final assembly includes all four separate lead-nut cartridges, retaining pins and C-clips.\n')
+    fh.write('Assembly FCStd is a lightweight tessellated inspection proof; all hard checks and neutral CAD exports use exact BRep geometry.\n')
 
 stage('complete')
