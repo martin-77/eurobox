@@ -4,9 +4,10 @@ Production order:
 1. structural full baseline;
 2. phase-matched RH8x2 cartridge prerequisite + complete spindle sweep;
 3. 160 mm main clamp face with outboard drive ears and cartridge/drop load paths;
-4. M4x30 rack closure;
-5. explicit printable 12x2 rack-retainer thread pair;
-6. lightweight final inspection assembly.
+4. position-only correction of the complete front topology;
+5. M4x30 rack closure;
+6. explicit printable 12x2 rack-retainer thread pair;
+7. lightweight final inspection assembly.
 
 Each stage emits V60_TIMING records into build_v60/TIMING_v60.json so later
 runtime/cost work can target measured hotspots instead of guessing.
@@ -28,10 +29,17 @@ _t = start_timer('full.apply_outboard_box_clamp_front')
 import apply_v60_front_final as _front  # noqa: E402
 stop_timer('full.apply_outboard_box_clamp_front', _t)
 
-RIGHT_FULL = _front.RIGHT_FULL
-LEFT_FULL = _front.LEFT_FULL
-PLATE = _front.PLATE
-SPINDLE_X = _front.SPINDLE_X
+# Installed-orientation inspection showed that the complete clamp front was
+# centred too far left on the asymmetric carrier.  Apply only the X-position
+# correction here; clamp geometry/kinematics remain unchanged.
+_t = start_timer('full.apply_front_position_fix')
+import apply_v60_front_position_fix as _front_position  # noqa: E402
+stop_timer('full.apply_front_position_fix', _t)
+
+RIGHT_FULL = _front_position.RIGHT_FULL
+LEFT_FULL = _front_position.LEFT_FULL
+PLATE = _front_position.PLATE
+SPINDLE_X = _front_position.SPINDLE_X
 LEAD_NUT = _front.LEAD_NUT
 NUT_PIN = _front.NUT_PIN
 NUT_PIN_CLIP = _front.NUT_PIN_CLIP
@@ -79,6 +87,6 @@ import apply_v60_final_assembly as _final_assembly  # noqa: F401,E402
 stop_timer('full.build_lightweight_final_assembly', _t)
 
 print(
-    'V60_STAGE outboard box-clamp drive ears + integrated outer DROPs + explicit rack retainer threads active',
+    'V60_STAGE repositioned outboard box-clamp front + integrated outer DROPs + explicit rack retainer threads active',
     flush=True,
 )
