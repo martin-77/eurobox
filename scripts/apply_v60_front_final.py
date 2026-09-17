@@ -300,6 +300,7 @@ NUT_TAIL_Y0 = F.NUT_THREAD_Y0 - LEAD_NUT_TAIL_L
 PIN_Y = F.NUT_Y0 + LEAD_NUT_PIN_LOCAL_Y
 PIN_Z = F.SPINDLE_Z + LEAD_NUT_PIN_LOCAL_Z
 
+CARTRIDGE_CUTTERS = {}
 for sx in SPINDLE_X:
     nut_pocket = C.box(
         sx - 8.35,
@@ -329,8 +330,10 @@ for sx in SPINDLE_X:
     pin_bore = C.cyl_x(LEAD_NUT_PIN_HOLE_D / 2.0, 24.0, sx - 12.0, PIN_Y, PIN_Z)
     head_service = C.cyl_x(3.55, 3.0, sx - 14.0, PIN_Y, PIN_Z)
     clip_service = C.cyl_x(4.10, 4.0, sx + 11.0, PIN_Y, PIN_Z)
-    for cutter in (nut_pocket, tail_pocket, spindle_tunnel,
-                   pin_bore, head_service, clip_service):
+    cutters = (nut_pocket, tail_pocket, spindle_tunnel,
+               pin_bore, head_service, clip_service)
+    CARTRIDGE_CUTTERS[sx] = cutters
+    for cutter in cutters:
         RIGHT_FULL = RIGHT_FULL.cut(cutter).removeSplitter()
 
 C.require_single(RIGHT_FULL, 'RIGHT final outboard separate-nut front')
@@ -418,7 +421,21 @@ for side, drop, x0, x1, sx in (
     ('left', LEFT_OUTER_DROP, LEFT_DROP_X0, LEFT_DROP_X1, SPINDLE_X[0]),
     ('right', RIGHT_OUTER_DROP, RIGHT_DROP_X0, RIGHT_DROP_X1, SPINDLE_X[1]),
 ):
-    frac = RIGHT_FULL.common(drop).Volume / drop.Volume
+    # The drop is intentionally machined by the cartridge pocket, spindle
+    # tunnel and retaining-pin service cuts. Comparing the final BASE against
+    # the pristine/raw drop falsely treated those required voids as missing
+    # structure (~0.782 remaining in run #67). Build the exact expected
+    # machined drop with the same production cutters and witness that instead.
+    raw_frac = RIGHT_FULL.common(drop).Volume / drop.Volume
+    expected_drop = drop.copy()
+    for cutter in CARTRIDGE_CUTTERS[sx]:
+        expected_drop = expected_drop.cut(cutter).removeSplitter()
+    if expected_drop.isNull() or not expected_drop.isValid() or expected_drop.Volume <= 0.0:
+        fail(f'{side} expected machined outer DROP is invalid/empty')
+        expected_frac = 0.0
+    else:
+        expected_frac = RIGHT_FULL.common(expected_drop).Volume / expected_drop.Volume
+
     outside_main_face = (x1 <= -PLATE_MAIN_HALF_X + OUTER_DROP_OVERLAP_X + 1e-6
                          if side == 'left'
                          else x0 >= PLATE_MAIN_HALF_X - OUTER_DROP_OVERLAP_X - 1e-6)
@@ -431,12 +448,14 @@ for side, drop, x0, x1, sx in (
         'integrated_with_cartridge_boss_common_mm3': round(boss_drop_common, 6),
         'y_mm': [round(DROP_TOP_Y0, 3), round(DROP_LOW_Y1, 3)],
         'flank_angle_from_horizontal_deg': round(DROP_FLANK_ANGLE, 3),
-        'material_fraction': round(frac, 6),
+        'raw_material_fraction_after_functional_machining': round(raw_frac, 6),
+        'material_fraction': round(expected_frac, 6),
+        'material_fraction_witness': 'expected drop after exact production cartridge/service cutters',
     })
     if not outside_main_face:
         fail(f'{side} outer DROP moved into 160 mm main clamp-face envelope')
-    if frac < 0.995:
-        fail(f'{side} outer DROP not materially fused: {frac:.6f}')
+    if expected_frac < 0.995:
+        fail(f'{side} machined outer DROP not materially fused: {expected_frac:.6f}')
     if boss_drop_common < 20.0:
         fail(f'{side} cartridge boss is not integrated into outer DROP: {boss_drop_common:.3f} mm3')
 stop_timer('box_front.check_integrated_drop_and_boss_load_paths', _t)
