@@ -14,6 +14,7 @@ on:
       - "scripts/apply_v60_box_clamp_prereq.py"
       - "scripts/apply_v60_front_rework.py"
       - "scripts/apply_v60_front_final.py"
+      - "scripts/apply_v60_front_position_fix.py"
       - "scripts/apply_v60_final_assembly.py"
       - "scripts/apply_v60_rack_closure.py"
       - "scripts/apply_v60_retainer_thread_final.py"
@@ -82,6 +83,7 @@ jobs:
             scripts/apply_v60_box_clamp_prereq.py \
             scripts/apply_v60_front_rework.py \
             scripts/apply_v60_front_final.py \
+            scripts/apply_v60_front_position_fix.py \
             scripts/apply_v60_final_assembly.py \
             scripts/apply_v60_rack_closure.py \
             scripts/apply_v60_retainer_thread_final.py \
@@ -95,10 +97,6 @@ jobs:
         run: |
           set -euo pipefail
           START=$(date +%s)
-          # Import the CI driver as a normal Python module. Passing the .py file
-          # positionally to FreeCADCmd caused FreeCAD's command-line script
-          # handler to execute the same driver a second time in the same process,
-          # while OCC state was already being mutated by the first build.
           "$FREECADCMD" -c "import sys; sys.path.insert(0, 'scripts'); import run_v60_continuous_ci" 2>&1 | tee build_v60.log
           END=$(date +%s)
           echo $((END-START)) > build_v60/build_seconds.txt
@@ -137,8 +135,6 @@ jobs:
           rm -rf cad/v60 preview-stl/v60
           mkdir -p cad/v60/FCStd cad/v60/STEP cad/v60/STL cad/v60/assembly cad/v60/validation preview-stl/v60
 
-          # Individual FCStd parts remain small enough for normal Git. The complete
-          # assembly is kept as a workflow proof artifact instead of normal Git.
           for f in build_v60/eurobox_v60_*.FCStd; do
             base=$(basename "$f")
             if [ "$base" = "eurobox_v60_assembly.FCStd" ]; then
@@ -170,7 +166,7 @@ jobs:
           - `validation/` — machine-readable hard-check and timing reports
           - workflow artifact `eurobox-v60-complete` — complete generated FreeCAD assembly and all proof outputs
 
-          The box clamp keeps a 160 mm central clamp face, but its two RH8x2 drive axes are at +/-88 mm, outside that face. Narrow moving ears connect the plate to the spindles. The removable lead-nut cartridge bosses are integrated directly into the two broad outer Y/Z DROPs instead of being stacked between a guide and a separate drop. The BASE remains smooth/non-threaded in the working lead-screw corridor and the hard 600 mm Eurobox envelope remains enforced. The rack closure retains its explicit matched 12x2 service-retainer thread pair.
+          The box clamp keeps a 160 mm central clamp face. Its front assembly position is validated separately by the production front-position stage. The removable lead-nut cartridge bosses remain integrated into broad outer Y/Z load paths, the BASE remains smooth/non-threaded in the working lead-screw corridor, and the hard 600 mm Eurobox envelope remains enforced. The rack closure retains its explicit matched 12x2 service-retainer thread pair.
 
           `validation/TIMING_v60.json` records measured stage/operation durations from the GitHub runner so expensive OCC operations can be optimized from data rather than guesswork.
           EOF
@@ -183,8 +179,6 @@ jobs:
           `eurobox_v60_preview.png` shows the actual installed orientation: RIGHT is translated to the +Y rack tube; LEFT is the handed printable STL rotated 180 degrees about Z and translated to the -Y rack tube. The long carriers therefore point outward on both sides.
           EOF
 
-          # Fail before commit/push with a useful error if another generated file
-          # grows beyond GitHub's normal Git object limit in the future.
           max_git_bytes=$((100 * 1024 * 1024))
           while IFS= read -r -d '' generated; do
             bytes=$(stat -c '%s' "$generated")
