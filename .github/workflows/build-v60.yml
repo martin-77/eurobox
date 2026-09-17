@@ -13,6 +13,7 @@ on:
       - "scripts/build_v60_full_baseline.py"
       - "scripts/apply_v60_front_rework.py"
       - "scripts/apply_v60_front_final.py"
+      - "scripts/apply_v60_final_assembly.py"
       - "scripts/apply_v60_rack_closure.py"
       - "scripts/apply_v60_retainer_thread_final.py"
       - "scripts/check_v60_rack_closure_exports.py"
@@ -77,6 +78,7 @@ jobs:
             scripts/build_v60_full_baseline.py \
             scripts/apply_v60_front_rework.py \
             scripts/apply_v60_front_final.py \
+            scripts/apply_v60_final_assembly.py \
             scripts/apply_v60_rack_closure.py \
             scripts/apply_v60_retainer_thread_final.py \
             scripts/check_v60_rack_closure_exports.py \
@@ -97,6 +99,9 @@ jobs:
           test -s build_v60/eurobox_v60_base_right.stl
           test -s build_v60/eurobox_v60_base_left.stl
           test -s build_v60/eurobox_v60_rack_nut_retainer.stl
+          test -s build_v60/eurobox_v60_lead_nut.stl
+          test -s build_v60/eurobox_v60_lead_nut_retaining_pin.stl
+          test -s build_v60/eurobox_v60_lead_nut_pin_clip.stl
           test -s build_v60/eurobox_v60_assembly.FCStd
           python3 - <<'PY'
           import json
@@ -105,7 +110,7 @@ jobs:
           assert not core['failures'], core['failures']
           assert not full['failures'], full['failures']
           assert core['stage'] == 'clean_structural_core_continuous_carrier', core['stage']
-          assert full['stage'] == 'full_direct_mechanism_actual_front_and_explicit_retainer_threads', full['stage']
+          assert full['stage'] == 'full_direct_mechanism_v50_box_clamp_and_explicit_retainer_threads', full['stage']
           assert core['datums']['clamp_spacing_mm'] == 160.0
           assert full['rack']['clamp_spacing_mm'] == 160.0
           assert full['base']['right_bbox_mm'][0] <= 296.0
@@ -117,24 +122,42 @@ jobs:
           assert full['handed_stl_export']['mirror_bounds_ok']
           assert full['handed_stl_export']['mirror_vertex_set_ok']
 
-          # FRONT: do not accept metadata alone. The finalization pass writes
-          # front/middle/back material witnesses through the REAL drop depth.
+          # BOX CLAMP: v50 function, v60 dimensions. The working RH8x2 thread
+          # must exist only in removable cartridges; the BASE thread corridor
+          # must be geometrically empty. The old row of triangular front teeth
+          # is forbidden and replaced by two outer Y/Z DROPs.
           front = full['box_clamp']
           assert front['plate_width_mm'] == 160.0, front
           assert front['spindle_x_mm'] == [-65.0, 65.0], front
           assert front['spindle_spacing_mm'] == 130.0, front
           assert front['plate_screw_edge_margin_mm'] == 15.0, front
-          assert front['rectangular_screw_blocks'] is True, front
-          assert front['drops_only_beside_blocks'] is True, front
-          assert front['drop_architecture'].startswith('full-depth structural'), front
-          assert front['drop_depth_y_mm'] >= 20.0, front
-          drops = front['support_free_drop_checks']
-          assert len(drops) == 5, drops
+          assert front['lead_nut_mode'] == 'separate_RH8x2_cartridge_cross_pin_external_C_clip', front
+          assert front['integral_female_threads'] is False, front
+          assert front['base_has_working_lead_thread'] is False, front
+          assert front['triangular_front_drops'] is False, front
+          assert front['outer_guide_blocks_outside_plate_x'] is True, front
+          assert front['final_assembly_contains_separate_lead_nut_hardware'] is True, front
+          assert front['final_assembly_lead_nut_cartridge_count'] == 4, front
+          assert front['final_assembly_lead_nut_pin_count'] == 4, front
+          assert front['final_assembly_lead_nut_clip_count'] == 4, front
+          drops = front['outer_support_drops']
+          assert len(drops) == 2, drops
+          assert all(q['outside_plate_x'] for q in drops), drops
           assert all(q['flank_angle_from_horizontal_deg'] >= 45.0 for q in drops), drops
-          assert all(q['material_fraction'] >= 0.999 for q in drops), drops
-          assert all(q['depth_y_mm'] >= 20.0 for q in drops), drops
-          assert all(len(q['front_mid_back_material_fraction']) == 3 for q in drops), drops
-          assert all(min(q['front_mid_back_material_fraction']) >= 0.995 for q in drops), drops
+          assert all(q['material_fraction'] >= 0.995 for q in drops), drops
+          voids = front['base_thread_void_checks']
+          assert len(voids) == 2, voids
+          assert all(q['base_common_mm3'] <= 0.0001 for q in voids), voids
+          cartridges = front['cartridge_checks']
+          assert len(cartridges) == 2, cartridges
+          assert all(q['nut_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+          assert all(q['pin_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+          assert all(q['pin_nut_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+          assert all(q['clip_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+          assert front['axial_slide_without_rotation_common_mm3'] >= 0.5, front
+          assert front['half_pitch_wrong_phase_common_mm3'] >= 0.5, front
+          assert any(q['travel_mm'] == -0.5 for q in front['plate_motion']), front['plate_motion']
+          assert any(q['travel_mm'] == 5.5 for q in front['plate_motion']), front['plate_motion']
 
           closure = full['rack']['m4_closure']
           assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
@@ -227,14 +250,14 @@ jobs:
 
           - `FCStd/` — individual editable FreeCAD parts
           - `STEP/` — neutral CAD exports
-          - `STL/` — printable handed meshes
+          - `STL/` — printable handed meshes and removable clamp hardware
           - `assembly/` — installed-orientation PNG
           - `validation/` — machine-readable hard-check reports
           - workflow artifact `eurobox-v60-complete` — complete generated FreeCAD assembly and all proof outputs
 
           The complete assembly is deliberately not committed to normal Git: detailed thread geometry can push the generated FCStd above GitHub's 100 MB object limit. Keeping it in the workflow artifact also prevents an old assembly from remaining beside newer STEP/STL outputs.
 
-          The production gate verifies the continuous carrier load path, the actual 160 mm box-clamp front with +/-65 mm spindle axes and full-depth support-free DROPs only beside/between rectangular screw blocks, distinct geometrically X-mirrored LEFT/RIGHT STL files, and an explicit matched 12x2 rack-retainer thread pair with final-BRep helix witnesses.
+          The box clamp restores the proven v50 function: a 160 mm moving plate on two +/-65 mm RH8x2 spindles, separate removable threaded lead-nut cartridges retained by cross-pins and C-clips, a smooth/non-threaded BASE, and two outer Y/Z support DROPs instead of the rejected row of triangular front teeth. The hard 600 mm Eurobox envelope remains enforced. The rack closure retains its explicit matched 12x2 service-retainer thread pair with final-BRep helix witnesses.
           EOF
 
           cat > preview-stl/v60/README.md <<'EOF'
