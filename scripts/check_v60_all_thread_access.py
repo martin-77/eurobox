@@ -56,14 +56,18 @@ for xc in C.CLAMP_X:
             f'{core_block:.6f} mm3'
         )
 
-    # Simulate proper unscrewing: +Z translation requires +360*d/pitch phase
-    # rotation for the matched +twist male/female pair. Exact production BReps
-    # are used, including the final threaded BASE.
+    # The final 12x2 pair uses the OpenSCAD +twist convention. In the assembled
+    # FreeCAD transform the service retainer is extracted along +Z while its
+    # body must be turned in the opposite angular sense. Keep this independent
+    # from the frozen RH8x2 clamp kinematics: only the rack-retainer audit uses
+    # this sign. The half-pitch sample (0.5 mm = 90 deg) is intentionally kept
+    # as a hard gate because whole-pitch positions can hide a wrong phase sign.
     for d in (0.0, 0.5, 1.0, 2.0, 4.0):
         ret = T.RACK_NUT_RETAINER.copy()
+        rotation_deg = -360.0 * d / T.PITCH
         ret.rotate(
             App.Vector(0, 0, 0), App.Vector(0, 0, 1),
-            360.0 * d / T.PITCH,
+            rotation_deg,
         )
         ret.translate(App.Vector(
             xc, C.RACK_CLOSURE_Y, T.THREAD_Z0 + d
@@ -72,7 +76,7 @@ for xc in C.CLAMP_X:
         retainer_motion.append({
             'x_mm': xc,
             'unscrew_mm': d,
-            'rotation_deg': round(360.0 * d / T.PITCH, 3),
+            'rotation_deg': round(rotation_deg, 3),
             'base_common_mm3': round(common, 6),
         })
         if common > 2.0:
