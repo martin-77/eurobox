@@ -93,10 +93,11 @@ def stage(msg):
 
 
 def lead_rotation_deg(travel):
-    # Proven v50 RH8x2 orientation: opening moves the screw in -Y and therefore
-    # requires negative rotation about +Y.  The previous v60 validator used the
-    # opposite sign and was testing a deliberately wrong thread phase as valid.
-    return -360.0 * travel / F.THREAD_PITCH
+    # The production spindle master is already rotated 180 degrees about Z.
+    # In that final installed coordinate system, opening in -Y follows the
+    # RH8x2 helix with positive rotation about global +Y.  This is also the
+    # direction proven by the baseline thread-motion gate.
+    return 360.0 * travel / F.THREAD_PITCH
 
 
 def wider_plate_sweep():
@@ -145,8 +146,6 @@ def build_lead_nut():
         LEAD_NUT_TAIL_H,
     )
     q = body.fuse(tail).removeSplitter()
-    # Exact same female RH8x2 master as the spindle pair; it is a separate part,
-    # not a cutter applied to BASE.
     q = q.cut(F.FEMALE_NEGY).removeSplitter()
     q = q.cut(
         C.cyl_x(
@@ -192,21 +191,18 @@ LEFT_OUTER_DROP = make_outer_drop(LEFT_DROP_X0, LEFT_DROP_X1, 'left outer v50-st
 RIGHT_OUTER_DROP = make_outer_drop(RIGHT_DROP_X0, RIGHT_DROP_X1, 'right outer v50-style DROP')
 
 parts = [
-    # Side guides are outside the moving 160 mm plate in X.
     C.box(FRAME_X0, F.PRINT_GUIDE_Y0, F.PRINT_GUIDE_Z0,
           GUIDE_W, F.PRINT_GUIDE_Y1 - F.PRINT_GUIDE_Y0,
           F.PRINT_BASE_PLANE_Z - F.PRINT_GUIDE_Z0),
     C.box(PLATE_SWEEP_HALF_X, F.PRINT_GUIDE_Y0, F.PRINT_GUIDE_Z0,
           GUIDE_W, F.PRINT_GUIDE_Y1 - F.PRINT_GUIDE_Y0,
           F.PRINT_BASE_PLANE_Z - F.PRINT_GUIDE_Z0),
-    # Broad bed-side tie and lower deck: no triangular/V cells between bosses.
     C.box(FRAME_X0, F.CAGE_Y0 - 0.10,
           F.PRINT_BASE_PLANE_Z - F.PRINT_FRAME_TIE_T,
           FRAME_W, F.CAGE_Y1 - F.CAGE_Y0 + 0.20, F.PRINT_FRAME_TIE_T),
     C.box(DECK_X0, F.CAGE_Y0, F.FINAL_DECK_Z0,
           DECK_X1 - DECK_X0, F.PRINT_GUIDE_Y1 - F.CAGE_Y0,
           F.FINAL_DECK_Z1 - F.FINAL_DECK_Z0),
-    # Small structural stitches between deck and the outer side guides.
     C.box(FRAME_X0, F.CAGE_Y0 - 0.10, F.PRINT_GUIDE_Z0,
           GUIDE_W, F.PRINT_GUIDE_Y0 - (F.CAGE_Y0 - 0.10) + 0.35,
           F.PRINT_BASE_PLANE_Z - F.PRINT_GUIDE_Z0),
@@ -227,8 +223,6 @@ parts = [
     RIGHT_OUTER_DROP,
 ]
 
-# Rectangular cartridge housings remain near the plate edges.  They are smooth
-# housings only; the actual RH8x2 working thread lives in the removable nut.
 for sx in SPINDLE_X:
     parts.append(C.box(
         sx - BOSS_HALF_X,
@@ -379,7 +373,6 @@ for side, drop, x0, x1 in (
     if frac < 0.995:
         fail(f'{side} outer DROP not materially fused: {frac:.6f}')
 
-# Box rim and plate travel.  Include the real 0.5 mm clamp preload from v50.
 rim = C.box(-220.0, C.BOX_RIM_INNER_Y, F.RIM_BOTTOM_Z, 440.0, C.RIM_Y, C.RIM_H)
 plate_motion = []
 for travel in (-0.5, 0.0, 1.0, 2.0, 3.0, 4.0, 4.5, 5.0, 5.5):
@@ -399,8 +392,6 @@ for travel in (-0.5, 0.0, 1.0, 2.0, 3.0, 4.0, 4.5, 5.0, 5.5):
     if travel < 0.0 and rim_common < 1.0:
         fail('0.5mm preload does not reach the box rim')
 
-# The BASE must be smooth/open through the complete working-thread cartridge
-# volume.  This geometric witness prevents an integral BASE thread returning.
 base_thread_void = []
 for sx in SPINDLE_X:
     probe = F.cyl_y(
@@ -415,7 +406,6 @@ for sx in SPINDLE_X:
     if common > 1e-4:
         fail(f'BASE still contains material in separate lead-nut working-thread volume X={sx}: {common:.6f}')
 
-# Place cartridges and prove the pin/clip service interfaces are real.
 cartridge_checks = []
 for sx in SPINDLE_X:
     nut = LEAD_NUT.copy()
@@ -454,7 +444,6 @@ for sx in SPINDLE_X:
     if not (0.04 <= clip_pin_distance <= 0.18):
         fail(f'lead-nut clip/groove radial clearance implausible X={sx}: {clip_pin_distance:.6f}')
 
-# RH8x2 motion must happen exclusively against the separate cartridges.
 thread_motion = []
 for sx in SPINDLE_X:
     nut = LEAD_NUT.copy()
@@ -495,7 +484,6 @@ if axial_wrong_common < correct_half + 0.50:
 if wrong_phase_common < correct_half + 0.50:
     fail(f'lead-nut cartridge lacks phase-sensitive RH8x2 engagement: {wrong_phase_common:.6f}')
 
-# Exact handed geometry and hard 600 mm width envelope.
 left_back = C.mirror_x(LEFT_FULL)
 mirror_delta = abs(RIGHT_FULL.Volume - left_back.Volume)
 if mirror_delta > 1e-4:
