@@ -4,7 +4,7 @@ import os
 import FreeCAD as App
 import MeshPart
 
-import apply_v60_front_rebuild_v3 as P
+import apply_v60_front_rebuild_v4 as P
 import apply_v60_rack_closure as R
 import apply_v60_retainer_thread_final as T
 import build_v60 as C
@@ -187,7 +187,7 @@ stage(f'assembly saved: {os.path.getsize(assembly_path)} bytes')
 validation_path = os.path.join(C.OUT, 'VALIDATION_v60_full.json')
 with open(validation_path, 'r', encoding='utf-8') as fh:
     validation = json.load(fh)
-validation['stage'] = 'full_direct_mechanism_clean_modular_front_v3_and_explicit_retainer_threads'
+validation['stage'] = 'full_direct_mechanism_clean_modular_front_v4_and_explicit_retainer_threads'
 validation['box_clamp']['final_assembly_contains_separate_lead_nut_hardware'] = True
 validation['box_clamp']['final_assembly_lead_nut_cartridge_count'] = 4
 validation['box_clamp']['final_assembly_lead_nut_pin_count'] = 4
@@ -209,7 +209,7 @@ with open(validation_path, 'w', encoding='utf-8') as fh:
     json.dump(validation, fh, indent=2)
 
 with open(os.path.join(C.OUT, 'README_BUILD_v60_full.txt'), 'a', encoding='utf-8') as fh:
-    fh.write('Front v3 uses rear-open spindle-drive service windows and reinforced replaceable RH8x2 cartridges.\n')
+    fh.write('Front v4 uses rear-open spindle-drive service windows and thread-clear reinforced replaceable RH8x2 cartridges.\n')
     fh.write('Each cassette contains a separately replaceable RH8x2 lead-nut cartridge retained by cross-pin and C-clip.\n')
     fh.write('Assembly FCStd is a lightweight tessellated inspection proof; hard checks and neutral CAD exports use exact BRep geometry.\n')
 
