@@ -9,28 +9,22 @@ import apply_v60_rack_closure as R
 import apply_v60_retainer_thread_final as T
 import build_v60 as C
 import build_v60_full_baseline as B
+from v60_timing import start_timer, stop_timer
 
 
 def stage(msg):
     print('V60_FINAL_ASSEMBLY ' + msg, flush=True)
 
 
-# The production hard-checks above operate on the exact BRep geometry.  The
-# complete assembly is only an installed-orientation proof/inspection artifact.
-# Storing every detailed threaded BRep again in one FCStd made that document
-# >100 MiB and, more importantly, spent tens of seconds serialising huge OCC
-# shapes at the very end of an already long GitHub Actions job.  Hosted runners
-# were repeatedly shut down during that final save even though every mechanical
-# check had already passed.
-#
-# Keep the exact final shapes for all validation and STEP/STL exports, but make
-# the assembly FCStd a tessellated representation of those same final shapes.
-# This changes no design geometry and keeps the assembly useful for visual
-# inspection while making the last stage fast and compact.
+# The production hard-checks operate on exact BRep geometry. The complete
+# assembly is an installed-orientation inspection artifact, so store tessellated
+# representations of those exact final shapes instead of serialising every BRep
+# again. Per-object meshing is timed because it is an obvious future cost target.
 ASSEMBLY_LINEAR_DEFLECTION = 0.12
 ASSEMBLY_ANGULAR_DEFLECTION = 0.35
 
 stage('rewrite lightweight final assembly including separate box-clamp hardware')
+_t_total = start_timer('assembly.total')
 assembly_path = os.path.join(C.OUT, 'eurobox_v60_assembly.FCStd')
 try:
     if App.ActiveDocument:
@@ -42,6 +36,8 @@ doc = App.newDocument('Eurobox_v60_assembly')
 
 
 def add_obj(name, shape):
+    label = 'assembly.mesh.' + name
+    _t = start_timer(label)
     obj = doc.addObject('Mesh::Feature', name)
     obj.Mesh = MeshPart.meshFromShape(
         Shape=shape,
@@ -51,6 +47,7 @@ def add_obj(name, shape):
     )
     if obj.Mesh.CountFacets <= 0:
         raise RuntimeError(f'Final assembly mesh is empty for {name}')
+    stop_timer(label, _t, facets=obj.Mesh.CountFacets)
     return obj
 
 
@@ -132,6 +129,7 @@ for xc in C.CLAMP_X:
 add_obj('REF_right_rack_tube', C.cyl_x(C.RACK_R, 400, -200, RY, 0))
 add_obj('REF_left_rack_tube', C.cyl_x(C.RACK_R, 400, -200, LY, 0))
 
+_t = start_timer('assembly.recompute_and_save_FCStd')
 doc.recompute()
 object_names = [obj.Name for obj in doc.Objects]
 required_tokens = ('lead_nut_', 'lead_nut_pin_', 'lead_nut_clip_')
@@ -141,6 +139,7 @@ for token in required_tokens:
         raise RuntimeError(f'Final assembly missing box-clamp hardware {token}: {matches}')
 doc.saveAs(assembly_path)
 App.closeDocument(doc.Name)
+stop_timer('assembly.recompute_and_save_FCStd', _t)
 
 if not os.path.isfile(assembly_path) or os.path.getsize(assembly_path) <= 0:
     raise RuntimeError('Final lightweight assembly FCStd was not written')
@@ -168,4 +167,5 @@ with open(os.path.join(C.OUT, 'README_BUILD_v60_full.txt'), 'a', encoding='utf-8
     fh.write('Final assembly includes all four separate lead-nut cartridges, retaining pins and C-clips.\n')
     fh.write('Assembly FCStd is a lightweight tessellated inspection proof; all hard checks and neutral CAD exports use exact BRep geometry.\n')
 
+stop_timer('assembly.total', _t_total, file_bytes=os.path.getsize(assembly_path))
 stage('complete')
