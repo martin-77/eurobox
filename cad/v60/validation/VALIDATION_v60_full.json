@@ -1,6 +1,6 @@
 {
   "version": "v60",
-  "stage": "full_direct_mechanism_v50_box_clamp_and_explicit_retainer_threads",
+  "stage": "full_direct_mechanism_clean_modular_front_and_explicit_retainer_threads",
   "architecture": "continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow 12x2 printed service plug",
   "base": {
     "right_bbox_mm": [
@@ -368,339 +368,260 @@
     }
   },
   "box_clamp": {
-    "architecture": "160mm main clamp face; outboard RH8x2 cartridge bosses integrated into broad Y/Z DROPs; narrow moving drive ears",
-    "plate_width_mm": 160.0,
-    "plate_total_outer_x_mm": 98.0,
-    "plate_drive_ear_x_mm": [
-      78.0,
-      98.0
+    "architecture": "closed_v60_front_carrier_with_two_replaceable_clamp_cassettes",
+    "front_carrier_x_mm": [
+      -96.0,
+      196.0
     ],
-    "plate_drive_ear_z_mm": [
-      23.5,
-      38.5
+    "front_carrier_y_mm": [
+      190.68,
+      214.315
+    ],
+    "front_carrier_z_mm": [
+      9.54,
+      39.54
+    ],
+    "front_recess_for_plate_travel_mm": 5.9,
+    "plate_width_mm": 160.0,
+    "plate_main_x_mm": [
+      -40.0,
+      120.0
     ],
     "plate_travel_mm": 5.5,
-    "plate_preload_mm": 0.5,
+    "plate_motion": [
+      {
+        "travel_mm": -0.5,
+        "base_common_mm3": 0.0,
+        "modules_common_mm3": 0.0
+      },
+      {
+        "travel_mm": 0.0,
+        "base_common_mm3": 0.0,
+        "modules_common_mm3": 0.0
+      },
+      {
+        "travel_mm": 1.0,
+        "base_common_mm3": 0.0,
+        "modules_common_mm3": 0.0
+      },
+      {
+        "travel_mm": 3.0,
+        "base_common_mm3": 0.0,
+        "modules_common_mm3": 0.0
+      },
+      {
+        "travel_mm": 5.5,
+        "base_common_mm3": 0.0,
+        "modules_common_mm3": 0.0
+      }
+    ],
     "spindle_x_mm": [
       -48.0,
       128.0
     ],
     "spindle_spacing_mm": 176.0,
     "spindle_z_mm": 31.0,
-    "spindle_outboard_of_main_face_mm": 8.0,
-    "fixed_cartridge_boss_outer_x_mm": 99.0,
-    "guide_architecture": "lower lateral rails only; drive ears pass above; bosses merge into outer DROPs",
-    "lead_nut_mode": "separate_RH8x2_cartridge_cross_pin_external_C_clip",
+    "lead_nut_mode": "separate_RH8x2_cartridge_cross_pin_external_C_clip_inside_replaceable_module",
     "integral_female_threads": false,
     "base_has_working_lead_thread": false,
-    "triangular_front_drops": false,
-    "cartridge_bosses_outside_main_plate_x": true,
-    "outer_support_drops": [
-      {
-        "side": "left",
-        "x_mm": [
-          -98.5,
-          -79.6
-        ],
-        "outside_main_plate_x": true,
-        "integrated_with_cartridge_boss_common_mm3": 6903.788566,
-        "y_mm": [
-          190.68,
-          228.015
-        ],
-        "flank_angle_from_horizontal_deg": 52.73,
-        "raw_material_fraction_after_functional_machining": 0.781879,
-        "material_fraction": 1.0,
-        "material_fraction_witness": "expected drop after exact production cartridge/service cutters"
-      },
-      {
-        "side": "right",
-        "x_mm": [
-          79.6,
-          98.5
-        ],
-        "outside_main_plate_x": true,
-        "integrated_with_cartridge_boss_common_mm3": 6903.788566,
-        "y_mm": [
-          190.68,
-          228.015
-        ],
-        "flank_angle_from_horizontal_deg": 52.73,
-        "raw_material_fraction_after_functional_machining": 0.781879,
-        "material_fraction": 1.0,
-        "material_fraction_witness": "expected drop after exact production cartridge/service cutters"
-      }
+    "module_has_working_lead_thread": false,
+    "module_attachment": "top-drop cassette, two M3 screws into heat-set inserts per module",
+    "module_count_per_base": 2,
+    "module_bay_half_x_mm": 12.35,
+    "module_flange_half_x_mm": 19.0,
+    "module_m3_centres_local_x_mm": [
+      -15.5,
+      15.5
     ],
-    "base_thread_void_checks": [
+    "module_checks": [
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "base_common_mm3": 0.0
       }
     ],
     "cartridge_checks": [
       {
         "x_mm": -48.0,
-        "installed_base_common_mm3": 0.0,
-        "pin_base_common_mm3": 0.0,
-        "pin_nut_common_mm3": 0.0,
-        "clip_base_common_mm3": 0.0,
-        "service_mouth_base_common_mm3": 0.0,
-        "tail_lane_base_common_mm3": 0.0,
-        "extraction_path": [
-          {
-            "travel_y_mm": 0.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 2.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 5.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 10.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 16.0,
-            "base_common_mm3": 0.0
-          }
-        ]
+        "nut_module_common_mm3": 0.0,
+        "pin_module_common_mm3": 0.0,
+        "clip_module_common_mm3": 0.0
       },
       {
         "x_mm": 128.0,
-        "installed_base_common_mm3": 0.0,
-        "pin_base_common_mm3": 0.0,
-        "pin_nut_common_mm3": 0.0,
-        "clip_base_common_mm3": 0.0,
-        "service_mouth_base_common_mm3": 0.0,
-        "tail_lane_base_common_mm3": 0.0,
-        "extraction_path": [
-          {
-            "travel_y_mm": 0.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 2.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 5.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 10.0,
-            "base_common_mm3": 0.0
-          },
-          {
-            "travel_y_mm": 16.0,
-            "base_common_mm3": 0.0
-          }
-        ]
+        "nut_module_common_mm3": 0.0,
+        "pin_module_common_mm3": 0.0,
+        "clip_module_common_mm3": 0.0
+      }
+    ],
+    "cartridge_extraction_plus_y": [
+      {
+        "travel_y_mm": 0.0,
+        "module_common_mm3": 0.0
+      },
+      {
+        "travel_y_mm": 2.0,
+        "module_common_mm3": 0.0
+      },
+      {
+        "travel_y_mm": 5.0,
+        "module_common_mm3": 0.0
+      },
+      {
+        "travel_y_mm": 10.0,
+        "module_common_mm3": 0.0
+      },
+      {
+        "travel_y_mm": 16.0,
+        "module_common_mm3": 0.0
       }
     ],
     "thread_motion": [
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": -0.5,
         "rotation_deg": -90.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": 0.0,
         "rotation_deg": 0.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": 0.5,
         "rotation_deg": 90.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": 1.0,
         "rotation_deg": 180.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": 2.0,
         "rotation_deg": 360.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": 3.0,
         "rotation_deg": 540.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": 4.0,
         "rotation_deg": 720.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": -88.0,
+        "x_mm": -48.0,
         "travel_mm": 5.5,
         "rotation_deg": 990.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": -0.5,
         "rotation_deg": -90.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": 0.0,
         "rotation_deg": 0.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": 0.5,
         "rotation_deg": 90.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": 1.0,
         "rotation_deg": 180.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": 2.0,
         "rotation_deg": 360.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": 3.0,
         "rotation_deg": 540.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": 4.0,
         "rotation_deg": 720.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       },
       {
-        "x_mm": 88.0,
+        "x_mm": 128.0,
         "travel_mm": 5.5,
         "rotation_deg": 990.0,
-        "nut_common_mm3": 0.0,
-        "base_common_mm3": 0.0
+        "base_common_mm3": 0.0,
+        "module_common_mm3": 0.0,
+        "nut_common_mm3": 0.0
       }
     ],
     "axial_slide_without_rotation_common_mm3": 3.054096,
     "half_pitch_wrong_phase_common_mm3": 3.054095,
-    "plate_motion": [
-      {
-        "travel_mm": -0.5,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 1472.902664
-      },
-      {
-        "travel_mm": 0.0,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      },
-      {
-        "travel_mm": 1.0,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      },
-      {
-        "travel_mm": 2.0,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      },
-      {
-        "travel_mm": 3.0,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      },
-      {
-        "travel_mm": 4.0,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      },
-      {
-        "travel_mm": 4.5,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      },
-      {
-        "travel_mm": 5.0,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      },
-      {
-        "travel_mm": 5.5,
-        "base_common_mm3": 0.0,
-        "rim_common_mm3": 0.0
-      }
-    ],
-    "width_states_local_y_mm": {
-      "-0.5": 232.915,
-      "0.0": 232.415,
-      "5.5": 228.015
-    },
     "effective_total_width_mm": 600.0,
-    "front_x_offset_mm": 40.0,
-    "main_face_x_mm": [
-      -40.0,
-      120.0
-    ],
-    "position_fix": "complete front topology translated +40 mm in X on canonical continuous carrier; left cartridge clears front support and right cartridge is farther right",
-    "lead_nut_service_architecture": {
-      "mode": "v50_drop_in_RH8x2_cartridge_lower_tail_cross_pin_external_C_clip",
-      "working_thread_is_replaceable_part": true,
-      "base_contains_working_lead_thread": false,
-      "cartridge_extraction_axis": "+Y after spindle/pin removal",
-      "body_service_mouth_open": true,
-      "tail_extraction_lane_open": true,
-      "pin_head_external_service": true,
-      "c_clip_external_service": true,
-      "service_extraction_test_max_mm": 16.0
-    },
-    "serviceable_cartridge_count": 2,
     "final_assembly_contains_separate_lead_nut_hardware": true,
     "final_assembly_lead_nut_cartridge_count": 4,
     "final_assembly_lead_nut_pin_count": 4,
     "final_assembly_lead_nut_clip_count": 4,
+    "final_assembly_replaceable_module_count": 4,
     "final_assembly_installed_spindle_x_mm": [
       -48.0,
       128.0
     ],
-    "final_assembly_left_hardware_transform": "rigid 180deg turnaround about shifted front centre for plate/spindle/lead-nut; Y mirror only for non-threaded cross-pin and C-clip service hardware"
+    "final_assembly_left_hardware_transform": "rigid 180deg turnaround about clean-front centre for complete reusable cassette/spindle/cartridge/pin/clip stack; no RH8x2 reflection"
   },
   "failures": [],
   "final_assembly": {
@@ -708,11 +629,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3387813
+    "file_bytes": 3433049
   },
   "handed_stl_export": {
-    "right_sha256": "f8103b49aa9021fe274906e87084ef12f19d012cae4a21ee16873cb275ed879e",
-    "left_sha256": "6dde41e242a79dc2064d56dc9dc28d5a6ea29e29f6b25c93822c9c47b2214db6",
+    "right_sha256": "9d1aed34f8dcd77d9628504ea918a1fe223992045f6a27a0b4f1cf12d353d1ae",
+    "left_sha256": "6e2b44dc50ab4a1d2bd70b5ebffe0cf65c790706cd4f67399baf2c5f643490bf",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -735,13 +656,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 68308,
-    "left_facets": 68308,
-    "right_volume_mm3": 574077.950686,
-    "left_volume_mm3": 574077.950686,
+    "right_facets": 67900,
+    "left_facets": 67900,
+    "right_volume_mm3": 643570.435232,
+    "left_volume_mm3": 643570.435232,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 198242.506713,
-    "left_area_mm2": 198242.506713,
+    "right_area_mm2": 181593.719988,
+    "left_area_mm2": 181593.719988,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
