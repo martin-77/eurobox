@@ -24,10 +24,9 @@ assert full['handed_stl_export']['mirror_bounds_ok']
 assert full['handed_stl_export']['mirror_vertex_set_ok']
 
 # BOX CLAMP: the complete front topology is translated +40 mm in X from the
-# mechanically validated outboard-clamp geometry.  The 160 mm main face moves
+# mechanically validated outboard-clamp geometry. The 160 mm main face moves
 # from -80..+80 to -40..+120 and the +/-88 mm spindle pair therefore becomes
-# -48..+128.  Relative geometry (176 mm spacing, 8 mm outboard offset, ears,
-# bosses, drops and RH8x2 cartridge mechanics) remains unchanged.
+# -48..+128.
 front = full['box_clamp']
 assert front['plate_width_mm'] == 160.0, front
 assert front['front_x_offset_mm'] == 40.0, front
@@ -49,6 +48,39 @@ assert front['final_assembly_lead_nut_cartridge_count'] == 4, front
 assert front['final_assembly_lead_nut_pin_count'] == 4, front
 assert front['final_assembly_lead_nut_clip_count'] == 4, front
 
+# v50 service architecture is a hard production requirement: the working RH8x2
+# female thread must be a replaceable wear cartridge. The BASE only provides a
+# smooth cradle, extraction mouth and lower-tail lane. Cross-pin head and C-clip
+# must be reachable externally and the cartridge must clear the BASE through the
+# complete tested +Y extraction stroke once spindle and pin are removed.
+svc = front['lead_nut_service_architecture']
+assert svc['mode'] == 'v50_drop_in_RH8x2_cartridge_lower_tail_cross_pin_external_C_clip', svc
+assert svc['working_thread_is_replaceable_part'] is True, svc
+assert svc['base_contains_working_lead_thread'] is False, svc
+assert svc['cartridge_extraction_axis'] == '+Y after spindle/pin removal', svc
+assert svc['body_service_mouth_open'] is True, svc
+assert svc['tail_extraction_lane_open'] is True, svc
+assert svc['pin_head_external_service'] is True, svc
+assert svc['c_clip_external_service'] is True, svc
+assert svc['service_extraction_test_max_mm'] >= 16.0, svc
+assert front['serviceable_cartridge_count'] == 2, front
+
+cartridges = front['cartridge_checks']
+assert len(cartridges) == 2, cartridges
+assert all(q['installed_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(q['pin_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(q['pin_nut_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(q['clip_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(q['service_mouth_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(q['tail_lane_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
+assert all(len(q['extraction_path']) >= 5 for q in cartridges), cartridges
+assert all(
+    all(p['base_common_mm3'] <= 0.0001 for p in q['extraction_path'])
+    for q in cartridges
+), cartridges
+
+# The broad outboard support/drop concept remains mandatory. These witnesses are
+# generated in the pre-position mechanism at identical relative geometry.
 drops = front['outer_support_drops']
 assert len(drops) == 2, drops
 assert all(q['outside_main_plate_x'] for q in drops), drops
@@ -56,16 +88,6 @@ assert all(q['flank_angle_from_horizontal_deg'] >= 45.0 for q in drops), drops
 assert all(q['material_fraction'] >= 0.995 for q in drops), drops
 assert all(q['integrated_with_cartridge_boss_common_mm3'] >= 20.0 for q in drops), drops
 
-voids = front['base_thread_void_checks']
-assert len(voids) == 2, voids
-assert all(q['base_common_mm3'] <= 0.0001 for q in voids), voids
-
-cartridges = front['cartridge_checks']
-assert len(cartridges) == 2, cartridges
-assert all(q['nut_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['pin_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['pin_nut_common_mm3'] <= 0.0001 for q in cartridges), cartridges
-assert all(q['clip_base_common_mm3'] <= 0.0001 for q in cartridges), cartridges
 assert front['axial_slide_without_rotation_common_mm3'] >= 0.5, front
 assert front['half_pitch_wrong_phase_common_mm3'] >= 0.5, front
 assert any(q['travel_mm'] == -0.5 for q in front['plate_motion']), front['plate_motion']
