@@ -8,9 +8,9 @@ Structural principle: one continuous rack-side carrier. The two rack clamps and 
 - `STEP/` — neutral CAD exports
 - `STL/` — printable handed meshes and removable clamp hardware
 - `assembly/` — installed-orientation PNG
-- `validation/` — machine-readable hard-check reports
+- `validation/` — machine-readable hard-check and timing reports
 - workflow artifact `eurobox-v60-complete` — complete generated FreeCAD assembly and all proof outputs
 
-The complete assembly is deliberately not committed to normal Git: detailed thread geometry can push the generated FCStd above GitHub's 100 MB object limit. Keeping it in the workflow artifact also prevents an old assembly from remaining beside newer STEP/STL outputs.
+The box clamp keeps a 160 mm central clamp face, but its two RH8x2 drive axes are at +/-88 mm, outside that face. Narrow moving ears connect the plate to the spindles. The removable lead-nut cartridge bosses are integrated directly into the two broad outer Y/Z DROPs instead of being stacked between a guide and a separate drop. The BASE remains smooth/non-threaded in the working lead-screw corridor and the hard 600 mm Eurobox envelope remains enforced. The rack closure retains its explicit matched 12x2 service-retainer thread pair.
 
-The box clamp restores the proven v50 function: a 160 mm moving plate on two +/-65 mm RH8x2 spindles, separate removable threaded lead-nut cartridges retained by cross-pins and C-clips, a smooth/non-threaded BASE, and two outer Y/Z support DROPs instead of the rejected row of triangular front teeth. The hard 600 mm Eurobox envelope remains enforced. The rack closure retains its explicit matched 12x2 service-retainer thread pair with final-BRep helix witnesses.
+`validation/TIMING_v60.json` records measured stage/operation durations from the GitHub runner so expensive OCC operations can be optimized from data rather than guesswork.
