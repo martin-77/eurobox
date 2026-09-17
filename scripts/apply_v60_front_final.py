@@ -89,6 +89,13 @@ def stage(msg):
     print('V60_BOX_CLAMP_FINAL ' + msg, flush=True)
 
 
+def lead_rotation_deg(travel):
+    # Proven v50 RH8x2 orientation: opening moves the screw in -Y and therefore
+    # requires negative rotation about +Y.  The previous v60 validator used the
+    # opposite sign and was testing a deliberately wrong thread phase as valid.
+    return -360.0 * travel / F.THREAD_PITCH
+
+
 def wider_plate_sweep():
     return C.box(
         -PLATE_SWEEP_HALF_X,
@@ -451,7 +458,7 @@ for sx in SPINDLE_X:
     nut.translate(App.Vector(sx, F.NUT_Y0, F.SPINDLE_Z))
     for travel in (-0.5, 0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.5):
         spindle = F.SPINDLE.copy()
-        rotation = 360.0 * travel / F.THREAD_PITCH
+        rotation = lead_rotation_deg(travel)
         spindle.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), rotation)
         spindle.translate(App.Vector(sx, F.PLATE_SPINDLE_Y - travel, F.SPINDLE_Z))
         nut_common = nut.common(spindle).Volume
@@ -474,7 +481,8 @@ axial_wrong = F.SPINDLE.copy()
 axial_wrong.translate(App.Vector(SPINDLE_X[0], F.PLATE_SPINDLE_Y - 0.5, F.SPINDLE_Z))
 axial_wrong_common = nut0.common(axial_wrong).Volume
 wrong_phase = F.SPINDLE.copy()
-wrong_phase.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), -90.0)
+wrong_phase_rotation = lead_rotation_deg(0.5) + 180.0
+wrong_phase.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), wrong_phase_rotation)
 wrong_phase.translate(App.Vector(SPINDLE_X[0], F.PLATE_SPINDLE_Y - 0.5, F.SPINDLE_Z))
 wrong_phase_common = nut0.common(wrong_phase).Volume
 correct_half = next(q['nut_common_mm3'] for q in thread_motion
@@ -494,7 +502,7 @@ if mirror_delta > 1e-4:
 def local_y_extent(travel):
     plate = PLATE.copy(); plate.translate(App.Vector(0, -travel, 0))
     spindle = F.SPINDLE.copy()
-    spindle.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), 360.0 * travel / F.THREAD_PITCH)
+    spindle.rotate(App.Vector(0, 0, 0), App.Vector(0, 1, 0), lead_rotation_deg(travel))
     spindle.translate(App.Vector(0, F.PLATE_SPINDLE_Y - travel, F.SPINDLE_Z))
     nut = LEAD_NUT.copy(); nut.translate(App.Vector(0, F.NUT_Y0, F.SPINDLE_Z))
     pin = NUT_PIN.copy(); pin.translate(App.Vector(0, PIN_Y, PIN_Z))

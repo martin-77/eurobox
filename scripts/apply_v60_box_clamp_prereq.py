@@ -3,9 +3,8 @@
 This module fixes two prerequisites before ``apply_v60_front_final`` runs:
 
 1. The removable RH8x2 lead-nut cartridge gets a female cutter derived from
-   the *actual* v60 spindle profile using the proven v50 print clearances.
-   The previous v60 female profile was an independently tuned legacy profile
-   and collided with the male spindle even at the nominal phase.
+   the *actual* v60 spindle master, with the proven v50 print clearances and
+   the exact same helix tessellation/phase as the male thread.
 2. The smooth spindle corridor is cleared for the complete 43.5 mm spindle
    length plus the full 5.5 mm opening travel.  The previous corridor started
    at CAGE_Y0 and therefore cut only the front part of the spindle sweep.
@@ -16,6 +15,7 @@ this module deliberately does not relax any validation thresholds.
 
 import os
 
+import FreeCAD as App
 import Part
 
 import build_v60_full_baseline as F
@@ -33,6 +33,17 @@ FEMALE_ROOT_W = MALE_ROOT_W + 2.0 * LEAD_FLANK_CLEARANCE
 FEMALE_CREST_W = MALE_CREST_W + 2.0 * LEAD_FLANK_CLEARANCE
 FEMALE_CORE_R = F.THREAD_CORE_R + LEAD_RADIAL_CLEARANCE
 FEMALE_MAJOR_R = F.THREAD_MAJOR / 2.0 + LEAD_RADIAL_CLEARANCE
+
+# The cartridge starts 15.8 mm behind the plate while the male thread starts
+# 9.8 mm behind it.  The resulting 6.0 mm = 3*pitch phase offset is intentional.
+# Generate the female master over the *same full 22.2 mm length* as the male,
+# then crop the 14 mm cartridge window at that exact phase.  This keeps the
+# OpenSCAD slice planes identical to the already-built male master and avoids
+# false BRep intersections caused by separately tessellating a 14 mm helix.
+MALE_THREAD_START_Y = F.SPINDLE_LOCAL_JOURNAL + F.SPINDLE_LOCAL_SHOULDER
+FEMALE_PHASE_Z0 = F.NUT_ANCHOR_OFFSET - MALE_THREAD_START_Y
+if FEMALE_PHASE_Z0 < 0.0 or FEMALE_PHASE_Z0 + F.NUT_THREAD_LEN > F.LEAD_THREAD_LEN:
+    raise RuntimeError('v60 lead-nut phase window falls outside the male RH8x2 master')
 
 SPINDLE_TOTAL_LEN = (
     F.SPINDLE_LOCAL_JOURNAL
@@ -72,21 +83,51 @@ def cut_full_spindle_sweep(shape):
     return q
 
 
-stage('derive cartridge female RH8x2 cutter from actual v60 male profile')
+stage('derive phase-aligned cartridge female RH8x2 cutter from actual v60 male master')
 female_scad = os.path.join(C.OUT, 'v60_box_clamp_matched_female_RH8x2.scad')
 F.write_thread_scad(
     female_scad,
     FEMALE_CORE_R,
     FEMALE_MAJOR_R,
     F.THREAD_PITCH,
-    F.NUT_THREAD_LEN,
+    F.LEAD_THREAD_LEN,
     FEMALE_ROOT_W,
     FEMALE_CREST_W,
 )
-female_z = F.import_scad_shape(female_scad).common(
-    Part.makeCylinder(FEMALE_MAJOR_R + 0.06, F.NUT_THREAD_LEN)
+female_full_z = F.import_scad_shape(female_scad).common(
+    Part.makeCylinder(FEMALE_MAJOR_R + 0.06, F.LEAD_THREAD_LEN)
 ).removeSplitter()
-C.require_single(female_z, 'matched cartridge female RH8x2 cutter')
+C.require_single(female_full_z, 'full phase-matched cartridge female RH8x2 cutter')
+
+female_window = Part.makeCylinder(
+    FEMALE_MAJOR_R + 0.06,
+    F.NUT_THREAD_LEN,
+    App.Vector(0.0, 0.0, FEMALE_PHASE_Z0),
+)
+female_z = female_full_z.common(female_window).removeSplitter()
+female_z.translate(App.Vector(0.0, 0.0, -FEMALE_PHASE_Z0))
+C.require_single(female_z, 'phase-windowed cartridge female RH8x2 cutter')
+
+# Direct containment witness against the exact male master segment.  This is
+# deliberately stronger than waiting for the assembled cartridge collision
+# gate: at nominal phase every bit of male thread in the 14 mm engagement must
+# already be inside the female cutter before coordinate transforms are applied.
+male_window = Part.makeCylinder(
+    F.THREAD_MAJOR / 2.0 + 0.06,
+    F.NUT_THREAD_LEN,
+    App.Vector(0.0, 0.0, FEMALE_PHASE_Z0),
+)
+male_segment = F.MALE_Z.common(male_window).removeSplitter()
+male_segment.translate(App.Vector(0.0, 0.0, -FEMALE_PHASE_Z0))
+C.require_single(male_segment, 'nominal male RH8x2 cartridge engagement segment')
+uncovered_male_volume = male_segment.cut(female_z).Volume
+stage(f'nominal cutter uncovered male volume={uncovered_male_volume:.6f} mm3')
+if uncovered_male_volume > 0.05:
+    raise RuntimeError(
+        'phase-aligned RH8x2 cartridge cutter does not contain actual male master: '
+        f'{uncovered_male_volume:.6f} mm3 uncovered'
+    )
+
 F.FEMALE_NEGY = F.rotate_z180(F.z_to_y(female_z))
 C.require_single(F.FEMALE_NEGY, 'matched cartridge female RH8x2 cutter -Y')
 
@@ -113,6 +154,6 @@ def _fuse_seq_with_box_clamp_clearance(shapes, label):
 C.fuse_seq = _fuse_seq_with_box_clamp_clearance
 
 stage(
-    'ready: matched cartridge thread + full spindle sweep '
+    'ready: phase-matched cartridge thread + full spindle sweep '
     f'Y={SPINDLE_CLEAR_Y0:.3f}..{SPINDLE_CLEAR_Y1:.3f} mm'
 )
