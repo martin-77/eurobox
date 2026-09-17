@@ -8,15 +8,6 @@ import build_v60 as C
 import build_v60_full_baseline as F
 from v60_timing import start_timer, stop_timer
 
-# Position-only correction derived from the installed-orientation preview.
-# The complete box-clamp front was incorrectly centred at X=0.  The carrier
-# itself is strongly asymmetric in X, so that put the left cartridge almost
-# into the front support while leaving excessive unused room to the right.
-# Move the entire front mechanism +40 mm in X as one rigid topology:
-#   main 160 mm face:  -40 .. +120
-#   spindle axes:      -48 .. +128
-# This clears the damaged left placement and moves the good right cartridge
-# farther right without putting either cartridge into the outer angles.
 FRONT_X_OFFSET = 40.0
 PLATE_CENTER_X = FRONT_X_OFFSET
 SPINDLE_X = tuple(x + FRONT_X_OFFSET for x in P.SPINDLE_X)
@@ -63,7 +54,17 @@ def rebuild_raw_structural_core():
     raw = raw.cut(shifted_main_plate_sweep()).removeSplitter()
     for sx in SPINDLE_X:
         raw = raw.cut(shifted_ear_sweep(sx)).removeSplitter()
-    C.require_single(raw, 'RIGHT structural core with shifted box-clamp corridor')
+    # The shifted moving corridor can temporarily split the raw structural
+    # primitive into two solids.  The production cage is the intended bridge
+    # across that corridor, so single-solid validity belongs after cage fusion,
+    # not before it.  Keep the intermediate state observable in CI.
+    print(
+        'V60_FRONT_POSITION shifted raw core solids=' + str(len(raw.Solids)) +
+        ' volumes=' + str([round(s.Volume, 3) for s in raw.Solids]),
+        flush=True,
+    )
+    if raw.isNull() or not raw.isValid() or len(raw.Solids) < 1:
+        raise RuntimeError('shifted raw structural core is invalid')
     return raw
 
 
@@ -73,8 +74,8 @@ CORE = rebuild_raw_structural_core()
 CAGE = P.CAGE.copy()
 CAGE.translate(App.Vector(FRONT_X_OFFSET, 0, 0))
 RIGHT_FULL = CORE.fuse(CAGE).removeSplitter()
+C.require_single(RIGHT_FULL, 'RIGHT shifted structural core after cage reconnection')
 
-# Reapply the exact production cartridge/service machining at the shifted axes.
 for sx in SPINDLE_X:
     nut_pocket = C.box(
         sx - 8.35,
@@ -94,13 +95,7 @@ for sx in SPINDLE_X:
     )
     tunnel_y0 = F.CAGE_Y0 - 0.50
     tunnel_y1 = F.PLATE_SPINDLE_Y - F.PLATE_Y + 0.50
-    spindle_tunnel = F.cyl_y(
-        5.90,
-        tunnel_y1 - tunnel_y0,
-        sx,
-        tunnel_y0,
-        F.SPINDLE_Z,
-    )
+    spindle_tunnel = F.cyl_y(5.90, tunnel_y1 - tunnel_y0, sx, tunnel_y0, F.SPINDLE_Z)
     pin_bore = C.cyl_x(P.LEAD_NUT_PIN_HOLE_D / 2.0, 24.0, sx - 12.0, P.PIN_Y, P.PIN_Z)
     head_service = C.cyl_x(3.55, 3.0, sx - 14.0, P.PIN_Y, P.PIN_Z)
     clip_service = C.cyl_x(4.10, 4.0, sx + 11.0, P.PIN_Y, P.PIN_Z)
@@ -122,25 +117,15 @@ failures = []
 
 if SPINDLE_X != (-48.0, 128.0):
     failures.append(f'unexpected shifted spindle positions: {SPINDLE_X}')
-if abs(PLATE.BoundBox.XMin - (-40.0)) > 1e-6 or abs(PLATE.BoundBox.XMax - 138.0) > 1e-6:
-    # Plate main face is -40..120; drive ears extend to +138 and -58.
-    # Check explicit main-face datum separately below, total bbox here catches
-    # an accidental partial shift.
-    expected_min = -58.0
-    expected_max = 138.0
-    if abs(PLATE.BoundBox.XMin - expected_min) > 1e-6 or abs(PLATE.BoundBox.XMax - expected_max) > 1e-6:
-        failures.append(
-            f'shifted plate/ears bbox wrong: {PLATE.BoundBox.XMin:.3f}..{PLATE.BoundBox.XMax:.3f}'
-        )
-
-# The left fixed boss must no longer occupy the front-support centre at -80;
-# the right boss must move materially farther right than the previous +88 mm.
+expected_min = -58.0
+expected_max = 138.0
+if abs(PLATE.BoundBox.XMin - expected_min) > 1e-6 or abs(PLATE.BoundBox.XMax - expected_max) > 1e-6:
+    failures.append(f'shifted plate/ears bbox wrong: {PLATE.BoundBox.XMin:.3f}..{PLATE.BoundBox.XMax:.3f}')
 if abs(SPINDLE_X[0] - C.FRONT_CLAMP_X) < 20.0:
     failures.append('left cartridge still too close to front support/angle region')
 if SPINDLE_X[1] < 120.0:
     failures.append('right cartridge was not moved far enough right')
 
-# Preserve the complete plate travel and spindle/base clearance at the new X.
 for travel in (-0.5, 0.0, 1.0, 3.0, 5.5):
     pl = PLATE.copy()
     pl.translate(App.Vector(0, -travel, 0))
@@ -155,9 +140,7 @@ for sx in SPINDLE_X:
         spindle.translate(App.Vector(sx, F.PLATE_SPINDLE_Y - travel, F.SPINDLE_Z))
         base_common = RIGHT_FULL.common(spindle).Volume
         if base_common > 1.0:
-            failures.append(
-                f'shifted spindle/base collision X={sx} travel={travel}: {base_common:.6f}'
-            )
+            failures.append(f'shifted spindle/base collision X={sx} travel={travel}: {base_common:.6f}')
 
 if RIGHT_FULL.BoundBox.XLength > C.V60_X_TARGET_MAX + 1e-6:
     failures.append(f'RIGHT exceeds 296 mm X target after shift: {RIGHT_FULL.BoundBox.XLength:.3f}')
@@ -168,14 +151,11 @@ stop_timer('box_front_position.hard_checks', _t, failures=len(failures))
 if failures:
     raise RuntimeError('V60 FRONT POSITION HARD CHECKS FAILED: ' + ' | '.join(failures))
 
-# Publish the corrected position into the already imported front module so all
-# downstream consumers, including the final assembly, use the same geometry.
 P.RIGHT_FULL = RIGHT_FULL
 P.LEFT_FULL = LEFT_FULL
 P.PLATE = PLATE
 P.SPINDLE_X = SPINDLE_X
 
-# Overwrite the clamp-plate export produced by the preceding front stage.
 _te = start_timer('box_front_position.export_shifted_clamp_plate')
 C.export_shape('eurobox_v60_clamp_plate', PLATE)
 stop_timer('box_front_position.export_shifted_clamp_plate', _te)
