@@ -94,17 +94,24 @@ F.write_thread_scad(
     FEMALE_ROOT_W,
     FEMALE_CREST_W,
 )
-female_full_z = F.import_scad_shape(female_scad).common(
-    Part.makeCylinder(FEMALE_MAJOR_R + 0.06, F.LEAD_THREAD_LEN)
-).removeSplitter()
+
+# import_scad_shape already returns and validates one bounded solid.  Do not
+# intersect it again with a nearly coincident cylinder: OCC can reduce that
+# mesh-derived BRep to a valid non-solid even though the imported thread itself
+# is fine.  Keep the full master untouched and use a simple planar box only for
+# the axial phase crop below.
+female_full_z = F.import_scad_shape(female_scad)
 C.require_single(female_full_z, 'full phase-matched cartridge female RH8x2 cutter')
 
-female_window = Part.makeCylinder(
-    FEMALE_MAJOR_R + 0.06,
+WINDOW_HALF = max(FEMALE_MAJOR_R, F.THREAD_MAJOR / 2.0) + 1.0
+phase_window = Part.makeBox(
+    2.0 * WINDOW_HALF,
+    2.0 * WINDOW_HALF,
     F.NUT_THREAD_LEN,
-    App.Vector(0.0, 0.0, FEMALE_PHASE_Z0),
+    App.Vector(-WINDOW_HALF, -WINDOW_HALF, FEMALE_PHASE_Z0),
 )
-female_z = female_full_z.common(female_window).removeSplitter()
+female_z = female_full_z.common(phase_window).removeSplitter()
+C.require_single(female_z, 'phase-windowed cartridge female RH8x2 cutter before rebase')
 female_z.translate(App.Vector(0.0, 0.0, -FEMALE_PHASE_Z0))
 C.require_single(female_z, 'phase-windowed cartridge female RH8x2 cutter')
 
@@ -112,12 +119,10 @@ C.require_single(female_z, 'phase-windowed cartridge female RH8x2 cutter')
 # deliberately stronger than waiting for the assembled cartridge collision
 # gate: at nominal phase every bit of male thread in the 14 mm engagement must
 # already be inside the female cutter before coordinate transforms are applied.
-male_window = Part.makeCylinder(
-    F.THREAD_MAJOR / 2.0 + 0.06,
-    F.NUT_THREAD_LEN,
-    App.Vector(0.0, 0.0, FEMALE_PHASE_Z0),
-)
-male_segment = F.MALE_Z.common(male_window).removeSplitter()
+# Re-use the rectangular phase window so this proof cannot fail merely because
+# two nearly coincident cylindrical faces confuse OCC's boolean classifier.
+male_segment = F.MALE_Z.common(phase_window).removeSplitter()
+C.require_single(male_segment, 'nominal male RH8x2 cartridge engagement segment before rebase')
 male_segment.translate(App.Vector(0.0, 0.0, -FEMALE_PHASE_Z0))
 C.require_single(male_segment, 'nominal male RH8x2 cartridge engagement segment')
 uncovered_male_volume = male_segment.cut(female_z).Volume
