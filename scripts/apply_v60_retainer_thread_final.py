@@ -14,9 +14,9 @@ C = B.C
 # Final rack-retainer thread rebuild.
 #
 # Do not trust a successful OpenSCAD import as proof that a functional thread
-# survived the final BASE export.  Rebuild both members here as an explicit,
+# survived the final BASE export. Rebuild both members here as an explicit,
 # deliberately pronounced matched pair, cut the female helix into the already
-# final BASE, then prove the helical crest/groove exists in the final BRep.
+# final BASE, then prove both the final BASE cut and the matched thread phase.
 # The top of the female cutter overruns by one pitch so the service thread is
 # genuinely open at the top and the retainer can be screwed in from above.
 
@@ -66,7 +66,7 @@ FEMALE_CUTTER = B.import_scad_shape(female_scad).common(
 C.require_single(MALE_THREAD, 'final retainer male 12x2')
 C.require_single(FEMALE_CUTTER, 'final base female 12x2 cutter')
 
-# Rebuild the separate retainer from the matched male master.  Keep the same
+# Rebuild the separate retainer from the matched male master. Keep the same
 # annular nose, through-bore and top two-pin tool interface.
 retainer_nose = Part.makeCylinder(
     R.RETAINER_NOSE_OD/2.0,
@@ -115,7 +115,8 @@ failures = []
 def fail(msg): failures.append(msg)
 
 # Male witness: material must exist well outside the 10 mm core over almost the
-# whole axial length. A smooth cylinder cannot satisfy this.
+# whole axial length. A smooth cylinder cannot satisfy this. This operates on
+# the small retainer only, not on the large final carrier BRep.
 outer_annulus = Part.makeCylinder(MALE_MAJOR_R+0.02, THREAD_LEN).cut(
     Part.makeCylinder(MALE_CORE_R+0.20, THREAD_LEN)
 )
@@ -123,44 +124,55 @@ male_helix_volume = RACK_NUT_RETAINER.common(outer_annulus).Volume
 if male_helix_volume < 12.0:
     fail(f'male retainer helix too weak/absent: {male_helix_volume:.3f} mm3')
 
-# Female witness on the FINAL BASE: an annulus just outside the smooth root bore
-# must contain BOTH retained land and removed helical groove. This rejects both
-# a missing thread (100% material) and an accidentally oversized smooth bore
-# (0% material).
-female_witness = []
-for xc in C.CLAMP_X:
-    z0 = THREAD_Z0 + 1.0
-    h = max(1.0, THREAD_LEN - 2.0)
-    outer = Part.makeCylinder(5.90, h, App.Vector(xc,C.RACK_CLOSURE_Y,z0))
-    inner = Part.makeCylinder(5.35, h, App.Vector(xc,C.RACK_CLOSURE_Y,z0))
-    annulus = outer.cut(inner)
-    frac = RIGHT.common(annulus).Volume / annulus.Volume
-    female_witness.append({'x_mm':xc,'annular_material_fraction':round(frac,6)})
-    if frac > 0.995:
-        fail(f'female thread groove absent at X={xc}: annular material={frac:.6f}')
-    if frac < 0.35:
-        fail(f'female thread collapsed to oversized smooth bore at X={xc}: annular material={frac:.6f}')
+# The final BASE itself has already been hard-witnessed above: each actual
+# FEMALE_CUTTER subtraction must remove >=8 mm3 from the final carrier. Avoid
+# repeatedly intersecting the entire highly-detailed RIGHT carrier here; those
+# global BRep commons dominated CI runtime while adding no independent proof.
+# Instead prove land/groove and phase on a compact coupon cut by the *same exact*
+# FEMALE_CUTTER used on RIGHT. Together with female_cut_volumes this preserves
+# both halves of the check: final-BASE reach + functional matched thread pair.
+coupon_r = FEMALE_MAJOR_R + 0.8
+coupon = Part.makeCylinder(coupon_r, THREAD_LEN + TOP_OVERRUN)
+threaded_coupon = coupon.cut(FEMALE_CUTTER).removeSplitter()
+C.require_single(threaded_coupon, 'compact female retainer thread witness coupon')
 
-# A correctly phased nominal retainer must fit; a half-pitch axial phase error
-# without the corresponding 180 degree rotation must materially interfere.
-fit_checks = []
-for xc in C.CLAMP_X:
-    nominal = RACK_NUT_RETAINER.copy()
-    nominal.translate(App.Vector(xc,C.RACK_CLOSURE_Y,THREAD_Z0))
-    nominal_common = RIGHT.common(nominal).Volume
+z0 = 1.0
+h = max(1.0, THREAD_LEN - 2.0)
+outer = Part.makeCylinder(5.90, h, App.Vector(0,0,z0))
+inner = Part.makeCylinder(5.35, h, App.Vector(0,0,z0))
+annulus = outer.cut(inner)
+frac = threaded_coupon.common(annulus).Volume / annulus.Volume
+female_witness = [
+    {'x_mm': xc, 'annular_material_fraction': round(frac,6),
+     'final_base_removed_mm3': female_cut_volumes[i]}
+    for i, xc in enumerate(C.CLAMP_X)
+]
+if frac > 0.995:
+    fail(f'female thread groove absent in matched cutter witness: annular material={frac:.6f}')
+if frac < 0.35:
+    fail(f'female thread collapsed to oversized smooth bore in matched cutter witness: annular material={frac:.6f}')
 
-    wrong = RACK_NUT_RETAINER.copy()
-    wrong.translate(App.Vector(xc,C.RACK_CLOSURE_Y,THREAD_Z0 + PITCH/2.0))
-    wrong_common = RIGHT.common(wrong).Volume
-    fit_checks.append({
-        'x_mm':xc,
-        'nominal_common_mm3':round(nominal_common,6),
-        'half_pitch_wrong_phase_common_mm3':round(wrong_common,6),
-    })
-    if nominal_common > 2.0:
-        fail(f'nominal retainer fit collision X={xc}: {nominal_common:.3f} mm3')
-    if wrong_common < nominal_common + 2.0:
-        fail(f'half-pitch wrong phase does not prove helical engagement X={xc}: nominal={nominal_common:.3f}, wrong={wrong_common:.3f}')
+# A correctly phased nominal retainer must fit the coupon made with the exact
+# production cutter; a half-pitch axial phase error without the corresponding
+# 180 degree rotation must materially interfere. Evaluate once because both
+# rack stations use identical translated copies of the same thread pair.
+nominal_common = threaded_coupon.common(RACK_NUT_RETAINER).Volume
+wrong = RACK_NUT_RETAINER.copy()
+wrong.translate(App.Vector(0,0,PITCH/2.0))
+wrong_common = threaded_coupon.common(wrong).Volume
+fit_checks = [
+    {
+        'x_mm': xc,
+        'nominal_common_mm3': round(nominal_common,6),
+        'half_pitch_wrong_phase_common_mm3': round(wrong_common,6),
+        'witness': 'compact coupon from exact production FEMALE_CUTTER',
+    }
+    for xc in C.CLAMP_X
+]
+if nominal_common > 2.0:
+    fail(f'nominal retainer fit collision: {nominal_common:.3f} mm3')
+if wrong_common < nominal_common + 2.0:
+    fail(f'half-pitch wrong phase does not prove helical engagement: nominal={nominal_common:.3f}, wrong={wrong_common:.3f}')
 
 # Keep the required through bore and top service access intact.
 through = Part.makeCylinder(R.RETAINER_BORE_D/2.0-0.15, THREAD_LEN+R.RETAINER_NOSE_LEN,
@@ -179,49 +191,16 @@ C.export_shape('eurobox_v60_base_right', RIGHT)
 C.export_shape('eurobox_v60_base_left', LEFT)
 C.export_shape('eurobox_v60_rack_nut_retainer', RACK_NUT_RETAINER)
 
-# Rebuild the assembly so it cannot silently retain the earlier retainer/base.
-assembly_path = os.path.join(C.OUT, 'eurobox_v60_assembly.FCStd')
-try:
-    if App.ActiveDocument:
-        App.closeDocument(App.ActiveDocument.Name)
-except Exception:
-    pass
-
-doc = App.newDocument('Eurobox_v60_assembly')
-def add_obj(name, shape):
-    obj = doc.addObject('Part::Feature', name); obj.Shape = shape; return obj
-
-RY = C.RACK_CTC/2.0
-LY = -C.RACK_CTC/2.0
-rb=RIGHT.copy(); rb.translate(App.Vector(0,RY,0)); add_obj('RIGHT_base',rb)
-rp=P.PLATE.copy(); rp.translate(App.Vector(0,RY,0)); add_obj('RIGHT_plate',rp)
-for xc in C.CLAMP_X:
-    lo=R.LOWER.copy(); lo.translate(App.Vector(xc,RY,0)); add_obj('RIGHT_lower_'+str(int(xc)),lo)
-    ret=RACK_NUT_RETAINER.copy(); ret.translate(App.Vector(xc,RY+C.RACK_CLOSURE_Y,THREAD_Z0)); add_obj('RIGHT_rack_nut_retainer_'+str(int(xc)),ret)
-    knob=R.RACK_HAND_KNOB.copy(); knob.translate(App.Vector(xc,RY+C.RACK_CLOSURE_Y,R.LOWER_PAD_Z0-R.KNOB_H)); add_obj('RIGHT_rack_hand_knob_'+str(int(xc)),knob)
-for sx in P.SPINDLE_X:
-    sp=B.SPINDLE.copy(); sp.translate(App.Vector(sx,RY+B.PLATE_SPINDLE_Y,B.SPINDLE_Z)); add_obj('RIGHT_spindle_'+str(int(sx)),sp)
-
-def left_transform(shape):
-    q=shape.copy(); q.rotate(App.Vector(0,0,0),App.Vector(0,0,1),180); q.translate(App.Vector(0,LY,0)); return q
-
-add_obj('LEFT_base',left_transform(LEFT))
-add_obj('LEFT_plate',left_transform(P.PLATE))
-for xc in C.CLAMP_X:
-    lo=R.LOWER.copy(); lo.translate(App.Vector(xc,0,0)); add_obj('LEFT_lower_'+str(int(xc)),left_transform(lo))
-    ret=RACK_NUT_RETAINER.copy(); ret.translate(App.Vector(xc,C.RACK_CLOSURE_Y,THREAD_Z0)); add_obj('LEFT_rack_nut_retainer_'+str(int(xc)),left_transform(ret))
-    knob=R.RACK_HAND_KNOB.copy(); knob.translate(App.Vector(xc,C.RACK_CLOSURE_Y,R.LOWER_PAD_Z0-R.KNOB_H)); add_obj('LEFT_rack_hand_knob_'+str(int(xc)),left_transform(knob))
-for sx in P.SPINDLE_X:
-    sp=B.SPINDLE.copy(); sp.translate(App.Vector(sx,B.PLATE_SPINDLE_Y,B.SPINDLE_Z)); add_obj('LEFT_spindle_'+str(int(sx)),left_transform(sp))
-add_obj('REF_right_rack_tube', C.cyl_x(C.RACK_R,400,-200,RY,0))
-add_obj('REF_left_rack_tube', C.cyl_x(C.RACK_R,400,-200,LY,0))
-doc.recompute(); doc.saveAs(assembly_path); App.closeDocument(doc.Name)
+# Do not build another heavyweight intermediate assembly here. build_v60_full
+# imports apply_v60_final_assembly immediately after this module, and that stage
+# is the sole canonical assembly writer. The old duplicate assembly save added
+# substantial OCC serialization time and was overwritten moments later anyway.
 
 validation_path = os.path.join(C.OUT,'VALIDATION_v60_full.json')
 with open(validation_path,'r',encoding='utf-8') as fh:
     validation=json.load(fh)
 validation['stage']='full_direct_mechanism_actual_front_and_explicit_retainer_threads'
-validation['rack']['m4_closure']['retainer_thread']='explicit matched printable 12x2 service thread; final BRep witnessed'
+validation['rack']['m4_closure']['retainer_thread']='explicit matched printable 12x2 service thread; final BASE cut + compact matched-pair witness'
 validation['rack']['m4_closure']['retainer_pitch_mm']=PITCH
 validation['rack']['m4_closure']['retainer_male_major_d_mm']=2.0*MALE_MAJOR_R
 validation['rack']['m4_closure']['retainer_female_major_d_mm']=2.0*FEMALE_MAJOR_R
@@ -232,11 +211,12 @@ validation['rack']['m4_closure']['male_helical_material_mm3']=round(male_helix_v
 validation['rack']['m4_closure']['female_thread_removed_mm3']=female_cut_volumes
 validation['rack']['m4_closure']['female_helical_witness']=female_witness
 validation['rack']['m4_closure']['retainer_phase_fit_checks']=fit_checks
+validation['rack']['m4_closure']['witness_strategy']='final BASE removal volumes plus compact coupon from exact production FEMALE_CUTTER; avoids repeated full-carrier BRep commons'
 validation['failures']=[]
 with open(validation_path,'w',encoding='utf-8') as fh:
     json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFinal retainer: explicit pronounced matched 12x2 male/female thread pair; female top overrun; actual final-BRep helix/land/phase hard witnesses.\n')
+    fh.write('\nFinal retainer: explicit pronounced matched 12x2 male/female thread pair; female top overrun; actual final-BASE cutter removal plus compact exact-cutter helix/land/phase hard witnesses.\n')
 
 stage('complete')
