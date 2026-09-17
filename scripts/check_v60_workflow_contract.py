@@ -11,7 +11,7 @@ with open('build_v60/VALIDATION_v60_full.json', encoding='utf-8') as fh:
 assert not core['failures'], core['failures']
 assert not full['failures'], full['failures']
 assert core['stage'] == 'clean_structural_core_continuous_carrier', core['stage']
-assert full['stage'] == 'full_direct_mechanism_clean_modular_front_and_explicit_retainer_threads', full['stage']
+assert full['stage'] == 'full_direct_mechanism_clean_modular_front_v6_all_threads_accessible', full['stage']
 assert core['datums']['clamp_spacing_mm'] == 160.0
 assert full['rack']['clamp_spacing_mm'] == 160.0
 assert full['base']['right_bbox_mm'][0] <= 296.0
@@ -24,10 +24,10 @@ assert full['handed_stl_export']['mirror_bounds_ok']
 assert full['handed_stl_export']['mirror_vertex_set_ok']
 
 # CLEAN MODULAR FRONT: fixed front is one closed v60-style structural carrier.
-# It has two smooth cassette bays only; all spindle/cartridge service geometry
-# belongs to the separately printable modules.
+# It has two cassette bays. All working RH8x2 wear threads remain separately
+# replaceable and every user-operated threaded interface has a real service path.
 front = full['box_clamp']
-assert front['architecture'] == 'closed_v60_front_carrier_with_two_replaceable_clamp_cassettes', front
+assert front['architecture'] == 'clean_modular_front_v6_full_handle_travel_and_all_RH8x2_service_access', front
 assert front['plate_width_mm'] == 160.0, front
 assert front['plate_main_x_mm'] == [-40.0, 120.0], front
 assert front['spindle_x_mm'] == [-48.0, 128.0], front
@@ -38,11 +38,18 @@ assert front['module_has_working_lead_thread'] is False, front
 assert front['module_count_per_base'] == 2, front
 assert front['module_attachment'] == 'top-drop cassette, two M3 screws into heat-set inserts per module', front
 assert front['lead_nut_mode'] == 'separate_RH8x2_cartridge_cross_pin_external_C_clip_inside_replaceable_module', front
+assert front['rear_drive_service_open'] is True, front
+assert front['lead_nut_tail_to_hex_preload_clearance_mm'] >= 0.5, front
+assert front['knob_retainer_thread']['open_ended'] is True, front
+assert front['knob_retainer_thread']['core_blockage_mm3'] <= 0.0001, front
+assert front['knob_retainer_thread']['stud_engagement_mm'] >= 4.0, front
 assert front['final_assembly_replaceable_module_count'] == 4, front
 assert front['final_assembly_contains_separate_lead_nut_hardware'] is True, front
 assert front['final_assembly_lead_nut_cartridge_count'] == 4, front
 assert front['final_assembly_lead_nut_pin_count'] == 4, front
 assert front['final_assembly_lead_nut_clip_count'] == 4, front
+assert front['final_assembly_box_clamp_knob_count'] == 4, front
+assert front['final_assembly_knob_retainer_count'] == 4, front
 assert front['final_assembly_installed_spindle_x_mm'] == [-48.0, 128.0], front
 
 mods = front['module_checks']
@@ -55,7 +62,7 @@ assert all(q['nut_module_common_mm3'] <= 0.0001 for q in cartridges), cartridges
 assert all(q['pin_module_common_mm3'] <= 0.0001 for q in cartridges), cartridges
 assert all(q['clip_module_common_mm3'] <= 0.0001 for q in cartridges), cartridges
 
-# v50 service principle remains nested inside each replaceable cassette.  Once
+# v50 service principle remains nested inside each replaceable cassette. Once
 # spindle, C-clip and cross-pin are removed, the RH8x2 wear cartridge must slide
 # out through the module's +Y service mouth without touching the module housing.
 extract = front['cartridge_extraction_plus_y']
@@ -70,6 +77,16 @@ assert any(q['travel_mm'] == -0.5 for q in front['plate_motion']), front['plate_
 assert any(q['travel_mm'] == 5.5 for q in front['plate_motion']), front['plate_motion']
 assert any(q['travel_mm'] == -0.5 for q in front['thread_motion']), front['thread_motion']
 assert any(q['travel_mm'] == 5.5 for q in front['thread_motion']), front['thread_motion']
+
+# Ø30 hand knob + its open-ended RH8x2 retainer must be exposed over every
+# tested clamp position, through both fixed carrier and replaceable cassette.
+handle = front['handle_wall_access_checks']
+assert len(handle) == 16, handle
+assert {q['travel_mm'] for q in handle} == {-0.5, 0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.5}, handle
+assert all(q['knob_base_common_mm3'] <= 0.0001 for q in handle), handle
+assert all(q['knob_module_common_mm3'] <= 0.0001 for q in handle), handle
+assert all(q['cap_nut_base_common_mm3'] <= 0.0001 for q in handle), handle
+assert all(q['cap_nut_module_common_mm3'] <= 0.0001 for q in handle), handle
 
 closure = full['rack']['m4_closure']
 assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
@@ -95,6 +112,17 @@ assert all(
     q['half_pitch_wrong_phase_common_mm3'] >= q['nominal_common_mm3'] + 2.0
     for q in pf
 ), pf
+
+# Consolidated final thread audit: all printed working threads plus the metal M4
+# service path must be physically accessible in the final geometry.
+audit = full['thread_access_audit']
+assert audit['all_printed_threads_checked'] is True, audit
+assert audit['no_thread_behind_closed_wall'] is True, audit
+assert len(audit['printed_thread_interfaces']) == 3, audit
+assert audit['rack_retainer_top_recess_mm'] <= 0.35, audit
+rm = audit['rack_retainer_unscrew_motion']
+assert len(rm) == 10, rm
+assert all(q['base_common_mm3'] <= 2.0 for q in rm), rm
 
 cc = core['geometry']['continuous_carrier']
 assert cc['material_fraction'] >= 0.995, cc
