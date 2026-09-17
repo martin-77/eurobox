@@ -2,6 +2,7 @@
 
 import json
 
+# CI trigger marker: serviceable v50-style cartridge/access architecture audit.
 
 with open('build_v60/VALIDATION_v60.json', encoding='utf-8') as fh:
     core = json.load(fh)
