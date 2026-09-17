@@ -6,41 +6,63 @@ import FreeCAD as App
 import Part
 
 import build_v60_full_baseline as F
+from v60_timing import start_timer, stop_timer
 
 C = F.C
 
 # ---------------------------------------------------------------------------
 # Final v60 box-clamp front
 # ---------------------------------------------------------------------------
-# v50's final mechanism is the authority for the clamp FUNCTION:
-#   * the moving plate is driven by two RH8x2 spindles;
-#   * the BASE itself has NO working lead thread;
-#   * each spindle runs in a separate removable threaded lead-nut cartridge;
-#   * the cartridge is positively retained by a cross-pin + external C-clip.
+# v50's final mechanism remains the authority for clamp FUNCTION:
+#   * two RH8x2 spindles drive the moving plate;
+#   * the BASE has no working lead thread;
+#   * each spindle runs in a removable threaded lead-nut cartridge;
+#   * the cartridge is retained by cross-pin + external C-clip.
 #
-# v60 keeps the requested 160 mm plate and +/-65 mm spindle axes, but restores
-# that v50 architecture.  The previous v60 front also filled every free X-field
-# with triangular/V-shaped DROPs.  Those are intentionally gone.  The front is
-# supported by two v50-style outer Y/Z DROPs located outside the moving plate's
-# X envelope, plus the rectangular screw-cartridge housings.
+# Front topology is now different from the previous v60 restoration.  The
+# requested 160 mm clamp face remains in the middle, while the screw/cartridge
+# blocks sit OUTSIDE that face and merge directly into the broad orange-style
+# Y/Z load-path DROPs.  Narrow moving ears connect the 160 mm plate to the two
+# outboard spindle axes.  There is no longer a stack of "plate -> guide -> boss
+# -> separate drop" across X.
 
 PLATE_X = 160.0
-SPINDLE_X = (-65.0, 65.0)
+PLATE_MAIN_HALF_X = PLATE_X / 2.0
+SPINDLE_X = (-88.0, 88.0)
 SPINDLE_SPACING = SPINDLE_X[1] - SPINDLE_X[0]
-PLATE_EDGE_MARGIN = PLATE_X / 2.0 - abs(SPINDLE_X[1])
-PLATE_SWEEP_HALF_X = PLATE_X / 2.0 + 0.40
-GUIDE_W = 7.60
-FRAME_X0 = -PLATE_SWEEP_HALF_X - GUIDE_W
-FRAME_X1 = PLATE_SWEEP_HALF_X + GUIDE_W
+SPINDLE_OUTBOARD_OF_MAIN_FACE = abs(SPINDLE_X[1]) - PLATE_MAIN_HALF_X
+
+# Main moving face clearance remains 0.4 mm.  Each drive ear overlaps the main
+# plate by 2 mm, spans 20 mm in X and stays narrow in Z around the spindle.  The
+# ear outer edge (98 mm) remains just inside the fixed boss/drop envelope (~99).
+PLATE_SWEEP_HALF_X = PLATE_MAIN_HALF_X + 0.40
+PLATE_EAR_HALF_X = 10.0
+PLATE_EAR_INNER_X = abs(SPINDLE_X[1]) - PLATE_EAR_HALF_X
+PLATE_EAR_OUTER_X = abs(SPINDLE_X[1]) + PLATE_EAR_HALF_X
+PLATE_EAR_Z0 = F.SPINDLE_Z - 7.5
+PLATE_EAR_Z1 = F.SPINDLE_Z + 7.5
+PLATE_EAR_CLEAR = 0.40
+
+BOSS_HALF_X = 11.0
+BOSS_LOWER_HALF_X = 11.35
+BOSS_OUTER_X = abs(SPINDLE_X[1]) + BOSS_HALF_X
+FRAME_X0 = -BOSS_OUTER_X
+FRAME_X1 = BOSS_OUTER_X
 FRAME_W = FRAME_X1 - FRAME_X0
 DECK_X0 = -PLATE_SWEEP_HALF_X
 DECK_X1 = PLATE_SWEEP_HALF_X
 
-BOSS_HALF_X = 11.0
-BOSS_LOWER_HALF_X = 11.35
+# Only a lower lateral guide remains beside the 160 mm main plate.  The drive
+# ear passes above it, while the guide root merges into the outboard boss.  The
+# two lead screws provide the remaining plate retention.
+GUIDE_INNER_X = PLATE_SWEEP_HALF_X
+GUIDE_OUTER_X = abs(SPINDLE_X[1]) - 1.20
+GUIDE_W = GUIDE_OUTER_X - GUIDE_INNER_X
+GUIDE_Z0 = F.PRINT_GUIDE_Z0
+GUIDE_Z1 = PLATE_EAR_Z0 - PLATE_EAR_CLEAR
 
-# v50-style outer supports.  Keep them outside the 160 mm moving plate in X,
-# but do NOT resurrect the obsolete outboard-in-Y cage that exceeded 600 mm.
+# Broad v50-style outer supports.  They overlap the low central deck slightly
+# and now also overlap the outboard cartridge bosses, forming one load path.
 OUTER_DROP_OVERLAP_X = 0.80
 OUTER_DROP_X_LIMIT = abs(C.FRONT_CLAMP_X - C.FIXED_STATION_HALF_X) - 0.50
 LEFT_DROP_X0 = -OUTER_DROP_X_LIMIT
@@ -58,11 +80,8 @@ DROP_RISE = DROP_TOP_Z - DROP_LOW_Z1
 DROP_RUN = DROP_SLOPE_Y1 - DROP_TOP_Y1
 DROP_FLANK_ANGLE = math.degrees(math.atan2(DROP_RISE, DROP_RUN))
 
-# Separate lead-nut cartridge, copied from the final v50 architecture and
-# re-oriented for the already-inboard v60 spindle direction.  v50's lower tail
-# cleared an 8x8 drive by 0.5 mm.  v60 uses the larger 10 AF hex drive, whose
-# vertex reaches 5.7735 mm below the spindle axis.  Lower the tail/pin together
-# so the retainer has >0.7 mm real clearance to that drive at nominal phase.
+# Separate lead-nut cartridge.  v60's 10 AF hex drive reaches farther below the
+# axis than v50's 8x8 drive, therefore tail and pin remain lowered together.
 LEAD_NUT_BODY_HALF_X = 8.0
 LEAD_NUT_BODY_HALF_Z = 7.0
 LEAD_NUT_TAIL_L = 5.5
@@ -93,14 +112,12 @@ def stage(msg):
 
 
 def lead_rotation_deg(travel):
-    # The production spindle master is already rotated 180 degrees about Z.
-    # In that final installed coordinate system, opening in -Y follows the
-    # RH8x2 helix with positive rotation about global +Y.  This is also the
-    # direction proven by the baseline thread-motion gate.
+    # Production spindle master is rotated 180 degrees about Z.  In final
+    # coordinates opening in -Y follows +360 deg per +2 mm travel.
     return 360.0 * travel / F.THREAD_PITCH
 
 
-def wider_plate_sweep():
+def main_plate_sweep():
     return C.box(
         -PLATE_SWEEP_HALF_X,
         C.PLATE_SWEEP_Y0,
@@ -111,9 +128,26 @@ def wider_plate_sweep():
     )
 
 
+def ear_sweep(sx):
+    return C.box(
+        sx - PLATE_EAR_HALF_X - PLATE_EAR_CLEAR,
+        C.PLATE_SWEEP_Y0,
+        PLATE_EAR_Z0 - PLATE_EAR_CLEAR,
+        2.0 * (PLATE_EAR_HALF_X + PLATE_EAR_CLEAR),
+        C.PLATE_SWEEP_Y1 - C.PLATE_SWEEP_Y0,
+        (PLATE_EAR_Z1 - PLATE_EAR_Z0) + 2.0 * PLATE_EAR_CLEAR,
+    )
+
+
+def clear_moving_plate_corridor(shape):
+    q = shape.cut(main_plate_sweep()).removeSplitter()
+    for sx in SPINDLE_X:
+        q = q.cut(ear_sweep(sx)).removeSplitter()
+    return q
+
+
 def make_outer_drop(x0, x1, label):
-    # This is the v50 printability concept: a broad outer connector descends in
-    # Y/Z with one support-free flank.  It is not a row of X/Z triangles.
+    # Broad Y/Z connector with one support-free sloping flank.
     pts = [
         App.Vector(x0, DROP_TOP_Y0, DROP_TOP_Z),
         App.Vector(x0, DROP_TOP_Y1, DROP_TOP_Z),
@@ -183,69 +217,76 @@ def build_nut_pin():
     return q
 
 
-stage('rebuild clean 160mm front from structural core')
-CORE = C.RIGHT.cut(wider_plate_sweep()).removeSplitter()
-C.require_single(CORE, 'RIGHT core with 160mm moving-plate corridor')
+stage('rebuild 160mm main front with outboard cartridge load paths')
+_t = start_timer('box_front.rebuild_core_and_integrated_outboard_cage')
+CORE = clear_moving_plate_corridor(C.RIGHT)
+C.require_single(CORE, 'RIGHT core with 160mm face + outboard drive-ear corridor')
 
-LEFT_OUTER_DROP = make_outer_drop(LEFT_DROP_X0, LEFT_DROP_X1, 'left outer v50-style DROP')
-RIGHT_OUTER_DROP = make_outer_drop(RIGHT_DROP_X0, RIGHT_DROP_X1, 'right outer v50-style DROP')
+LEFT_OUTER_DROP = make_outer_drop(LEFT_DROP_X0, LEFT_DROP_X1, 'left integrated outer DROP')
+RIGHT_OUTER_DROP = make_outer_drop(RIGHT_DROP_X0, RIGHT_DROP_X1, 'right integrated outer DROP')
+
+# Lower side guides only.  Their roots overlap the fixed outboard boss; above
+# them the moving ear has a clear path.
+LEFT_GUIDE = C.box(
+    -GUIDE_OUTER_X,
+    F.PRINT_GUIDE_Y0,
+    GUIDE_Z0,
+    GUIDE_W,
+    F.PRINT_GUIDE_Y1 - F.PRINT_GUIDE_Y0,
+    GUIDE_Z1 - GUIDE_Z0,
+)
+RIGHT_GUIDE = C.box(
+    GUIDE_INNER_X,
+    F.PRINT_GUIDE_Y0,
+    GUIDE_Z0,
+    GUIDE_W,
+    F.PRINT_GUIDE_Y1 - F.PRINT_GUIDE_Y0,
+    GUIDE_Z1 - GUIDE_Z0,
+)
 
 parts = [
-    C.box(FRAME_X0, F.PRINT_GUIDE_Y0, F.PRINT_GUIDE_Z0,
-          GUIDE_W, F.PRINT_GUIDE_Y1 - F.PRINT_GUIDE_Y0,
-          F.PRINT_BASE_PLANE_Z - F.PRINT_GUIDE_Z0),
-    C.box(PLATE_SWEEP_HALF_X, F.PRINT_GUIDE_Y0, F.PRINT_GUIDE_Z0,
-          GUIDE_W, F.PRINT_GUIDE_Y1 - F.PRINT_GUIDE_Y0,
-          F.PRINT_BASE_PLANE_Z - F.PRINT_GUIDE_Z0),
+    # One bed-side tie joins both outboard cartridge towers.
     C.box(FRAME_X0, F.CAGE_Y0 - 0.10,
           F.PRINT_BASE_PLANE_Z - F.PRINT_FRAME_TIE_T,
           FRAME_W, F.CAGE_Y1 - F.CAGE_Y0 + 0.20, F.PRINT_FRAME_TIE_T),
+    # Central low deck overlaps each broad outer drop.
     C.box(DECK_X0, F.CAGE_Y0, F.FINAL_DECK_Z0,
           DECK_X1 - DECK_X0, F.PRINT_GUIDE_Y1 - F.CAGE_Y0,
           F.FINAL_DECK_Z1 - F.FINAL_DECK_Z0),
-    C.box(FRAME_X0, F.CAGE_Y0 - 0.10, F.PRINT_GUIDE_Z0,
-          GUIDE_W, F.PRINT_GUIDE_Y0 - (F.CAGE_Y0 - 0.10) + 0.35,
-          F.PRINT_BASE_PLANE_Z - F.PRINT_GUIDE_Z0),
-    C.box(PLATE_SWEEP_HALF_X, F.CAGE_Y0 - 0.10, F.PRINT_GUIDE_Z0,
-          GUIDE_W, F.PRINT_GUIDE_Y0 - (F.CAGE_Y0 - 0.10) + 0.35,
-          F.PRINT_BASE_PLANE_Z - F.PRINT_GUIDE_Z0),
-    C.box(-PLATE_SWEEP_HALF_X - F.GUIDE_STITCH_OVERLAP,
-          F.CAGE_Y0, F.FINAL_DECK_Z1 - F.GUIDE_STITCH_OVERLAP,
-          2.0 * F.GUIDE_STITCH_OVERLAP,
-          F.PRINT_GUIDE_Y1 - F.CAGE_Y0,
-          2.0 * F.GUIDE_STITCH_OVERLAP),
-    C.box(PLATE_SWEEP_HALF_X - F.GUIDE_STITCH_OVERLAP,
-          F.CAGE_Y0, F.FINAL_DECK_Z1 - F.GUIDE_STITCH_OVERLAP,
-          2.0 * F.GUIDE_STITCH_OVERLAP,
-          F.PRINT_GUIDE_Y1 - F.CAGE_Y0,
-          2.0 * F.GUIDE_STITCH_OVERLAP),
+    LEFT_GUIDE,
+    RIGHT_GUIDE,
     LEFT_OUTER_DROP,
     RIGHT_OUTER_DROP,
 ]
 
+BOSS_SHAPES = {}
 for sx in SPINDLE_X:
-    parts.append(C.box(
+    upper_boss = C.box(
         sx - BOSS_HALF_X,
         F.CAGE_Y0,
         F.PRINT_FRAME_BOSS_Z0,
         2.0 * BOSS_HALF_X,
         F.CAGE_Y1 - F.CAGE_Y0,
         F.PRINT_BASE_PLANE_Z - F.PRINT_FRAME_BOSS_Z0,
-    ))
-    parts.append(C.box(
+    )
+    lower_boss = C.box(
         sx - BOSS_LOWER_HALF_X,
         F.CAGE_Y0,
         F.FINAL_DECK_Z1 - 0.35,
         2.0 * BOSS_LOWER_HALF_X,
         F.CAGE_Y1 - F.CAGE_Y0,
         F.PRINT_FRAME_BOSS_Z0 - (F.FINAL_DECK_Z1 - 0.35) + 0.35,
-    ))
+    )
+    BOSS_SHAPES[sx] = (upper_boss, lower_boss)
+    parts.extend((upper_boss, lower_boss))
 
 CAGE = C.fuse_seq(parts, 'v60-v50-style-separate-nut-box-clamp-cage')
 RIGHT_FULL = CORE.fuse(CAGE).removeSplitter()
-C.require_single(RIGHT_FULL, 'RIGHT front before cartridge pockets')
+C.require_single(RIGHT_FULL, 'RIGHT front before outboard cartridge pockets')
+stop_timer('box_front.rebuild_core_and_integrated_outboard_cage', _t)
 
-stage('machine smooth cartridge pockets and service access')
+stage('machine smooth outboard cartridge pockets and service access')
+_t = start_timer('box_front.machine_outboard_cartridge_pockets')
 LEAD_NUT = build_lead_nut()
 NUT_PIN = build_nut_pin()
 NUT_PIN_CLIP = F.make_c_clip(
@@ -292,16 +333,18 @@ for sx in SPINDLE_X:
                    pin_bore, head_service, clip_service):
         RIGHT_FULL = RIGHT_FULL.cut(cutter).removeSplitter()
 
-C.require_single(RIGHT_FULL, 'RIGHT final v50-style separate-nut front')
+C.require_single(RIGHT_FULL, 'RIGHT final outboard separate-nut front')
 LEFT_FULL = C.mirror_x(RIGHT_FULL)
-C.require_single(LEFT_FULL, 'LEFT final v50-style separate-nut front')
+C.require_single(LEFT_FULL, 'LEFT final outboard separate-nut front')
+stop_timer('box_front.machine_outboard_cartridge_pockets', _t)
 
-stage('build 160mm moving clamp plate')
+stage('build 160mm moving clamp face with narrow outboard drive ears')
+_t = start_timer('box_front.build_moving_plate_and_drive_ears')
 PLATE_BODY_Y0 = C.BOX_RIM_INNER_Y - F.PLATE_Y
 PLATE_HOOK_Y0 = C.BOX_RIM_INNER_Y - F.WIDTH_RIM_CLEAR
 PLATE_HOOK_Y1 = C.BOX_RIM_INNER_Y + F.UNDERHOOK
 PLATE = C.box(
-    -PLATE_X / 2.0,
+    -PLATE_MAIN_HALF_X,
     PLATE_BODY_Y0,
     F.PLATE_Z0,
     PLATE_X,
@@ -309,13 +352,23 @@ PLATE = C.box(
     F.PLATE_Z1 - F.PLATE_Z0,
 )
 PLATE = PLATE.fuse(C.box(
-    -PLATE_X / 2.0,
+    -PLATE_MAIN_HALF_X,
     PLATE_HOOK_Y0,
     F.RIM_BOTTOM_Z - F.UNDERHOOK_T,
     PLATE_X,
     PLATE_HOOK_Y1 - PLATE_HOOK_Y0,
     F.UNDERHOOK_T,
 ))
+for sx in SPINDLE_X:
+    PLATE = PLATE.fuse(C.box(
+        sx - PLATE_EAR_HALF_X,
+        PLATE_BODY_Y0,
+        PLATE_EAR_Z0,
+        2.0 * PLATE_EAR_HALF_X,
+        F.PLATE_Y,
+        PLATE_EAR_Z1 - PLATE_EAR_Z0,
+    )).removeSplitter()
+
 for sx in SPINDLE_X:
     PLATE = PLATE.cut(F.cyl_y(
         F.PLATE_HOLE_D / 2.0,
@@ -332,9 +385,11 @@ for sx in SPINDLE_X:
         F.SPINDLE_Z,
     ))
 PLATE = PLATE.removeSplitter()
-C.require_single(PLATE, '160mm moving box-clamp plate')
+C.require_single(PLATE, '160mm moving box-clamp face with outboard drive ears')
+stop_timer('box_front.build_moving_plate_and_drive_ears', _t)
 
 stage('hard-check mechanical function')
+_t_hard = start_timer('box_front.hard_checks_total')
 failures = []
 
 
@@ -342,37 +397,51 @@ def fail(msg):
     failures.append(msg)
 
 
-if tuple(SPINDLE_X) != (-65.0, 65.0):
-    fail('final screw axes are not +/-65 mm')
+if tuple(SPINDLE_X) != (-88.0, 88.0):
+    fail('final screw axes are not the constrained outboard +/-88 mm positions')
 if abs(PLATE_X - 160.0) > 1e-9:
-    fail('final clamp plate is not 160 mm wide')
-if abs(PLATE_EDGE_MARGIN - 15.0) > 1e-9:
-    fail('final spindle edge margin is not 15 mm')
+    fail('final main clamp face is not 160 mm wide')
+if abs(SPINDLE_OUTBOARD_OF_MAIN_FACE - 8.0) > 1e-9:
+    fail('spindle axes are not 8 mm outside the 160 mm main clamp face')
+if PLATE_EAR_INNER_X >= PLATE_MAIN_HALF_X:
+    fail('moving drive ears do not overlap/fuse to the 160 mm main clamp face')
+if PLATE_EAR_OUTER_X >= BOSS_OUTER_X:
+    fail('moving drive ears are not inside the fixed outboard boss envelope')
+if GUIDE_W <= 1.0 or GUIDE_Z1 <= GUIDE_Z0:
+    fail('lower lateral guide geometry collapsed')
 if DROP_FLANK_ANGLE < 45.0:
     fail(f'outer support DROP is not support-free: {DROP_FLANK_ANGLE:.3f} deg')
 
+_t = start_timer('box_front.check_integrated_drop_and_boss_load_paths')
 outer_drop_checks = []
-for side, drop, x0, x1 in (
-    ('left', LEFT_OUTER_DROP, LEFT_DROP_X0, LEFT_DROP_X1),
-    ('right', RIGHT_OUTER_DROP, RIGHT_DROP_X0, RIGHT_DROP_X1),
+for side, drop, x0, x1, sx in (
+    ('left', LEFT_OUTER_DROP, LEFT_DROP_X0, LEFT_DROP_X1, SPINDLE_X[0]),
+    ('right', RIGHT_OUTER_DROP, RIGHT_DROP_X0, RIGHT_DROP_X1, SPINDLE_X[1]),
 ):
     frac = RIGHT_FULL.common(drop).Volume / drop.Volume
-    outside_plate = (x1 <= -PLATE_X / 2.0 + OUTER_DROP_OVERLAP_X + 1e-6
-                     if side == 'left'
-                     else x0 >= PLATE_X / 2.0 - OUTER_DROP_OVERLAP_X - 1e-6)
+    outside_main_face = (x1 <= -PLATE_MAIN_HALF_X + OUTER_DROP_OVERLAP_X + 1e-6
+                         if side == 'left'
+                         else x0 >= PLATE_MAIN_HALF_X - OUTER_DROP_OVERLAP_X - 1e-6)
+    upper_boss, lower_boss = BOSS_SHAPES[sx]
+    boss_drop_common = upper_boss.common(drop).Volume + lower_boss.common(drop).Volume
     outer_drop_checks.append({
         'side': side,
         'x_mm': [round(x0, 3), round(x1, 3)],
-        'outside_plate_x': bool(outside_plate),
+        'outside_main_plate_x': bool(outside_main_face),
+        'integrated_with_cartridge_boss_common_mm3': round(boss_drop_common, 6),
         'y_mm': [round(DROP_TOP_Y0, 3), round(DROP_LOW_Y1, 3)],
         'flank_angle_from_horizontal_deg': round(DROP_FLANK_ANGLE, 3),
         'material_fraction': round(frac, 6),
     })
-    if not outside_plate:
-        fail(f'{side} outer DROP moved into moving plate X envelope')
+    if not outside_main_face:
+        fail(f'{side} outer DROP moved into 160 mm main clamp-face envelope')
     if frac < 0.995:
         fail(f'{side} outer DROP not materially fused: {frac:.6f}')
+    if boss_drop_common < 20.0:
+        fail(f'{side} cartridge boss is not integrated into outer DROP: {boss_drop_common:.3f} mm3')
+stop_timer('box_front.check_integrated_drop_and_boss_load_paths', _t)
 
+_t = start_timer('box_front.check_plate_motion')
 rim = C.box(-220.0, C.BOX_RIM_INNER_Y, F.RIM_BOTTOM_Z, 440.0, C.RIM_Y, C.RIM_H)
 plate_motion = []
 for travel in (-0.5, 0.0, 1.0, 2.0, 3.0, 4.0, 4.5, 5.0, 5.5):
@@ -391,7 +460,9 @@ for travel in (-0.5, 0.0, 1.0, 2.0, 3.0, 4.0, 4.5, 5.0, 5.5):
         fail(f'plate/rim collision at open travel={travel}: {rim_common:.6f}')
     if travel < 0.0 and rim_common < 1.0:
         fail('0.5mm preload does not reach the box rim')
+stop_timer('box_front.check_plate_motion', _t)
 
+_t = start_timer('box_front.check_cartridge_fit_and_base_thread_void')
 base_thread_void = []
 for sx in SPINDLE_X:
     probe = F.cyl_y(
@@ -443,7 +514,9 @@ for sx in SPINDLE_X:
         fail(f'lead-nut retaining clip collides X={sx}')
     if not (0.04 <= clip_pin_distance <= 0.18):
         fail(f'lead-nut clip/groove radial clearance implausible X={sx}: {clip_pin_distance:.6f}')
+stop_timer('box_front.check_cartridge_fit_and_base_thread_void', _t)
 
+_t = start_timer('box_front.check_RH8x2_motion_and_phase')
 thread_motion = []
 for sx in SPINDLE_X:
     nut = LEAD_NUT.copy()
@@ -483,7 +556,9 @@ if axial_wrong_common < correct_half + 0.50:
     fail(f'lead-nut cartridge does not reject axial slide without rotation: {axial_wrong_common:.6f}')
 if wrong_phase_common < correct_half + 0.50:
     fail(f'lead-nut cartridge lacks phase-sensitive RH8x2 engagement: {wrong_phase_common:.6f}')
+stop_timer('box_front.check_RH8x2_motion_and_phase', _t)
 
+_t = start_timer('box_front.check_mirror_width_and_machine_envelope')
 left_back = C.mirror_x(LEFT_FULL)
 mirror_delta = abs(RIGHT_FULL.Volume - left_back.Volume)
 if mirror_delta > 1e-4:
@@ -513,7 +588,9 @@ for side, shape in (('RIGHT', RIGHT_FULL), ('LEFT', LEFT_FULL)):
         fail(f'{side} exceeds 296 mm X target: {shape.BoundBox.XLength:.3f}')
     if shape.BoundBox.YLength > C.INDX_Y_MAX + 1e-6:
         fail(f'{side} exceeds 275 mm Y target: {shape.BoundBox.YLength:.3f}')
+stop_timer('box_front.check_mirror_width_and_machine_envelope', _t)
 
+stop_timer('box_front.hard_checks_total', _t_hard, failures=len(failures))
 if failures:
     raise RuntimeError('V60 FINAL BOX CLAMP HARD CHECKS FAILED: ' + ' | '.join(failures))
 
@@ -530,12 +607,14 @@ for name, shape in (
     ('eurobox_v60_lead_nut_pin_clip', NUT_PIN_CLIP),
 ):
     C.require_single(shape, name)
+    _te = start_timer('box_front.export.' + name)
     C.export_shape(name, shape)
+    stop_timer('box_front.export.' + name, _te)
 
 validation_path = os.path.join(C.OUT, 'VALIDATION_v60_full.json')
 with open(validation_path, 'r', encoding='utf-8') as fh:
     validation = json.load(fh)
-validation['stage'] = 'full_direct_mechanism_v50_separate_lead_nut_outer_drops'
+validation['stage'] = 'full_direct_mechanism_outboard_drive_ears_integrated_outer_drops'
 validation['base']['right_bbox_mm'] = [
     round(RIGHT_FULL.BoundBox.XLength, 3),
     round(RIGHT_FULL.BoundBox.YLength, 3),
@@ -548,19 +627,24 @@ validation['base']['left_bbox_mm'] = [
 ]
 validation['base']['mirror_delta_mm3'] = round(mirror_delta, 9)
 validation['box_clamp'] = {
-    'architecture': 'v50 separate RH8x2 lead-nut cartridge; smooth BASE; outer Y/Z support DROPs',
+    'architecture': '160mm main clamp face; outboard RH8x2 cartridge bosses integrated into broad Y/Z DROPs; narrow moving drive ears',
     'plate_width_mm': PLATE_X,
+    'plate_total_outer_x_mm': PLATE_EAR_OUTER_X,
+    'plate_drive_ear_x_mm': [PLATE_EAR_INNER_X, PLATE_EAR_OUTER_X],
+    'plate_drive_ear_z_mm': [PLATE_EAR_Z0, PLATE_EAR_Z1],
     'plate_travel_mm': F.PLATE_OPEN,
     'plate_preload_mm': 0.5,
     'spindle_x_mm': list(SPINDLE_X),
     'spindle_spacing_mm': SPINDLE_SPACING,
     'spindle_z_mm': F.SPINDLE_Z,
-    'plate_screw_edge_margin_mm': PLATE_EDGE_MARGIN,
+    'spindle_outboard_of_main_face_mm': SPINDLE_OUTBOARD_OF_MAIN_FACE,
+    'fixed_cartridge_boss_outer_x_mm': BOSS_OUTER_X,
+    'guide_architecture': 'lower lateral rails only; drive ears pass above; bosses merge into outer DROPs',
     'lead_nut_mode': 'separate_RH8x2_cartridge_cross_pin_external_C_clip',
     'integral_female_threads': False,
     'base_has_working_lead_thread': False,
     'triangular_front_drops': False,
-    'outer_guide_blocks_outside_plate_x': True,
+    'cartridge_bosses_outside_main_plate_x': True,
     'outer_support_drops': outer_drop_checks,
     'base_thread_void_checks': base_thread_void,
     'cartridge_checks': cartridge_checks,
@@ -577,8 +661,9 @@ with open(validation_path, 'w', encoding='utf-8') as fh:
 
 with open(os.path.join(C.OUT, 'README_BUILD_v60_full.txt'), 'a', encoding='utf-8') as fh:
     fh.write(
-        '\nFinal box clamp: v50 separate RH8x2 lead-nut cartridge with cross-pin/C-clip; '
-        'smooth BASE; 160 mm plate at +/-65 mm; two outer Y/Z DROPs and no triangular front teeth.\n'
+        '\nFinal box clamp: 160 mm main clamp face with narrow outboard drive ears; '
+        'RH8x2 axes at +/-88 mm; separate lead-nut cartridges; fixed cartridge '
+        'bosses integrated directly into the two broad outer Y/Z DROPs.\n'
     )
 
 stage('complete')
