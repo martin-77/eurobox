@@ -4,7 +4,7 @@ import os
 import FreeCAD as App
 import MeshPart
 
-import apply_v60_front_rebuild as P
+import apply_v60_front_rebuild_v2 as P
 import apply_v60_rack_closure as R
 import apply_v60_retainer_thread_final as T
 import build_v60 as C
