@@ -23,12 +23,16 @@ assert full['handed_stl_export']['mirror_geometry_ok']
 assert full['handed_stl_export']['mirror_bounds_ok']
 assert full['handed_stl_export']['mirror_vertex_set_ok']
 
-# BOX CLAMP: 160 mm main clamp face, but the drive hardware itself is outside
-# that face. Narrow moving ears pick up the +/-88 mm spindle axes while the
-# fixed cartridge bosses merge directly into the broad outer Y/Z DROPs.
+# BOX CLAMP: the complete front topology is translated +40 mm in X from the
+# mechanically validated outboard-clamp geometry.  The 160 mm main face moves
+# from -80..+80 to -40..+120 and the +/-88 mm spindle pair therefore becomes
+# -48..+128.  Relative geometry (176 mm spacing, 8 mm outboard offset, ears,
+# bosses, drops and RH8x2 cartridge mechanics) remains unchanged.
 front = full['box_clamp']
 assert front['plate_width_mm'] == 160.0, front
-assert front['spindle_x_mm'] == [-88.0, 88.0], front
+assert front['front_x_offset_mm'] == 40.0, front
+assert front['main_face_x_mm'] == [-40.0, 120.0], front
+assert front['spindle_x_mm'] == [-48.0, 128.0], front
 assert front['spindle_spacing_mm'] == 176.0, front
 assert front['spindle_outboard_of_main_face_mm'] == 8.0, front
 assert front['plate_total_outer_x_mm'] == 98.0, front
