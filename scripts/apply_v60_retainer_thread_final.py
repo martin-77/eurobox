@@ -5,7 +5,6 @@ import os
 import FreeCAD as App
 import Part
 
-import apply_v60_front_final as P
 import apply_v60_rack_closure as R
 import build_v60_full_baseline as B
 from v60_timing import start_timer, stop_timer
@@ -13,6 +12,11 @@ from v60_timing import start_timer, stop_timer
 C = B.C
 
 # Final rack-retainer thread rebuild.
+#
+# This stage deliberately depends only on the already-canonical rack-closure
+# output.  It must not import any box-clamp/front builder: doing so would execute
+# a second, obsolete front architecture after the clean modular front has already
+# passed its hard checks.
 #
 # Do not trust a successful OpenSCAD import as proof that a functional thread
 # survived the final BASE export. Rebuild both members here as an explicit,
