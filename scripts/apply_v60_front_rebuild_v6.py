@@ -10,17 +10,15 @@ import build_v60 as C
 import build_v60_full_baseline as F
 from v60_timing import start_timer, stop_timer
 
-# Clean-front v6: service-access audit of the complete box-clamp screw stack.
-# v5 fixes the wear cartridge. v6 additionally makes the 30 mm hand knob and
-# its RH8x2 retaining nut physically reachable from the rear of the front beam.
-# The old bay cleared the 10-AF hex but was only ~24.7 mm wide, so a Ø30 knob
-# could still sit partly behind fixed front material. That is now a hard error.
+# Clean-front v6: service-access audit of the COMPLETE box-clamp screw stack.
+# v5 fixes the wear cartridge. v6 makes the 30 mm hand knob and its RH8x2
+# retaining nut physically reachable through both the fixed front carrier and
+# the replaceable cassette over the full -0.5..5.5 mm clamp travel.
 
 SPINDLE_X = V5.SPINDLE_X
 SPINDLE_SPACING = V5.SPINDLE_SPACING
 PLATE_CENTER_X = V5.PLATE_CENTER_X
 PLATE = V5.PLATE
-MODULE = V5.MODULE
 LEAD_NUT = V5.LEAD_NUT
 NUT_PIN = V5.NUT_PIN
 NUT_PIN_CLIP = V5.NUT_PIN_CLIP
@@ -45,33 +43,58 @@ STUD_START_POSY = (
 STUD_START_NEGY = -STUD_START_POSY
 STUD_END_NEGY = -(STUD_START_POSY + F.OUTER_STUD_LEN)
 CAP_THREAD_OVERRUN = F.THREAD_PITCH
+TRAVEL_STATES = (-0.5, 0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.5)
 
-# Rear knob corridor stops before the replaceable cassette body. It only opens
-# the short rear wall segment that previously covered the sides of the knob.
-HANDLE_ACCESS_Y0 = V5.V2.FRONT_Y0 - 1.0
-HANDLE_ACCESS_Y1 = V5.MODULE_BODY_Y0 - 0.50
+# Derive the handle sweep from the actual production KNOB BRep rather than from
+# guessed nominal dimensions. The knob translates by -travel with the spindle.
+_knob_nominal = KNOB.copy()
+_knob_nominal.translate(App.Vector(0, F.PLATE_SPINDLE_Y + KNOB_Y_LOCAL, F.SPINDLE_Z))
+HANDLE_SWEEP_Y0 = _knob_nominal.BoundBox.YMin - max(TRAVEL_STATES) - 0.30
+HANDLE_SWEEP_Y1 = _knob_nominal.BoundBox.YMax - min(TRAVEL_STATES) + 0.30
+
+# The fixed front needs the same radial passage. The cassette itself also gets
+# this cut; this was the missing half of the previous v6 and caused run #90.
+HANDLE_ACCESS_Y0 = min(V5.V2.FRONT_Y0 - 1.0, HANDLE_SWEEP_Y0)
+HANDLE_ACCESS_Y1 = max(V5.MODULE_BODY_Y0 - 0.50, HANDLE_SWEEP_Y1)
 
 
 def stage(msg):
     print('V60_FRONT_REBUILD_V6 ' + msg, flush=True)
 
 
+def knob_sweep_cutter():
+    return F.cyl_y(
+        KNOB_CLEAR_R,
+        HANDLE_SWEEP_Y1 - HANDLE_SWEEP_Y0,
+        0.0,
+        HANDLE_SWEEP_Y0,
+        F.SPINDLE_Z,
+    )
+
+
 def rebuild_fixed_front_with_handle_access():
     q = V5.RIGHT_FULL
     for sx in SPINDLE_X:
-        q = q.cut(F.cyl_y(
-            KNOB_CLEAR_R,
-            HANDLE_ACCESS_Y1 - HANDLE_ACCESS_Y0,
-            sx, HANDLE_ACCESS_Y0, F.SPINDLE_Z,
-        )).removeSplitter()
-    C.require_single(q, 'clean-front-v6 fixed carrier with rear knob access')
+        cutter = knob_sweep_cutter()
+        cutter.translate(App.Vector(sx, 0, 0))
+        q = q.cut(cutter).removeSplitter()
+    C.require_single(q, 'clean-front-v6 fixed carrier with full handle sweep access')
+    return q
+
+
+def rebuild_module_with_handle_access():
+    # Circular sweep keeps the upper/corner flange material and M3 mounting ears
+    # wherever they lie outside the Ø31.2 service envelope; unlike a box slot it
+    # does not unnecessarily destroy the replaceable module structure.
+    q = V5.MODULE.cut(knob_sweep_cutter()).removeSplitter()
+    C.require_single(q, 'clean-front-v6 cassette with full handle sweep access')
     return q
 
 
 def build_phase_matched_cap_nut():
     # Use the same profile clearances as the proven main RH8x2 pair. The cutter
-    # spans one full pitch before the outer-stud start and far beyond the cap,
-    # so no smooth end-wall can survive at either printed thread mouth.
+    # spans one full pitch before the outer-stud start and beyond the cap, so no
+    # smooth printed end-wall can survive at either thread mouth.
     span = F.OUTER_STUD_LEN + CAP_NUT_H + 2.0 * CAP_THREAD_OVERRUN
     scad = os.path.join(C.OUT, 'v60_knob_retainer_matched_female_RH8x2.scad')
     F.write_thread_scad(
@@ -99,56 +122,71 @@ def build_phase_matched_cap_nut():
     return cap
 
 
-stage('open rear handle corridors and rebuild matched knob-retainer thread')
+stage('open full handle sweep through carrier/module and rebuild matched knob-retainer thread')
 _t = start_timer('box_front_rebuild_v6.build_geometry')
 RIGHT_FULL = rebuild_fixed_front_with_handle_access()
 LEFT_FULL = C.mirror_x(RIGHT_FULL)
 C.require_single(LEFT_FULL, 'clean-front-v6 mirrored LEFT carrier')
+MODULE = rebuild_module_with_handle_access()
 CAP_NUT = build_phase_matched_cap_nut()
 stop_timer('box_front_rebuild_v6.build_geometry', _t)
 
-stage('hard-check every printed box-clamp thread and handle access')
+stage('hard-check every printed box-clamp thread and full handle travel')
 _t = start_timer('box_front_rebuild_v6.hard_checks')
 failures = []
 access_checks = []
 cap_fit_checks = []
 
-# Main RH8x2 cartridge was already checked through the full travel in v5. Here
-# prove the complete handle/cap assembly is not hidden behind fixed front or
-# cassette material.
 for sx in SPINDLE_X:
-    mod = MODULE.copy(); mod.translate(App.Vector(sx, 0, 0))
+    mod = MODULE.copy()
+    mod.translate(App.Vector(sx, 0, 0))
 
-    knob = KNOB.copy()
-    knob.translate(App.Vector(sx, F.PLATE_SPINDLE_Y + KNOB_Y_LOCAL, F.SPINDLE_Z))
-    knob_base = RIGHT_FULL.common(knob).Volume
-    knob_module = mod.common(knob).Volume
+    # Full physical handle/cap travel, including -0.5 mm preload. A thread/knob
+    # is considered accessible only if neither fixed carrier nor cassette hides
+    # it at ANY working state.
+    for travel in TRAVEL_STATES:
+        knob = KNOB.copy()
+        knob.translate(App.Vector(
+            sx,
+            F.PLATE_SPINDLE_Y + KNOB_Y_LOCAL - travel,
+            F.SPINDLE_Z,
+        ))
+        knob_base = RIGHT_FULL.common(knob).Volume
+        knob_module = mod.common(knob).Volume
 
-    cap = CAP_NUT.copy()
-    cap.translate(App.Vector(sx, F.PLATE_SPINDLE_Y + CAP_Y_LOCAL, F.SPINDLE_Z))
-    cap_base = RIGHT_FULL.common(cap).Volume
-    cap_module = mod.common(cap).Volume
+        cap = CAP_NUT.copy()
+        cap.translate(App.Vector(
+            sx,
+            F.PLATE_SPINDLE_Y + CAP_Y_LOCAL - travel,
+            F.SPINDLE_Z,
+        ))
+        cap_base = RIGHT_FULL.common(cap).Volume
+        cap_module = mod.common(cap).Volume
 
-    access_checks.append({
-        'x_mm': sx,
-        'knob_base_common_mm3': round(knob_base, 6),
-        'knob_module_common_mm3': round(knob_module, 6),
-        'cap_nut_base_common_mm3': round(cap_base, 6),
-        'cap_nut_module_common_mm3': round(cap_module, 6),
-    })
-    if knob_base > 1e-4 or knob_module > 1e-4:
-        failures.append(
-            f'hand knob still behind/intersecting front wall X={sx}: '
-            f'base={knob_base:.6f} module={knob_module:.6f}'
-        )
-    if cap_base > 1e-4 or cap_module > 1e-4:
-        failures.append(
-            f'RH8x2 knob-retainer nut still behind/intersecting wall X={sx}: '
-            f'base={cap_base:.6f} module={cap_module:.6f}'
-        )
+        access_checks.append({
+            'x_mm': sx,
+            'travel_mm': travel,
+            'knob_base_common_mm3': round(knob_base, 6),
+            'knob_module_common_mm3': round(knob_module, 6),
+            'cap_nut_base_common_mm3': round(cap_base, 6),
+            'cap_nut_module_common_mm3': round(cap_module, 6),
+        })
+        if knob_base > 1e-4 or knob_module > 1e-4:
+            failures.append(
+                f'hand knob behind/intersecting wall X={sx} travel={travel}: '
+                f'base={knob_base:.6f} module={knob_module:.6f}'
+            )
+        if cap_base > 1e-4 or cap_module > 1e-4:
+            failures.append(
+                f'RH8x2 knob-retainer behind/intersecting wall X={sx} travel={travel}: '
+                f'base={cap_base:.6f} module={cap_module:.6f}'
+            )
 
+    # Thread phase check at the nominal installed state.
     spindle = F.SPINDLE.copy()
     spindle.translate(App.Vector(sx, F.PLATE_SPINDLE_Y, F.SPINDLE_Z))
+    cap = CAP_NUT.copy()
+    cap.translate(App.Vector(sx, F.PLATE_SPINDLE_Y + CAP_Y_LOCAL, F.SPINDLE_Z))
     correct_common = spindle.common(cap).Volume
 
     wrong = CAP_NUT.copy()
@@ -171,8 +209,8 @@ for sx in SPINDLE_X:
             f'correct={correct_common:.6f} wrong={wrong_common:.6f}'
         )
 
-# Mechanical engagement is 4.5 mm: the cap runs from -39 to -44.8 while the
-# outer stud runs from -36.5 to -43.5 in the spindle-local Y frame.
+# Mechanical engagement: cap -39..-44.8, outer stud -36.5..-43.5 in spindle
+# local Y, yielding 4.5 mm nominal engagement.
 cap_y0 = CAP_Y_LOCAL - CAP_NUT_H
 cap_y1 = CAP_Y_LOCAL
 stud_y0 = STUD_END_NEGY
@@ -181,17 +219,19 @@ stud_engagement = max(0.0, min(cap_y1, stud_y1) - max(cap_y0, stud_y0))
 if stud_engagement < 4.0:
     failures.append(f'knob-retainer RH8x2 engagement too short: {stud_engagement:.3f} mm')
 
-# Central core must be through-open across the complete nut. This catches the
-# recurring failure mode where a visually threaded part still has an end wall.
+# Central core must be through-open across the complete cap. This explicitly
+# catches the recurring visually-threaded-but-closed-by-a-wall failure mode.
 through = F.cyl_y(
     Q.FEMALE_CORE_R - 0.10,
     CAP_NUT_H + 0.40,
-    0.0, -CAP_NUT_H - 0.20, 0.0,
+    0.0,
+    -CAP_NUT_H - 0.20,
+    0.0,
 )
 cap_core_block = CAP_NUT.common(through).Volume
 if cap_core_block > 1e-4:
     failures.append(
-        f'knob-retainer RH8x2 has a closed/end wall in its threaded bore: '
+        f'knob-retainer RH8x2 has a closed/end wall in threaded bore: '
         f'{cap_core_block:.6f} mm3'
     )
 
@@ -199,8 +239,9 @@ stop_timer('box_front_rebuild_v6.hard_checks', _t, failures=len(failures))
 if failures:
     raise RuntimeError('V60 CLEAN FRONT V6 HARD CHECKS FAILED: ' + ' | '.join(failures))
 
-stage('export handle and corrected open-ended retainer nut')
+stage('export accessible module, handle and corrected retainer nut')
 _t = start_timer('box_front_rebuild_v6.exports')
+C.export_shape('eurobox_v60_front_clamp_module', MODULE)
 C.export_shape('eurobox_v60_knob', KNOB)
 C.export_shape('eurobox_v60_knob_retainer_nut', CAP_NUT)
 stop_timer('box_front_rebuild_v6.exports', _t)
@@ -209,8 +250,8 @@ validation_path = os.path.join(C.OUT, 'VALIDATION_v60_full.json')
 with open(validation_path, 'r', encoding='utf-8') as fh:
     validation = json.load(fh)
 box = validation.setdefault('box_clamp', {})
-box['architecture'] = 'clean_modular_front_v6_full_handle_and_all_RH8x2_service_access'
-box['handle_access_y_mm'] = [round(HANDLE_ACCESS_Y0, 3), round(HANDLE_ACCESS_Y1, 3)]
+box['architecture'] = 'clean_modular_front_v6_full_handle_travel_and_all_RH8x2_service_access'
+box['handle_sweep_y_mm'] = [round(HANDLE_SWEEP_Y0, 3), round(HANDLE_SWEEP_Y1, 3)]
 box['handle_clearance_d_mm'] = round(2.0 * KNOB_CLEAR_R, 3)
 box['handle_wall_access_checks'] = access_checks
 box['knob_retainer_thread'] = {
