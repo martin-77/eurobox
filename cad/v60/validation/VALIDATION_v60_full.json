@@ -843,6 +843,52 @@
       "5.5": 228.015
     },
     "effective_total_width_mm": 600.0,
+    "knob_retainer_thread": {
+      "standard": "RH8x2 true radial/axial printable pair",
+      "pitch_mm": 2.0,
+      "male_core_d_mm": 6.5,
+      "male_major_d_mm": 8.0,
+      "female_crest_bore_d_mm": 7.0,
+      "female_groove_root_d_mm": 8.5,
+      "male_root_width_mm": 1.2,
+      "male_crest_width_mm": 0.6,
+      "female_groove_root_width_mm": 1.5,
+      "female_groove_crest_width_mm": 0.9,
+      "female_crest_material_between_turns_mm": 0.5,
+      "radial_core_clearance_mm": 0.25,
+      "radial_major_clearance_mm": 0.25,
+      "samples": [
+        {
+          "angle_deg": 0.0,
+          "male_ridge_center_solid": true,
+          "male_between_turns_solid": false,
+          "female_groove_center_solid": false,
+          "female_between_turns_solid": true
+        },
+        {
+          "angle_deg": 90.0,
+          "male_ridge_center_solid": true,
+          "male_between_turns_solid": false,
+          "female_groove_center_solid": false,
+          "female_between_turns_solid": true
+        },
+        {
+          "angle_deg": 180.0,
+          "male_ridge_center_solid": true,
+          "male_between_turns_solid": false,
+          "female_groove_center_solid": false,
+          "female_between_turns_solid": true
+        },
+        {
+          "angle_deg": 270.0,
+          "male_ridge_center_solid": true,
+          "male_between_turns_solid": false,
+          "female_groove_center_solid": false,
+          "female_between_turns_solid": true
+        }
+      ],
+      "validated_export_part": "eurobox_v60_knob_retainer_nut"
+    },
     "final_assembly_contains_separate_lead_nut_hardware": true,
     "final_assembly_lead_nut_cartridge_count": 4,
     "final_assembly_lead_nut_pin_count": 4,
@@ -862,7 +908,7 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 2522312
+    "file_bytes": 4173040
   },
   "handed_stl_export": {
     "right_sha256": "fe73fb64856bedc3ca70fff2b1584fbb0539f50040c7f33e20fbe0adf84c622e",
