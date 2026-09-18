@@ -80,11 +80,12 @@ RACK_M4_NUT_AF = 7.4
 RACK_M4_NUT_H = 3.6
 RACK_M4_NUT_Z0 = 3.0
 
-# Final v50 plate corridor.  The clamp plate is 140 mm wide and moves 5.5 mm
-# toward -Y; 0.4 mm side/Z running clearance is kept.  The support/head geometry
-# is built closed first, then only this real moving-body envelope is cleared.
-PLATE_SWEEP_X0 = -70.4
-PLATE_SWEEP_X1 = 70.4
+# Final box-clamp plate corridor. The widened clamp plate is 160 mm wide and
+# moves 5.5 mm toward -Y; 0.4 mm side/Z running clearance is kept.
+# The support/head geometry is built closed first, then only this real moving
+# body envelope is cleared.
+PLATE_SWEEP_X0 = -80.4
+PLATE_SWEEP_X1 = 80.4
 PLATE_SWEEP_Y0 = (BOX_RIM_INNER_Y - 8.0) - 5.5 - 0.4
 PLATE_SWEEP_Y1 = (BOX_RIM_INNER_Y - 8.0) + 8.0 + 0.4
 PLATE_SWEEP_Z0 = 16.0 - 0.4
@@ -219,8 +220,8 @@ def make_crosshead():
     x1 = REAR_SUPPORT_X + ARM_W/2.0
     y0 = 216.0
     y1 = ARM_HEAD_FACE_Y
-    plate_x0 = -70.4
-    plate_x1 = 70.4
+    plate_x0 = PLATE_SWEEP_X0
+    plate_x1 = PLATE_SWEEP_X1
     web_h = ARM_H-2.0*FLANGE_T
     return fuse_seq([
         box(x0,y0,ARM_BOTTOM_Z,x1-x0,y1-y0,FLANGE_T),
@@ -254,7 +255,7 @@ def make_right_core():
     ], 'RIGHT structural core before plate clearance')
     # Exact final v50 strategy: retain the full lower crosshead flange and outer
     # guide structures, but remove only the real moving plate envelope.  This
-    # prevents the front holm head from intruding into the 140 mm plate after
+    # prevents the front holm head from intruding into the 160 mm plate after
     # the clamp spacing moved from 180 to 160 mm.
     core = core.cut(make_plate_sweep_clearance()).removeSplitter()
     require_single(core,'RIGHT structural core after plate clearance')
