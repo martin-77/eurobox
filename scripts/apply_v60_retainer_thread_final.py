@@ -31,8 +31,12 @@ FEMALE_MAJOR_R = 6.22
 MALE_ROOT_W = 1.80
 MALE_CREST_W = 0.90
 FLANK_CLEAR = 0.24
-FEMALE_ROOT_W = MALE_ROOT_W + 2.0*FLANK_CLEAR
-FEMALE_CREST_W = MALE_CREST_W + 2.0*FLANK_CLEAR
+# A radial/axial helical ridge must stay narrower than one pitch at its root.
+# The previous female root width was 2.28 mm on a 2.0 mm pitch, so adjacent
+# turns self-overlapped and OpenSCAD produced a non-solid shell.  Keep the
+# female cutter wider than the male thread, but cap its root below one pitch.
+FEMALE_ROOT_W = min(PITCH - 0.10, MALE_ROOT_W + 2.0*FLANK_CLEAR)
+FEMALE_CREST_W = min(PITCH - 0.40, MALE_CREST_W + 2.0*FLANK_CLEAR)
 THREAD_LEN = R.RETAINER_LEN
 THREAD_Z0 = R.RETAINER_THREAD_Z0
 TOP_OVERRUN = PITCH
@@ -54,6 +58,13 @@ def stage(msg):
 
 def write_true_helical_ridge(path, core_r, major_r, length, root_w, crest_w, overrun):
     # Build one closed radial/axial trapezoid swept around a real helix.
+    # Widths >= pitch make neighboring turns overlap and the polyhedron ceases
+    # to be a valid solid, so reject that geometry before handing it to OpenSCAD.
+    if root_w >= PITCH or crest_w >= PITCH:
+        raise RuntimeError(
+            f'Invalid helical profile: root={root_w:.3f} crest={crest_w:.3f} '
+            f'must both be < pitch={PITCH:.3f}'
+        )
     # The previous linear_extrude XY ribbon could leave a visually smooth,
     # functionally useless bore even though volume/phase checks passed.
     inner_r = core_r - 0.12
