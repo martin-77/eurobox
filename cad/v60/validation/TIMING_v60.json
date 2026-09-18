@@ -1,648 +1,510 @@
 {
   "schema": 1,
-  "process_elapsed_s": 1402.808466,
+  "process_elapsed_s": 626.104505,
   "records": [
     {
       "index": 1,
       "label": "ci.build_continuous_carrier_core",
-      "seconds": 2.874895,
-      "process_elapsed_s": 2.87493
+      "seconds": 3.389827,
+      "process_elapsed_s": 3.389874
     },
     {
       "index": 2,
       "label": "full.import_structural_baseline",
-      "seconds": 110.92589,
-      "process_elapsed_s": 113.83592
+      "seconds": 95.9405,
+      "process_elapsed_s": 99.381946
     },
     {
       "index": 3,
-      "label": "box_prereq.compile_phase_matched_female_RH8x2",
-      "seconds": 3.330726,
-      "process_elapsed_s": 117.167569
+      "label": "full.apply_rack_closure",
+      "seconds": 24.839776,
+      "process_elapsed_s": 124.222228
     },
     {
       "index": 4,
-      "label": "box_prereq.phase_crop_and_nominal_containment_witness",
-      "seconds": 6.741853,
-      "process_elapsed_s": 123.909873
+      "label": "retainer.compile_matched_12x2_thread_pair",
+      "seconds": 61.185498,
+      "process_elapsed_s": 185.410015
     },
     {
       "index": 5,
-      "label": "full.apply_box_clamp_prerequisite",
-      "seconds": 10.074175,
-      "process_elapsed_s": 123.910345
+      "label": "retainer.build_threaded_service_retainer",
+      "seconds": 38.161374,
+      "process_elapsed_s": 223.571884
     },
     {
       "index": 6,
-      "label": "box_front_rebuild_v2.build_geometry",
-      "seconds": 6.970368,
-      "process_elapsed_s": 130.88468
+      "label": "retainer.cut_final_base_female_thread_x-80",
+      "seconds": 57.231685,
+      "process_elapsed_s": 280.804014,
+      "metadata": {
+        "removed_mm3": 1665.21954
+      }
     },
     {
       "index": 7,
-      "label": "box_front_rebuild_v2.hard_checks",
-      "seconds": 51.937452,
-      "process_elapsed_s": 182.822585,
+      "label": "retainer.cut_final_base_female_thread_x80",
+      "seconds": 142.162113,
+      "process_elapsed_s": 422.966594,
       "metadata": {
-        "failures": 0
+        "removed_mm3": 1665.21954
       }
     },
     {
       "index": 8,
-      "label": "box_front_rebuild_v2.exports",
-      "seconds": 2.112848,
-      "process_elapsed_s": 184.935921
+      "label": "retainer.validate_and_mirror_final_threaded_base",
+      "seconds": 27.94828,
+      "process_elapsed_s": 450.915414
     },
     {
       "index": 9,
-      "label": "box_front_rebuild_v5.build_geometry",
-      "seconds": 3.569279,
-      "process_elapsed_s": 188.512347
+      "label": "retainer.hard_geometric_thread_witness",
+      "seconds": 113.807173,
+      "process_elapsed_s": 564.729908,
+      "metadata": {
+        "failures": 0
+      }
     },
     {
       "index": 10,
-      "label": "box_front_rebuild_v5.hard_checks",
-      "seconds": 49.31944,
-      "process_elapsed_s": 237.832216,
-      "metadata": {
-        "failures": 0
-      }
+      "label": "retainer.export.eurobox_v60_base_right",
+      "seconds": 19.540484,
+      "process_elapsed_s": 584.275386
     },
     {
       "index": 11,
-      "label": "box_front_rebuild_v5.exports",
-      "seconds": 2.159166,
-      "process_elapsed_s": 239.992566
+      "label": "retainer.export.eurobox_v60_base_left",
+      "seconds": 16.443487,
+      "process_elapsed_s": 600.719287
     },
     {
       "index": 12,
-      "label": "box_front_rebuild_v6.build_geometry",
-      "seconds": 5.989802,
-      "process_elapsed_s": 245.984911
+      "label": "retainer.export.eurobox_v60_rack_nut_retainer",
+      "seconds": 7.426748,
+      "process_elapsed_s": 608.146508
     },
     {
       "index": 13,
-      "label": "box_front_rebuild_v6.hard_checks",
-      "seconds": 13.539313,
-      "process_elapsed_s": 259.53175,
-      "metadata": {
-        "failures": 0
-      }
+      "label": "full.apply_final_retainer_thread",
+      "seconds": 483.925395,
+      "process_elapsed_s": 608.147979
     },
     {
       "index": 14,
-      "label": "box_front_rebuild_v6.exports",
-      "seconds": 1.351796,
-      "process_elapsed_s": 260.884179
+      "label": "assembly.mesh.RIGHT_base",
+      "seconds": 2.02084,
+      "process_elapsed_s": 610.81393,
+      "metadata": {
+        "facets": 29048
+      }
     },
     {
       "index": 15,
-      "label": "full.apply_clean_modular_front_v6",
-      "seconds": 136.9747,
-      "process_elapsed_s": 260.885222
+      "label": "assembly.mesh.RIGHT_plate",
+      "seconds": 0.006004,
+      "process_elapsed_s": 610.821777,
+      "metadata": {
+        "facets": 612
+      }
     },
     {
       "index": 16,
-      "label": "full.apply_rack_closure",
-      "seconds": 158.635935,
-      "process_elapsed_s": 419.52138
+      "label": "assembly.mesh.RIGHT_spindle_-55",
+      "seconds": 0.593804,
+      "process_elapsed_s": 611.676727,
+      "metadata": {
+        "facets": 6963
+      }
     },
     {
       "index": 17,
-      "label": "retainer.compile_matched_12x2_thread_pair",
-      "seconds": 46.885122,
-      "process_elapsed_s": 466.40866
+      "label": "assembly.mesh.RIGHT_lead_nut_-55",
+      "seconds": 0.277605,
+      "process_elapsed_s": 612.05993,
+      "metadata": {
+        "facets": 3232
+      }
     },
     {
       "index": 18,
-      "label": "retainer.build_threaded_service_retainer",
-      "seconds": 27.078135,
-      "process_elapsed_s": 493.489353
+      "label": "assembly.mesh.RIGHT_lead_nut_pin_-55",
+      "seconds": 0.005166,
+      "process_elapsed_s": 612.065932,
+      "metadata": {
+        "facets": 572
+      }
     },
     {
       "index": 19,
-      "label": "retainer.cut_final_base_female_thread_x-80",
-      "seconds": 98.289278,
-      "process_elapsed_s": 591.779103,
+      "label": "assembly.mesh.RIGHT_lead_nut_clip_-55",
+      "seconds": 0.002579,
+      "process_elapsed_s": 612.069323,
       "metadata": {
-        "removed_mm3": 38.325518
+        "facets": 224
       }
     },
     {
       "index": 20,
-      "label": "retainer.cut_final_base_female_thread_x80",
-      "seconds": 175.397557,
-      "process_elapsed_s": 767.177286,
+      "label": "assembly.mesh.RIGHT_box_clamp_knob_-55",
+      "seconds": 0.008399,
+      "process_elapsed_s": 612.07958,
       "metadata": {
-        "removed_mm3": 38.325501
+        "facets": 692
       }
     },
     {
       "index": 21,
-      "label": "retainer.validate_and_mirror_final_threaded_base",
-      "seconds": 56.962866,
-      "process_elapsed_s": 824.140748
+      "label": "assembly.mesh.RIGHT_box_clamp_knob_retainer_-55",
+      "seconds": 0.094224,
+      "process_elapsed_s": 612.211364,
+      "metadata": {
+        "facets": 1320
+      }
     },
     {
       "index": 22,
-      "label": "retainer.hard_geometric_thread_witness",
-      "seconds": 56.012081,
-      "process_elapsed_s": 880.161221,
+      "label": "assembly.mesh.RIGHT_spindle_55",
+      "seconds": 0.57571,
+      "process_elapsed_s": 613.061625,
       "metadata": {
-        "failures": 0
+        "facets": 6963
       }
     },
     {
       "index": 23,
-      "label": "retainer.export.eurobox_v60_base_right",
-      "seconds": 33.562342,
-      "process_elapsed_s": 913.73023
+      "label": "assembly.mesh.RIGHT_lead_nut_55",
+      "seconds": 0.281598,
+      "process_elapsed_s": 613.460626,
+      "metadata": {
+        "facets": 3232
+      }
     },
     {
       "index": 24,
-      "label": "retainer.export.eurobox_v60_base_left",
-      "seconds": 27.957606,
-      "process_elapsed_s": 941.688282
+      "label": "assembly.mesh.RIGHT_lead_nut_pin_55",
+      "seconds": 0.005242,
+      "process_elapsed_s": 613.466844,
+      "metadata": {
+        "facets": 572
+      }
     },
     {
       "index": 25,
-      "label": "retainer.export.eurobox_v60_rack_nut_retainer",
-      "seconds": 6.132564,
-      "process_elapsed_s": 947.821344
+      "label": "assembly.mesh.RIGHT_lead_nut_clip_55",
+      "seconds": 0.00258,
+      "process_elapsed_s": 613.470283,
+      "metadata": {
+        "facets": 224
+      }
     },
     {
       "index": 26,
-      "label": "full.apply_final_retainer_thread",
-      "seconds": 528.30088,
-      "process_elapsed_s": 947.82267
+      "label": "assembly.mesh.RIGHT_box_clamp_knob_55",
+      "seconds": 0.008808,
+      "process_elapsed_s": 613.481386,
+      "metadata": {
+        "facets": 692
+      }
     },
     {
       "index": 27,
-      "label": "thread_access_audit.total",
-      "seconds": 431.277461,
-      "process_elapsed_s": 1379.191905,
+      "label": "assembly.mesh.RIGHT_box_clamp_knob_retainer_55",
+      "seconds": 0.101803,
+      "process_elapsed_s": 613.623784,
       "metadata": {
-        "failures": 0
+        "facets": 1320
       }
     },
     {
       "index": 28,
-      "label": "full.audit_all_thread_access",
-      "seconds": 431.326654,
-      "process_elapsed_s": 1379.222234
-    },
-    {
-      "index": 29,
-      "label": "assembly.mesh.RIGHT_base",
-      "seconds": 3.608036,
-      "process_elapsed_s": 1384.053433,
-      "metadata": {
-        "facets": 67356
-      }
-    },
-    {
-      "index": 30,
-      "label": "assembly.mesh.RIGHT_plate",
-      "seconds": 0.005629,
-      "process_elapsed_s": 1384.063347,
-      "metadata": {
-        "facets": 644
-      }
-    },
-    {
-      "index": 31,
-      "label": "assembly.mesh.RIGHT_clamp_module_-48",
-      "seconds": 0.00927,
-      "process_elapsed_s": 1384.074122,
-      "metadata": {
-        "facets": 1028
-      }
-    },
-    {
-      "index": 32,
-      "label": "assembly.mesh.RIGHT_spindle_-48",
-      "seconds": 0.657073,
-      "process_elapsed_s": 1385.006746,
-      "metadata": {
-        "facets": 6963
-      }
-    },
-    {
-      "index": 33,
-      "label": "assembly.mesh.RIGHT_lead_nut_-48",
-      "seconds": 0.303616,
-      "process_elapsed_s": 1385.43844,
-      "metadata": {
-        "facets": 3666
-      }
-    },
-    {
-      "index": 34,
-      "label": "assembly.mesh.RIGHT_lead_nut_pin_-48",
-      "seconds": 0.003793,
-      "process_elapsed_s": 1385.44309,
-      "metadata": {
-        "facets": 572
-      }
-    },
-    {
-      "index": 35,
-      "label": "assembly.mesh.RIGHT_lead_nut_clip_-48",
-      "seconds": 0.002575,
-      "process_elapsed_s": 1385.466036,
-      "metadata": {
-        "facets": 252
-      }
-    },
-    {
-      "index": 36,
-      "label": "assembly.mesh.RIGHT_box_clamp_knob_-48",
-      "seconds": 0.007327,
-      "process_elapsed_s": 1385.47582,
-      "metadata": {
-        "facets": 692
-      }
-    },
-    {
-      "index": 37,
-      "label": "assembly.mesh.RIGHT_box_clamp_knob_retainer_-48",
-      "seconds": 0.133513,
-      "process_elapsed_s": 1385.687091,
-      "metadata": {
-        "facets": 1855
-      }
-    },
-    {
-      "index": 38,
-      "label": "assembly.mesh.RIGHT_clamp_module_128",
-      "seconds": 0.007675,
-      "process_elapsed_s": 1385.696717,
-      "metadata": {
-        "facets": 1028
-      }
-    },
-    {
-      "index": 39,
-      "label": "assembly.mesh.RIGHT_spindle_128",
-      "seconds": 0.552856,
-      "process_elapsed_s": 1386.518921,
-      "metadata": {
-        "facets": 6963
-      }
-    },
-    {
-      "index": 40,
-      "label": "assembly.mesh.RIGHT_lead_nut_128",
-      "seconds": 0.313603,
-      "process_elapsed_s": 1386.963955,
-      "metadata": {
-        "facets": 3666
-      }
-    },
-    {
-      "index": 41,
-      "label": "assembly.mesh.RIGHT_lead_nut_pin_128",
-      "seconds": 0.003891,
-      "process_elapsed_s": 1386.968874,
-      "metadata": {
-        "facets": 572
-      }
-    },
-    {
-      "index": 42,
-      "label": "assembly.mesh.RIGHT_lead_nut_clip_128",
-      "seconds": 0.00214,
-      "process_elapsed_s": 1386.971868,
-      "metadata": {
-        "facets": 252
-      }
-    },
-    {
-      "index": 43,
-      "label": "assembly.mesh.RIGHT_box_clamp_knob_128",
-      "seconds": 0.006444,
-      "process_elapsed_s": 1386.9803,
-      "metadata": {
-        "facets": 692
-      }
-    },
-    {
-      "index": 44,
-      "label": "assembly.mesh.RIGHT_box_clamp_knob_retainer_128",
-      "seconds": 0.146163,
-      "process_elapsed_s": 1387.213824,
-      "metadata": {
-        "facets": 1855
-      }
-    },
-    {
-      "index": 45,
       "label": "assembly.mesh.RIGHT_lower_-80",
-      "seconds": 0.00676,
-      "process_elapsed_s": 1387.339778,
+      "seconds": 0.00804,
+      "process_elapsed_s": 613.700118,
       "metadata": {
         "facets": 772
       }
     },
     {
-      "index": 46,
+      "index": 29,
       "label": "assembly.mesh.RIGHT_rack_nut_retainer_-80",
-      "seconds": 0.983359,
-      "process_elapsed_s": 1388.622721,
+      "seconds": 0.969549,
+      "process_elapsed_s": 614.97557,
       "metadata": {
         "facets": 14220
       }
     },
     {
-      "index": 47,
+      "index": 30,
       "label": "assembly.mesh.RIGHT_rack_hand_knob_-80",
-      "seconds": 0.00313,
-      "process_elapsed_s": 1388.627378,
+      "seconds": 0.00364,
+      "process_elapsed_s": 614.980725,
       "metadata": {
         "facets": 212
       }
     },
     {
-      "index": 48,
+      "index": 31,
       "label": "assembly.mesh.RIGHT_lower_80",
-      "seconds": 0.005755,
-      "process_elapsed_s": 1388.634867,
+      "seconds": 0.007794,
+      "process_elapsed_s": 614.990297,
+      "metadata": {
+        "facets": 772
+      }
+    },
+    {
+      "index": 32,
+      "label": "assembly.mesh.RIGHT_rack_nut_retainer_80",
+      "seconds": 0.969432,
+      "process_elapsed_s": 616.332266,
+      "metadata": {
+        "facets": 14220
+      }
+    },
+    {
+      "index": 33,
+      "label": "assembly.mesh.RIGHT_rack_hand_knob_80",
+      "seconds": 0.003564,
+      "process_elapsed_s": 616.337636,
+      "metadata": {
+        "facets": 212
+      }
+    },
+    {
+      "index": 34,
+      "label": "assembly.mesh.LEFT_base",
+      "seconds": 2.098485,
+      "process_elapsed_s": 619.019317,
+      "metadata": {
+        "facets": 29048
+      }
+    },
+    {
+      "index": 35,
+      "label": "assembly.mesh.LEFT_plate",
+      "seconds": 0.006206,
+      "process_elapsed_s": 619.139906,
+      "metadata": {
+        "facets": 612
+      }
+    },
+    {
+      "index": 36,
+      "label": "assembly.mesh.LEFT_spindle_-55",
+      "seconds": 0.582762,
+      "process_elapsed_s": 619.963122,
+      "metadata": {
+        "facets": 6963
+      }
+    },
+    {
+      "index": 37,
+      "label": "assembly.mesh.LEFT_lead_nut_-55",
+      "seconds": 0.276511,
+      "process_elapsed_s": 620.337315,
+      "metadata": {
+        "facets": 3232
+      }
+    },
+    {
+      "index": 38,
+      "label": "assembly.mesh.LEFT_lead_nut_pin_-55",
+      "seconds": 0.005276,
+      "process_elapsed_s": 620.343731,
+      "metadata": {
+        "facets": 572
+      }
+    },
+    {
+      "index": 39,
+      "label": "assembly.mesh.LEFT_lead_nut_clip_-55",
+      "seconds": 0.002667,
+      "process_elapsed_s": 620.347372,
+      "metadata": {
+        "facets": 224
+      }
+    },
+    {
+      "index": 40,
+      "label": "assembly.mesh.LEFT_box_clamp_knob_-55",
+      "seconds": 0.008779,
+      "process_elapsed_s": 620.358467,
+      "metadata": {
+        "facets": 692
+      }
+    },
+    {
+      "index": 41,
+      "label": "assembly.mesh.LEFT_box_clamp_knob_retainer_-55",
+      "seconds": 0.104215,
+      "process_elapsed_s": 620.498424,
+      "metadata": {
+        "facets": 1320
+      }
+    },
+    {
+      "index": 42,
+      "label": "assembly.mesh.LEFT_spindle_55",
+      "seconds": 0.557794,
+      "process_elapsed_s": 621.311668,
+      "metadata": {
+        "facets": 6963
+      }
+    },
+    {
+      "index": 43,
+      "label": "assembly.mesh.LEFT_lead_nut_55",
+      "seconds": 0.274526,
+      "process_elapsed_s": 621.691032,
+      "metadata": {
+        "facets": 3232
+      }
+    },
+    {
+      "index": 44,
+      "label": "assembly.mesh.LEFT_lead_nut_pin_55",
+      "seconds": 0.005175,
+      "process_elapsed_s": 621.697348,
+      "metadata": {
+        "facets": 572
+      }
+    },
+    {
+      "index": 45,
+      "label": "assembly.mesh.LEFT_lead_nut_clip_55",
+      "seconds": 0.002588,
+      "process_elapsed_s": 621.701059,
+      "metadata": {
+        "facets": 224
+      }
+    },
+    {
+      "index": 46,
+      "label": "assembly.mesh.LEFT_box_clamp_knob_55",
+      "seconds": 0.008468,
+      "process_elapsed_s": 621.711903,
+      "metadata": {
+        "facets": 692
+      }
+    },
+    {
+      "index": 47,
+      "label": "assembly.mesh.LEFT_box_clamp_knob_retainer_55",
+      "seconds": 0.113164,
+      "process_elapsed_s": 621.867391,
+      "metadata": {
+        "facets": 1320
+      }
+    },
+    {
+      "index": 48,
+      "label": "assembly.mesh.LEFT_lower_-80",
+      "seconds": 0.008201,
+      "process_elapsed_s": 621.939462,
       "metadata": {
         "facets": 772
       }
     },
     {
       "index": 49,
-      "label": "assembly.mesh.RIGHT_rack_nut_retainer_80",
-      "seconds": 0.966164,
-      "process_elapsed_s": 1389.956408,
+      "label": "assembly.mesh.LEFT_rack_nut_retainer_-80",
+      "seconds": 1.051138,
+      "process_elapsed_s": 623.36133,
       "metadata": {
         "facets": 14220
       }
     },
     {
       "index": 50,
-      "label": "assembly.mesh.RIGHT_rack_hand_knob_80",
-      "seconds": 0.003052,
-      "process_elapsed_s": 1389.961289,
+      "label": "assembly.mesh.LEFT_rack_hand_knob_-80",
+      "seconds": 0.003856,
+      "process_elapsed_s": 623.367236,
       "metadata": {
         "facets": 212
       }
     },
     {
       "index": 51,
-      "label": "assembly.mesh.LEFT_base",
-      "seconds": 3.48346,
-      "process_elapsed_s": 1394.467131,
+      "label": "assembly.mesh.LEFT_lower_80",
+      "seconds": 0.007921,
+      "process_elapsed_s": 623.37711,
       "metadata": {
-        "facets": 67356
+        "facets": 772
       }
     },
     {
       "index": 52,
-      "label": "assembly.mesh.LEFT_plate",
-      "seconds": 0.005574,
-      "process_elapsed_s": 1394.718514,
+      "label": "assembly.mesh.LEFT_rack_nut_retainer_80",
+      "seconds": 1.052286,
+      "process_elapsed_s": 624.759926,
       "metadata": {
-        "facets": 644
+        "facets": 14220
       }
     },
     {
       "index": 53,
-      "label": "assembly.mesh.LEFT_clamp_module_-48",
-      "seconds": 0.008506,
-      "process_elapsed_s": 1394.728652,
+      "label": "assembly.mesh.LEFT_rack_hand_knob_80",
+      "seconds": 0.003889,
+      "process_elapsed_s": 624.765901,
       "metadata": {
-        "facets": 1028
+        "facets": 212
       }
     },
     {
       "index": 54,
-      "label": "assembly.mesh.LEFT_spindle_-48",
-      "seconds": 0.552179,
-      "process_elapsed_s": 1395.546581,
+      "label": "assembly.mesh.REF_right_rack_tube",
+      "seconds": 0.001513,
+      "process_elapsed_s": 624.768191,
       "metadata": {
-        "facets": 6963
+        "facets": 140
       }
     },
     {
       "index": 55,
-      "label": "assembly.mesh.LEFT_lead_nut_-48",
-      "seconds": 0.284382,
-      "process_elapsed_s": 1395.94894,
+      "label": "assembly.mesh.REF_left_rack_tube",
+      "seconds": 0.001537,
+      "process_elapsed_s": 624.770515,
       "metadata": {
-        "facets": 3666
+        "facets": 140
       }
     },
     {
       "index": 56,
-      "label": "assembly.mesh.LEFT_lead_nut_pin_-48",
-      "seconds": 0.003754,
-      "process_elapsed_s": 1395.95374,
-      "metadata": {
-        "facets": 572
-      }
+      "label": "assembly.recompute_and_save_FCStd",
+      "seconds": 0.607059,
+      "process_elapsed_s": 625.378249
     },
     {
       "index": 57,
-      "label": "assembly.mesh.LEFT_lead_nut_clip_-48",
-      "seconds": 0.002057,
-      "process_elapsed_s": 1395.956639,
+      "label": "assembly.total",
+      "seconds": 17.226484,
+      "process_elapsed_s": 625.380189,
       "metadata": {
-        "facets": 252
+        "file_bytes": 2316894
       }
     },
     {
       "index": 58,
-      "label": "assembly.mesh.LEFT_box_clamp_knob_-48",
-      "seconds": 0.006274,
-      "process_elapsed_s": 1395.964605,
-      "metadata": {
-        "facets": 692
-      }
+      "label": "full.build_lightweight_final_assembly",
+      "seconds": 17.230022,
+      "process_elapsed_s": 625.380887
     },
     {
       "index": 59,
-      "label": "assembly.mesh.LEFT_box_clamp_knob_retainer_-48",
-      "seconds": 0.140114,
-      "process_elapsed_s": 1396.171757,
-      "metadata": {
-        "facets": 1855
-      }
+      "label": "ci.full_mechanism_build_and_hard_checks",
+      "seconds": 622.357714,
+      "process_elapsed_s": 625.747915
     },
     {
       "index": 60,
-      "label": "assembly.mesh.LEFT_clamp_module_128",
-      "seconds": 0.007781,
-      "process_elapsed_s": 1396.181605,
-      "metadata": {
-        "facets": 1028
-      }
+      "label": "ci.postvalidate_rack_closure_exports",
+      "seconds": 0.354924,
+      "process_elapsed_s": 626.103613
     },
     {
       "index": 61,
-      "label": "assembly.mesh.LEFT_spindle_128",
-      "seconds": 0.62553,
-      "process_elapsed_s": 1397.080238,
-      "metadata": {
-        "facets": 6963
-      }
-    },
-    {
-      "index": 62,
-      "label": "assembly.mesh.LEFT_lead_nut_128",
-      "seconds": 0.302613,
-      "process_elapsed_s": 1397.52998,
-      "metadata": {
-        "facets": 3666
-      }
-    },
-    {
-      "index": 63,
-      "label": "assembly.mesh.LEFT_lead_nut_pin_128",
-      "seconds": 0.003677,
-      "process_elapsed_s": 1397.534838,
-      "metadata": {
-        "facets": 572
-      }
-    },
-    {
-      "index": 64,
-      "label": "assembly.mesh.LEFT_lead_nut_clip_128",
-      "seconds": 0.002416,
-      "process_elapsed_s": 1397.590641,
-      "metadata": {
-        "facets": 252
-      }
-    },
-    {
-      "index": 65,
-      "label": "assembly.mesh.LEFT_box_clamp_knob_128",
-      "seconds": 0.007533,
-      "process_elapsed_s": 1397.600908,
-      "metadata": {
-        "facets": 692
-      }
-    },
-    {
-      "index": 66,
-      "label": "assembly.mesh.LEFT_box_clamp_knob_retainer_128",
-      "seconds": 0.145006,
-      "process_elapsed_s": 1397.831522,
-      "metadata": {
-        "facets": 1855
-      }
-    },
-    {
-      "index": 67,
-      "label": "assembly.mesh.LEFT_lower_-80",
-      "seconds": 0.006535,
-      "process_elapsed_s": 1397.926008,
-      "metadata": {
-        "facets": 772
-      }
-    },
-    {
-      "index": 68,
-      "label": "assembly.mesh.LEFT_rack_nut_retainer_-80",
-      "seconds": 1.044022,
-      "process_elapsed_s": 1399.364452,
-      "metadata": {
-        "facets": 14220
-      }
-    },
-    {
-      "index": 69,
-      "label": "assembly.mesh.LEFT_rack_hand_knob_-80",
-      "seconds": 0.003335,
-      "process_elapsed_s": 1399.369798,
-      "metadata": {
-        "facets": 212
-      }
-    },
-    {
-      "index": 70,
-      "label": "assembly.mesh.LEFT_lower_80",
-      "seconds": 0.006577,
-      "process_elapsed_s": 1399.378365,
-      "metadata": {
-        "facets": 772
-      }
-    },
-    {
-      "index": 71,
-      "label": "assembly.mesh.LEFT_rack_nut_retainer_80",
-      "seconds": 1.026132,
-      "process_elapsed_s": 1400.761157,
-      "metadata": {
-        "facets": 14220
-      }
-    },
-    {
-      "index": 72,
-      "label": "assembly.mesh.LEFT_rack_hand_knob_80",
-      "seconds": 0.003281,
-      "process_elapsed_s": 1400.766625,
-      "metadata": {
-        "facets": 212
-      }
-    },
-    {
-      "index": 73,
-      "label": "assembly.mesh.REF_right_rack_tube",
-      "seconds": 0.001102,
-      "process_elapsed_s": 1400.768384,
-      "metadata": {
-        "facets": 140
-      }
-    },
-    {
-      "index": 74,
-      "label": "assembly.mesh.REF_left_rack_tube",
-      "seconds": 0.001104,
-      "process_elapsed_s": 1400.770056,
-      "metadata": {
-        "facets": 140
-      }
-    },
-    {
-      "index": 75,
-      "label": "assembly.recompute_and_save_FCStd",
-      "seconds": 0.67215,
-      "process_elapsed_s": 1401.442753
-    },
-    {
-      "index": 76,
-      "label": "assembly.total",
-      "seconds": 22.220142,
-      "process_elapsed_s": 1401.444506,
-      "metadata": {
-        "file_bytes": 3572768
-      }
-    },
-    {
-      "index": 77,
-      "label": "full.build_lightweight_final_assembly",
-      "seconds": 22.222472,
-      "process_elapsed_s": 1401.445095
-    },
-    {
-      "index": 78,
-      "label": "ci.full_mechanism_build_and_hard_checks",
-      "seconds": 1399.237789,
-      "process_elapsed_s": 1402.11303
-    },
-    {
-      "index": 79,
-      "label": "ci.postvalidate_rack_closure_exports",
-      "seconds": 0.694006,
-      "process_elapsed_s": 1402.807778
-    },
-    {
-      "index": 80,
       "label": "ci.total_freecad_pipeline",
-      "seconds": 1402.808415,
-      "process_elapsed_s": 1402.808446
+      "seconds": 626.104427,
+      "process_elapsed_s": 626.104467
     }
   ]
 }
