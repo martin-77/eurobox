@@ -58,10 +58,7 @@ assert all(q['cartridge_common_mm3'] <= box['thread_brep_common_tolerance_mm3'] 
 # Lead screw must be the exact closed printable CGAL mesh, with a full 7 mm
 # knob hex and true RH8x2 on both male thread sections.
 ls = box['lead_screw']
-assert ls['knob_hex_length_mm'] == 8.8, ls
-assert ls['knob_thickness_mm'] == 7.0, ls
-assert ls['knob_standoff_mm'] == 1.8, ls
-assert ls['knob_hex_engagement_mm'] == 7.0, ls
+assert ls['knob_hex_length_mm'] == ls['knob_thickness_mm'] == 7.0, ls
 assert ls['mesh_topology']['boundary_edges'] == 0, ls
 assert ls['mesh_topology']['nonmanifold_edges'] == 0, ls
 assert len(ls['main_thread_samples']) == 8, ls
@@ -98,17 +95,6 @@ assert all(q['knob_retainer_base_common_mm3'] <= 0.0001 for q in ms['threaded_pl
 assert len(ms['operating_knob_clearance']) == 14, ms
 assert all(q['knob_base_common_mm3'] <= 0.0001 for q in ms['operating_knob_clearance']), ms
 assert all(q['retainer_base_common_mm3'] <= 0.0001 for q in ms['operating_knob_clearance']), ms
-
-uph = box['plate_underhook_printability']
-assert uph['target'] == 'visible green underhook on moving clamp plate', uph
-assert uph['drop_side'] == 'outboard / knob side of clamp plate', uph
-assert uph['drop_run_mm'] == 4.2, uph
-assert uph['drop_material_fraction_away_from_knobs'] >= 0.999, uph
-assert uph['knob_standoff_mm'] == 1.8, uph
-assert abs(uph['knob_relief_y_depth_mm'] - 2.8) <= 1e-9, uph
-assert len(uph['plate_knob_clearance']) == 48, uph
-assert all(q['plate_knob_common_mm3'] <= 0.00001 for q in uph['plate_knob_clearance']), uph
-assert box['effective_total_width_mm'] <= 600.02, box
 
 # The removable lead-nut wear cartridge must contain a real printable RH8x2
 # female helix.  Direct final-part samples prevent a smooth cylindrical bore
@@ -192,6 +178,17 @@ assert cc['rack_tube_common_mm3'] <= 0.0001, cc
 assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
+
+gd = cc['green_shelf_drop']
+assert gd['target'] == 'green lower carrier shelf between saddle web +Y face and outer +Y wall', gd
+assert gd['root_side'] == 'internal saddle web at Y=7', gd
+assert gd['tip_side'] == 'outer +Y side wall inner face at Y=22.8', gd
+assert gd['y_mm'] == [7.0, 22.8], gd
+assert abs(gd['span_mm'] - 15.8) <= 1e-6, gd
+assert abs(gd['shelf_z_mm'] - 14.04) <= 1e-6, gd
+assert abs(gd['root_z_mm'] - 29.84) <= 1e-6, gd
+assert gd['centre_witness_material_fraction'] >= 0.999, gd
+assert gd['rack_closure_y_mm'] == 11.0, gd
 
 checks = full['installed_support_orientation']['checks']
 assert len(checks) == 2

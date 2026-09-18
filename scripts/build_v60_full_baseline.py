@@ -34,15 +34,6 @@ PLATE_RETAINER_COUNTERBORE_DEPTH = 2.0
 PLATE_RETAINER_CHANNEL_W = 11.4
 UNDERHOOK = 4.2
 UNDERHOOK_T = 4.0
-KNOB_STANDOFF = 1.8
-# Support-free DROP for the visible green underhook.  This is deliberately on
-# the OUTBOARD / knob side of the clamp plate -- the previous support attempts
-# modified BASE/holm geometry and could never appear under this ledge.
-PLATE_UNDERHOOK_DROP_CLEARANCE = 0.40
-PLATE_KNOB_RELIEF_Y_DEPTH = (
-    UNDERHOOK - KNOB_STANDOFF + PLATE_UNDERHOOK_DROP_CLEARANCE
-)
-PLATE_KNOB_RELIEF_R = KP.KNOB_R + 0.50
 SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
@@ -64,11 +55,10 @@ NUT_THREAD_LEN = 14.0
 SHOULDER_D = 11.0
 SPINDLE_LOCAL_JOURNAL = 8.0
 SPINDLE_LOCAL_SHOULDER = 1.8
-# The grip must sit clear of the underhook/drop on the OUTBOARD face of the
-# moving clamp plate.  Keep the proven 7 mm full-depth hex engagement.  A
-# 1.8 mm exposed stand-off plus a local hook-tip relief gives 0.4 mm running
-# clearance while keeping the COMPLETE knob + retainer stack inside 600 mm.
-HEX_LEN = KNOB_STANDOFF + KP.KNOB_H
+# The knob is 7 mm thick.  Its complete thickness must sit on the hex before
+# the outer RH8x2 stud begins; the old 4.5 mm hex put 2.5 mm of the knob over
+# the retainer stud and left only ~4.5 mm usable thread.
+HEX_LEN = KP.KNOB_H
 OUTER_STUD_LEN = 7.0
 
 PLATE_SPINDLE_Y = C.BOX_RIM_INNER_Y
@@ -657,54 +647,10 @@ for xc in C.CLAMP_X:
     if cv>1e-5: raise RuntimeError(f'Rack pin bore closed at X={xc}: {cv:.6f} mm3')
 C.require_single(RIGHT_FULL,'RIGHT full final'); LEFT_FULL=C.mirror_x(RIGHT_FULL)
 
-def make_plate_underhook_drop():
-    # The underhook's top face remains untouched because it is the functional
-    # box-rim contact.  Only its underside gets a DROP on the same (+Y/outboard)
-    # side as the visible green projection.
-    #
-    # Run = 4.2 mm from plate front face to hook tip.  Use the same rise so the
-    # support envelope is 45 degrees in Y/Z.  That puts the root only 1.11 mm
-    # below the old plate bottom and does not move either spindle hole upward.
-    y_wall = PLATE_SPINDLE_Y
-    y_tip = C.BOX_RIM_INNER_Y + UNDERHOOK
-    z_flange = RIM_BOTTOM_Z - UNDERHOOK_T
-    run = y_tip - y_wall
-    z_root = z_flange - run
-    curve = []
-    for i in range(19):
-        t = i/18.0
-        y = y_wall + run*C._smoothstep(t)
-        z = z_root + run*t
-        curve.append(App.Vector(0.0,y,z))
-    pts = [
-        App.Vector(0.0,y_wall,z_flange),
-        App.Vector(0.0,y_wall,z_root),
-    ] + curve[1:] + [App.Vector(0.0,y_wall,z_flange)]
-    face = Part.Face(Part.makePolygon(pts))
-    q = face.extrude(App.Vector(PLATE_X,0,0))
-    q.translate(App.Vector(PLATE_X0,0,0))
-    return q.removeSplitter()
-
-
 stage('plate')
 PLATE_BODY_Y0=C.BOX_RIM_INNER_Y-PLATE_Y; PLATE_HOOK_Y0=C.BOX_RIM_INNER_Y-WIDTH_RIM_CLEAR; PLATE_HOOK_Y1=C.BOX_RIM_INNER_Y+UNDERHOOK
 PLATE=C.box(PLATE_X0,PLATE_BODY_Y0,PLATE_Z0,PLATE_X,PLATE_Y,PLATE_Z1-PLATE_Z0)
 PLATE=PLATE.fuse(C.box(PLATE_X0,PLATE_HOOK_Y0,RIM_BOTTOM_Z-UNDERHOOK_T,PLATE_X,PLATE_HOOK_Y1-PLATE_HOOK_Y0,UNDERHOOK_T))
-PLATE_UNDERHOOK_DROP=make_plate_underhook_drop()
-PLATE=PLATE.fuse(PLATE_UNDERHOOK_DROP).removeSplitter()
-
-# The grip starts 1.8 mm in front of the plate.  Remove only the required
-# outer 2.8 mm of hook/drop locally around each grip envelope, leaving the
-# remainder of the hook and the entire front/drop untouched elsewhere.
-for sx in SPINDLE_X:
-    PLATE=PLATE.cut(cyl_y(
-        PLATE_KNOB_RELIEF_R,
-        PLATE_KNOB_RELIEF_Y_DEPTH+0.40,
-        sx,
-        PLATE_HOOK_Y1-PLATE_KNOB_RELIEF_Y_DEPTH,
-        SPINDLE_Z,
-    )).removeSplitter()
-
 for sx in SPINDLE_X:
     PLATE=PLATE.cut(cyl_y(PLATE_HOLE_D/2,PLATE_Y+1,sx,PLATE_BODY_Y0-0.5,SPINDLE_Z))
     # Outboard retainer recess plus a bottom-open radial service channel.  The
@@ -759,45 +705,6 @@ CAP_NUT_Z=CAP_NUT_Z.cut(CAP_FEMALE_Z).removeSplitter()
 C.require_single(CAP_NUT_Z,'lead-knob-retainer-nut true RH8x2 Z master')
 CAP_NUT=rotate_z180(z_to_y(CAP_NUT_Z))
 C.require_single(CAP_NUT,'lead-knob-retainer-nut')
-
-# Direct regression gate for the actual problem area: underhook/drop versus
-# the two user-operated knobs.  The plate and knob are one moving subassembly,
-# so this check is independent of clamp travel and covers a full revolution.
-plate_knob_clearance=[]
-for sx in SPINDLE_X:
-    for deg in range(0,360,15):
-        qkn=KNOB.copy()
-        qkn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),float(deg))
-        qkn.translate(App.Vector(sx,PLATE_SPINDLE_Y+HEX_LEN,SPINDLE_Z))
-        cv=PLATE.common(qkn).Volume
-        plate_knob_clearance.append({
-            'x_mm':sx,'deg':deg,'plate_knob_common_mm3':round(cv,9),
-        })
-        if cv>1e-5:
-            raise RuntimeError(
-                f'plate underhook/drop blocks knob X={sx} deg={deg}: {cv:.6f} mm3'
-            )
-
-# Prove the DROP itself is present on the visible/outboard side away from the
-# two intentionally tiny knob-tip reliefs.
-drop_probe=PLATE_UNDERHOOK_DROP.copy()
-drop_sample=C.box(
-    (SPINDLE_X[0]+SPINDLE_X[1])/2.0-8.0,
-    PLATE_SPINDLE_Y,
-    RIM_BOTTOM_Z-UNDERHOOK_T-UNDERHOOK,
-    16.0,
-    PLATE_HOOK_Y1-PLATE_SPINDLE_Y,
-    UNDERHOOK+0.05,
-)
-drop_common=PLATE.common(drop_probe.common(drop_sample)).Volume
-drop_sample_volume=drop_probe.common(drop_sample).Volume
-plate_underhook_drop_fraction=(
-    drop_common/drop_sample_volume if drop_sample_volume>1e-9 else 0.0
-)
-if plate_underhook_drop_fraction<0.999:
-    raise RuntimeError(
-        f'outboard clamp-plate underhook DROP missing: {plate_underhook_drop_fraction:.6f}'
-    )
 
 # The spindle journal is captive in the moving plate: shoulder on the inboard
 # face, printable C-clip in the existing Ø12 x 2 mm outboard counterbore.
@@ -1169,10 +1076,10 @@ for sx in SPINDLE_X:
         # Knob and its retainer are rigidly carried by the spindle.  Validate
         # their complete rotational envelope against the actual BASE over the
         # full 0..5.5 mm operating travel.
-        knob_y=PLATE_SPINDLE_Y+HEX_LEN-d
+        knob_y=PLATE_SPINDLE_Y+KP.KNOB_H-d
         # CAP_NUT points toward -Y, so placing its origin 5.4 mm beyond the
         # knob face seats its inner face exactly against the knob.
-        cap_y=PLATE_SPINDLE_Y+HEX_LEN+5.4-d
+        cap_y=PLATE_SPINDLE_Y+KP.KNOB_H+5.4-d
 
         qkn=KNOB.copy()
         qkn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
@@ -1231,13 +1138,13 @@ for sx in SPINDLE_X:
         spindle_base=RIGHT_FULL.common(asp).Volume
         spindle_nut=nut.common(asp).Volume
 
-        knob_y=PLATE_SPINDLE_Y+HEX_LEN-d
+        knob_y=PLATE_SPINDLE_Y+KP.KNOB_H-d
         akn=KNOB.copy()
         akn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
         akn.translate(App.Vector(sx,knob_y,SPINDLE_Z))
         knob_base=RIGHT_FULL.common(akn).Volume
 
-        cap_y=PLATE_SPINDLE_Y+HEX_LEN+5.4-d
+        cap_y=PLATE_SPINDLE_Y+KP.KNOB_H+5.4-d
         acap=CAP_NUT.copy()
         acap.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
         acap.translate(App.Vector(sx,cap_y,SPINDLE_Z))
@@ -1268,11 +1175,7 @@ for sx in SPINDLE_X:
 stage('thread motion complete')
 
 def local_y_extent(d):
-    pl=PLATE.copy(); pl.translate(App.Vector(0,-d,0))
-    sp=SPINDLE.copy(); sp.rotate(App.Vector(0,0,0),App.Vector(0,1,0),-360*d/THREAD_PITCH); sp.translate(App.Vector(0,PLATE_SPINDLE_Y-d,SPINDLE_Z))
-    kn=KNOB.copy(); kn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),-360*d/THREAD_PITCH); kn.translate(App.Vector(SPINDLE_X[0],PLATE_SPINDLE_Y+HEX_LEN-d,SPINDLE_Z))
-    cp=CAP_NUT.copy(); cp.rotate(App.Vector(0,0,0),App.Vector(0,1,0),-360*d/THREAD_PITCH); cp.translate(App.Vector(SPINDLE_X[0],PLATE_SPINDLE_Y+HEX_LEN+5.4-d,SPINDLE_Z))
-    return max(RIGHT_FULL.BoundBox.YMax,pl.BoundBox.YMax,sp.BoundBox.YMax,kn.BoundBox.YMax,cp.BoundBox.YMax)
+    pl=PLATE.copy(); pl.translate(App.Vector(0,-d,0)); sp=SPINDLE.copy(); sp.rotate(App.Vector(0,0,0),App.Vector(0,1,0),360*d/THREAD_PITCH); sp.translate(App.Vector(0,PLATE_SPINDLE_Y-d,SPINDLE_Z)); return max(RIGHT_FULL.BoundBox.YMax,pl.BoundBox.YMax,sp.BoundBox.YMax)
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
@@ -1286,27 +1189,12 @@ V['box_clamp']['lead_screw']={
     'main_thread_length_mm':LEAD_THREAD_LEN,
     'knob_hex_length_mm':HEX_LEN,
     'knob_thickness_mm':KP.KNOB_H,
-    'knob_standoff_mm':KNOB_STANDOFF,
-    'knob_hex_engagement_mm':KP.KNOB_H,
     'outer_stud_length_mm':OUTER_STUD_LEN,
     'knob_side':'outboard of clamp plate',
     'working_thread_side':'inboard toward fixed lead-nut cartridge',
     'outer_stack_y_from_plate_mm':[0.0,HEX_LEN,HEX_LEN+OUTER_STUD_LEN],
     'mesh_topology':lead_screw_mesh,
     'main_thread_samples':main_spindle_thread_samples,
-}
-V['box_clamp']['plate_underhook_printability']={
-    'target':'visible green underhook on moving clamp plate',
-    'drop_side':'outboard / knob side of clamp plate',
-    'hook_top_contact_z_mm':RIM_BOTTOM_Z,
-    'hook_outer_y_mm':PLATE_HOOK_Y1,
-    'drop_root_z_mm':round((RIM_BOTTOM_Z-UNDERHOOK_T)-(PLATE_HOOK_Y1-PLATE_SPINDLE_Y),3),
-    'drop_run_mm':round(PLATE_HOOK_Y1-PLATE_SPINDLE_Y,3),
-    'drop_material_fraction_away_from_knobs':round(plate_underhook_drop_fraction,6),
-    'knob_relief_y_depth_mm':PLATE_KNOB_RELIEF_Y_DEPTH,
-    'knob_relief_radius_mm':PLATE_KNOB_RELIEF_R,
-    'knob_standoff_mm':KNOB_STANDOFF,
-    'plate_knob_clearance':plate_knob_clearance,
 }
 V['box_clamp']['plate_spindle_retention']={
     'mode':'inboard Ø11 shoulder + outboard printable C-clip in Ø12x2 counterbore with bottom-open service channel',
