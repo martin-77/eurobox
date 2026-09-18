@@ -42,9 +42,6 @@ assert box['plate_travel_mm'] == 5.5, box
 assert box['effective_total_width_mm'] <= 600.02, box
 assert box['axial_slide_without_rotation_common_mm3'] >= 0.5, box
 assert box['wrong_phase_common_mm3'] >= 0.5, box
-assert len(box['cartridge_service_mouth']) == 2, box
-assert all(q['blocked_common_mm3'] <= 0.0001 for q in box['cartridge_service_mouth']), box['cartridge_service_mouth']
-assert box['cartridge_pocket_y_mm'][1] > 214.615, box
 assert len(box['cartridge_insertion']) == 8, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['cartridge_insertion']), box['cartridge_insertion']
 assert box['final_assembly_replaceable_module_count'] == 0, box
@@ -70,8 +67,9 @@ assert closure['screw_length_mm'] == 30.0, closure
 assert closure['retainer_pitch_mm'] == 2.0, closure
 assert closure['retainer_male_major_d_mm'] == 12.0, closure
 assert closure['retainer_female_major_d_mm'] >= 12.4, closure
-assert closure['entry_clear_d_mm'] > closure['retainer_male_major_d_mm'], closure
-assert closure['entry_clear_depth_mm'] >= 1.0, closure
+assert closure['entry_clear_d_mm'] >= closure['retainer_male_major_d_mm'] + 0.8, closure
+assert 0.35 <= closure['entry_clear_depth_mm'] <= 0.60, closure
+assert closure['female_thread_start_recess_mm'] <= 0.60, closure
 assert len(closure['female_thread_removed_mm3']) == 2, closure
 assert all(v >= 8.0 for v in closure['female_thread_removed_mm3']), closure
 

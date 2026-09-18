@@ -36,8 +36,13 @@ FEMALE_CREST_W = MALE_CREST_W + 2.0*FLANK_CLEAR
 THREAD_LEN = R.RETAINER_LEN
 THREAD_Z0 = R.RETAINER_THREAD_Z0
 TOP_OVERRUN = PITCH
-ENTRY_CLEAR_R = MALE_MAJOR_R + 0.30
-ENTRY_CLEAR_DEPTH = 1.20
+# The service retainer is Ø12.0 mm at the thread major diameter.  The old
+# Ø12.6 x 1.2 mm smooth entry throat made the first female thread sit visibly
+# behind the carrier top wall.  Use a slightly larger Ø13.0 mm lead-in, but only
+# for a shallow 0.45 mm print/chamfer relief so the actual 12x2 thread starts
+# essentially at the top surface.
+ENTRY_CLEAR_R = MALE_MAJOR_R + 0.50
+ENTRY_CLEAR_DEPTH = 0.45
 FN = 72
 SLICES_PER_PITCH = 32
 
@@ -258,6 +263,7 @@ validation['rack']['m4_closure']['female_helical_witness']=female_witness
 validation['rack']['m4_closure']['retainer_phase_fit_checks']=fit_checks
 validation['rack']['m4_closure']['entry_clear_d_mm']=round(2.0*ENTRY_CLEAR_R,3)
 validation['rack']['m4_closure']['entry_clear_depth_mm']=ENTRY_CLEAR_DEPTH
+validation['rack']['m4_closure']['female_thread_start_recess_mm']=ENTRY_CLEAR_DEPTH
 validation['rack']['m4_closure']['retainer_entry_checks']=entry_checks
 validation['rack']['m4_closure']['witness_strategy']='actual final BASE + actual final retainer; open-mouth envelope and entry motion from free space'
 validation['failures']=[]
@@ -265,6 +271,6 @@ with open(validation_path,'w',encoding='utf-8') as fh:
     json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFinal retainer: one matched 12x2 male/female pair; explicit full-diameter open mouth; actual final BASE/retainer fit, phase and insertion-from-free-space hard checks.\n')
+    fh.write('\nFinal retainer: one matched 12x2 male/female pair; Ø13.0 mm shallow service lead-in with the female thread starting 0.45 mm below the carrier top; actual final BASE/retainer fit, phase and insertion-from-free-space hard checks.\n')
 
 stage('complete')
