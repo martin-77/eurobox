@@ -456,7 +456,10 @@ for name,probe in make_cage_reinforcement().items():
         'material_fraction':round(fraction,6),
         'volume_mm3':round(pv,3),
     })
-    if fraction<0.995:
+    # The retaining-pin service bores deliberately nick the station-side ends
+    # of the right holm fill / cross top by well under 1 %.  Require essentially
+    # complete reinforcement while preserving those service cuts.
+    if fraction<0.990:
         fail(f'cage reinforcement {name} not structurally present: {fraction:.6f}')
 
 holm_station_checks=[]
