@@ -45,6 +45,11 @@ WIDTH_RIM_CLEAR = 0.20
 PRINT_GUIDE_Y0 = CAGE_Y1 - 0.40
 PRINT_GUIDE_Y1 = C.BOX_RIM_INNER_Y - WIDTH_RIM_CLEAR
 PRINT_GUIDE_Z0 = 14.0
+PLATE_HALF_X = PLATE_X / 2.0
+GUIDE_RUNNING_CLEAR_X = 0.40
+GUIDE_INNER_X = PLATE_HALF_X + GUIDE_RUNNING_CLEAR_X
+GUIDE_T = 7.60
+GUIDE_OUTER_X = GUIDE_INNER_X + GUIDE_T
 # Final v50 datum: the complete cage terminates on the box support plane.  The
 # first v60 rebuild incorrectly grew the guides/tie to Z=49.8 and changed the
 # front architecture substantially.
@@ -190,15 +195,15 @@ PLATE_CLIP=make_c_clip(5.4,2.45,1.4,3.8)
 
 def make_cage_structure():
     parts=[
-        C.box(-78.0,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,7.6,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(70.4,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,7.6,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(-78.0,CAGE_Y0-0.10,PRINT_BASE_PLANE_Z-PRINT_FRAME_TIE_T,156.0,CAGE_Y1-CAGE_Y0+0.20,PRINT_FRAME_TIE_T),
-        C.box(-70.4,CAGE_Y0,FINAL_DECK_Z0,140.8,PRINT_GUIDE_Y1-CAGE_Y0,FINAL_DECK_Z1-FINAL_DECK_Z0),
-        C.box(-78.0,CAGE_Y0-0.10,PRINT_GUIDE_Z0,7.6,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(70.4,CAGE_Y0-0.10,PRINT_GUIDE_Z0,7.6,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(-70.4-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,
+        C.box(-GUIDE_OUTER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
+        C.box(GUIDE_INNER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
+        C.box(-GUIDE_OUTER_X,CAGE_Y0-0.10,PRINT_BASE_PLANE_Z-PRINT_FRAME_TIE_T,2.0*GUIDE_OUTER_X,CAGE_Y1-CAGE_Y0+0.20,PRINT_FRAME_TIE_T),
+        C.box(-GUIDE_INNER_X,CAGE_Y0,FINAL_DECK_Z0,2.0*GUIDE_INNER_X,PRINT_GUIDE_Y1-CAGE_Y0,FINAL_DECK_Z1-FINAL_DECK_Z0),
+        C.box(-GUIDE_OUTER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
+        C.box(GUIDE_INNER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
+        C.box(-GUIDE_INNER_X-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,
               2*GUIDE_STITCH_OVERLAP,PRINT_GUIDE_Y1-CAGE_Y0,2*GUIDE_STITCH_OVERLAP),
-        C.box(70.4-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,
+        C.box(GUIDE_INNER_X-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,
               2*GUIDE_STITCH_OVERLAP,PRINT_GUIDE_Y1-CAGE_Y0,2*GUIDE_STITCH_OVERLAP),
     ]
     for sx in SPINDLE_X:
@@ -273,8 +278,14 @@ for sx in SPINDLE_X:
     )
     RIGHT_FULL = RIGHT_FULL.cut(pocket).removeSplitter()
 
-    # Smooth full spindle corridor from the inboard cage face through the plate.
-    tunnel_y0 = CAGE_Y0-0.50
+    # Smooth full spindle corridor. It must cover the complete screw including
+    # the rear stud at maximum 5.5 mm opening; the wider -65 mm station otherwise
+    # enters the front rack-station structure behind the old cage face.
+    spindle_rear_reach = (
+        SPINDLE_LOCAL_JOURNAL + SPINDLE_LOCAL_SHOULDER
+        + LEAD_THREAD_LEN + HEX_LEN + OUTER_STUD_LEN
+    )
+    tunnel_y0 = PLATE_SPINDLE_Y - PLATE_OPEN - spindle_rear_reach - 1.0
     tunnel_y1 = PLATE_SPINDLE_Y-PLATE_Y+0.50
     RIGHT_FULL = RIGHT_FULL.cut(
         cyl_y(5.90,tunnel_y1-tunnel_y0,sx,tunnel_y0,SPINDLE_Z)
@@ -334,7 +345,7 @@ mirror_bound_delta=max(abs(RIGHT_FULL.BoundBox.XMin-left_back.BoundBox.XMin),abs
 if full_mirror_delta>1e-4 or mirror_bound_delta>1e-6 or mirror_face_delta!=0: fail('full handed bases are not exact construction mirrors')
 stage('mirror gate complete')
 
-for x in (-70.4,70.4):
+for x in (-GUIDE_INNER_X,GUIDE_INNER_X):
     stitch=C.box(x-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,2*GUIDE_STITCH_OVERLAP,PRINT_GUIDE_Y1-CAGE_Y0,2*GUIDE_STITCH_OVERLAP)
     if RIGHT_FULL.common(stitch).Volume/stitch.Volume<0.999: fail(f'guide/deck structural stitch missing at X={x}')
 
