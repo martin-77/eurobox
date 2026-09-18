@@ -62,6 +62,9 @@
         46.4
       ]
     ],
+    "crosshead_front_drop_run_mm": 8.0,
+    "crosshead_front_drop_rise_mm": 8.0,
+    "crosshead_front_drop_angle_deg": 45.0,
     "indx_build_xy_mm": [
       298.0,
       275.0
@@ -87,14 +90,15 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 512707.345,
-    "left_volume_mm3": 512707.345,
+    "right_volume_mm3": 522051.345,
+    "left_volume_mm3": 522051.345,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
     "front_support_crosshead_common_mm3": 3486.644,
     "rear_support_backstop_common_mm3": 5251.2,
     "rear_support_crosshead_common_mm3": 3486.644,
+    "crosshead_front_drop_material_fraction": 1.0,
     "holm_head_closures": [
       {
         "x_mm": -80.0,
