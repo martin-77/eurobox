@@ -5,7 +5,7 @@ name: Build Eurobox v60
 on:
   workflow_dispatch:
   push:
-    branches: [main, v60-clean]
+    branches: [main, v60-clean, fix/v60-v50-box-clamp-thread-access]
     paths:
       - "scripts/build_v60.py"
       - "scripts/build_v60_continuous_carrier.py"
@@ -175,7 +175,7 @@ jobs:
           - `validation/` — machine-readable hard-check and timing reports
           - workflow artifact `eurobox-v60-complete` — complete generated FreeCAD assembly and all proof outputs
 
-          The box clamp keeps a 160 mm central clamp face. Its front assembly position is validated separately by the production front-position stage. The working RH8x2 lead nut is a replaceable cartridge; its spindle, 30 mm hand knob and open-ended RH8x2 knob retainer have explicit full-travel service-access checks. The rack closure retains its explicit matched 12x2 service-retainer thread pair with a hard top-access/unscrew audit. No printed working thread is accepted behind a closed wall.
+          The box clamp uses the v50 direct architecture: the BASE is a smooth housing and the only working RH8x2 female thread is a removable lead-nut cartridge retained by cross-pin and clip. There is no intermediate clamp cassette or later front rebuild. The rack closure uses one final matched 12x2 service-retainer pair. Its complete screw-major envelope must be open at the real BASE surface, and CI inserts the actual retainer from free space before accepting the build.
 
           `validation/TIMING_v60.json` records measured stage/operation durations from the GitHub runner so expensive OCC operations can be optimized from data rather than guesswork.
           EOF

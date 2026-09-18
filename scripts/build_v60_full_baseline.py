@@ -233,15 +233,66 @@ MALE_Z=import_scad_shape(MALE_SCAD).common(Part.makeCylinder(4.06,LEAD_THREAD_LE
 FEMALE_Z=import_scad_shape(FEMALE_SCAD).common(Part.makeCylinder(4.28,NUT_THREAD_LEN)).removeSplitter()
 CAP_FEMALE_Z=import_scad_shape(CAP_FEMALE_SCAD).common(Part.makeCylinder(4.38,5.4)).removeSplitter()
 
-stage('integral thread machining')
+stage('v50 direct cartridge pockets - no integral box-clamp threads in BASE')
 FEMALE_NEGY=rotate_z180(z_to_y(FEMALE_Z))
+
+# Canonical v50 box-clamp architecture: the BASE is only a smooth housing.
+# The one and only working RH8x2 female thread lives in a removable cartridge.
+LEAD_NUT_PIN_LOCAL_Y = -7.0
+LEAD_NUT_PIN_LOCAL_Z = 10.0
+LEAD_NUT_PIN_HOLE_D = 3.4
+NUT_PIN_SHAFT_D = 3.0
+NUT_PIN_GROOVE_D = 2.4
+NUT_PIN_GROOVE_X0 = 11.4
+NUT_PIN_GROOVE_W = 1.6
+NUT_PIN_CLIP_T = 1.3
+NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
+
+LEAD_NUT = C.box(-8.0,-NUT_THREAD_LEN,-7.0,16.0,NUT_THREAD_LEN,14.0)
+LEAD_NUT = LEAD_NUT.fuse(C.box(-6.0,-11.0,7.0,12.0,8.0,6.0)).removeSplitter()
+LEAD_NUT = LEAD_NUT.cut(FEMALE_NEGY).removeSplitter()
+LEAD_NUT = LEAD_NUT.cut(C.cyl_x(
+    LEAD_NUT_PIN_HOLE_D/2.0,20.0,-10.0,
+    LEAD_NUT_PIN_LOCAL_Y,LEAD_NUT_PIN_LOCAL_Z,
+)).removeSplitter()
+C.require_single(LEAD_NUT,'v50-style removable RH8x2 lead-nut cartridge')
+
+NUT_PIN = C.fuse_seq([
+    C.cyl_x(NUT_PIN_SHAFT_D/2.0,23.4,-12.0,0,0),
+    C.cyl_x(NUT_PIN_GROOVE_D/2.0,NUT_PIN_GROOVE_W,NUT_PIN_GROOVE_X0,0,0),
+    C.cyl_x(NUT_PIN_SHAFT_D/2.0,1.7,NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,0,0),
+    C.cyl_x(3.0,2.0,-14.0,0,0),
+],'lead-nut-retaining-pin')
+NUT_PIN_CLIP = make_c_clip(3.2,1.25,NUT_PIN_CLIP_T,2.4)
+
 for sx in SPINDLE_X:
-    inner_y0=CAGE_Y0-0.50
-    RIGHT_FULL=RIGHT_FULL.cut(cyl_y(5.90,NUT_THREAD_Y0-inner_y0+0.20,sx,inner_y0,SPINDLE_Z)).removeSplitter()
-    cutter=FEMALE_NEGY.copy(); cutter.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z)); RIGHT_FULL=RIGHT_FULL.cut(cutter).removeSplitter()
-    outer_y0=NUT_Y0
-    RIGHT_FULL=RIGHT_FULL.cut(cyl_y(SHOULDER_D/2+0.35,PLATE_SPINDLE_Y-outer_y0+0.70,sx,outer_y0,SPINDLE_Z)).removeSplitter()
-C.require_single(RIGHT_FULL,'RIGHT full after integral lead threads')
+    # Cartridge pocket is open to the inboard service side and carries no thread.
+    pocket = C.box(
+        sx-8.35,NUT_THREAD_Y0-0.35,SPINDLE_Z-7.35,
+        16.70,NUT_THREAD_LEN+0.70,20.70,
+    )
+    RIGHT_FULL = RIGHT_FULL.cut(pocket).removeSplitter()
+
+    # Smooth full spindle corridor from the inboard cage face through the plate.
+    tunnel_y0 = CAGE_Y0-0.50
+    tunnel_y1 = PLATE_SPINDLE_Y-PLATE_Y+0.50
+    RIGHT_FULL = RIGHT_FULL.cut(
+        cyl_y(5.90,tunnel_y1-tunnel_y0,sx,tunnel_y0,SPINDLE_Z)
+    ).removeSplitter()
+
+    pin_y = NUT_Y0 + LEAD_NUT_PIN_LOCAL_Y
+    pin_z = SPINDLE_Z + LEAD_NUT_PIN_LOCAL_Z
+    RIGHT_FULL = RIGHT_FULL.cut(
+        C.cyl_x(LEAD_NUT_PIN_HOLE_D/2.0,24.0,sx-12.0,pin_y,pin_z)
+    ).removeSplitter()
+    RIGHT_FULL = RIGHT_FULL.cut(
+        C.cyl_x(3.55,3.0,sx-14.0,pin_y,pin_z)
+    ).removeSplitter()
+    RIGHT_FULL = RIGHT_FULL.cut(
+        C.cyl_x(4.10,4.0,sx+11.0,pin_y,pin_z)
+    ).removeSplitter()
+
+C.require_single(RIGHT_FULL,'RIGHT full with v50 cartridge pockets and smooth spindle corridors')
 
 pin_bore_clearance=[]
 for xc in C.CLAMP_X:
@@ -378,11 +429,46 @@ for d in (0,1,2,3,4,4.5,5.0,5.5):
     if rc>1e-4: fail(f'plate/rim collision at open={d}: {rc:.6f} mm3')
 stage('plate motion complete')
 
+cartridge_insertion=[]
 thread_motion=[]
-for d in (0,0.5,1.0,2.0,3.0,4.0,5.5):
-    q=SPINDLE.copy(); q.rotate(App.Vector(0,0,0),App.Vector(0,1,0),360*d/THREAD_PITCH); q.translate(App.Vector(SPINDLE_X[0],PLATE_SPINDLE_Y-d,SPINDLE_Z)); bc=RIGHT_FULL.common(q).Volume
-    thread_motion.append({'open_mm':d,'rotation_deg':360*d/THREAD_PITCH,'base_common_mm3':round(bc,6)})
-    if bc>1.0: fail(f'lead screw grossly collides with base at open={d}: {bc:.6f} mm3')
+for sx in SPINDLE_X:
+    nut=LEAD_NUT.copy(); nut.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z))
+    if RIGHT_FULL.common(nut).Volume>1e-4:
+        fail(f'v50 lead-nut cartridge collides with BASE pocket at X={sx}')
+
+    # Prove the real cartridge can be dropped into the real BASE from above.
+    for lift in (10.0,5.0,2.0,0.0):
+        qnut=LEAD_NUT.copy()
+        qnut.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z+lift))
+        cv=RIGHT_FULL.common(qnut).Volume
+        cartridge_insertion.append({
+            'x_mm':sx,'lift_mm':lift,'base_common_mm3':round(cv,6),
+        })
+        if cv>1e-4:
+            fail(f'v50 lead-nut cartridge insertion blocked X={sx} lift={lift}: {cv:.6f} mm3')
+    for d in (0,0.5,1.0,2.0,3.0,4.0,5.5):
+        q=SPINDLE.copy()
+        q.rotate(App.Vector(0,0,0),App.Vector(0,1,0),360*d/THREAD_PITCH)
+        q.translate(App.Vector(sx,PLATE_SPINDLE_Y-d,SPINDLE_Z))
+        bc=RIGHT_FULL.common(q).Volume
+        nc=nut.common(q).Volume
+        thread_motion.append({
+            'x_mm':sx,'open_mm':d,'rotation_deg':360*d/THREAD_PITCH,
+            'base_common_mm3':round(bc,6),'cartridge_common_mm3':round(nc,6),
+        })
+        if bc>1e-4:
+            fail(f'lead screw blocked by smooth BASE corridor X={sx} open={d}: {bc:.6f} mm3')
+        if nc>0.10:
+            fail(f'RH8x2 spindle/cartridge collision X={sx} open={d}: {nc:.6f} mm3')
+
+# Functional thread proof uses the actual production cartridge, never a coupon.
+nut0=LEAD_NUT.copy(); nut0.translate(App.Vector(SPINDLE_X[0],NUT_Y0,SPINDLE_Z))
+axial=SPINDLE.copy(); axial.translate(App.Vector(SPINDLE_X[0],PLATE_SPINDLE_Y-0.5,SPINDLE_Z))
+wrong=SPINDLE.copy(); wrong.rotate(App.Vector(0,0,0),App.Vector(0,1,0),-90.0); wrong.translate(App.Vector(SPINDLE_X[0],PLATE_SPINDLE_Y-0.5,SPINDLE_Z))
+axial_slide_common=nut0.common(axial).Volume
+wrong_phase_common=nut0.common(wrong).Volume
+if axial_slide_common<0.5: fail('RH8x2 cartridge does not block axial slide without rotation')
+if wrong_phase_common<0.5: fail('RH8x2 cartridge lacks phase-sensitive engagement')
 stage('thread motion complete')
 
 def local_y_extent(d):
@@ -390,13 +476,13 @@ def local_y_extent(d):
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
-V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'guide_stitch_overlap_mm':GUIDE_STITCH_OVERLAP,'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'spindle_x_mm':list(SPINDLE_X),'spindle_spacing_mm':SPINDLE_X[1]-SPINDLE_X[0],'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':True,'thread_motion':thread_motion,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'guide_stitch_overlap_mm':GUIDE_STITCH_OVERLAP,'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'spindle_x_mm':list(SPINDLE_X),'spindle_spacing_mm':SPINDLE_X[1]-SPINDLE_X[0],'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'axial_slide_without_rotation_common_mm3':round(axial_slide_common,6),'wrong_phase_common_mm3':round(wrong_phase_common,6),'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60_full.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 FULL HARD CHECKS FAILED: '+' | '.join(failures))
 
 stage('exports')
-parts={'eurobox_v60_base_right':RIGHT_FULL,'eurobox_v60_base_left':LEFT_FULL,'eurobox_v60_rack_lower':LOWER,'eurobox_v60_rack_pin':PIN,'eurobox_v60_rack_pin_clip':PIN_CLIP,'eurobox_v60_clamp_plate':PLATE,'eurobox_v60_lead_screw':SPINDLE,'eurobox_v60_knob':KNOB,'eurobox_v60_knob_retainer_nut':CAP_NUT,'eurobox_v60_plate_retainer_clip':PLATE_CLIP}
+parts={'eurobox_v60_base_right':RIGHT_FULL,'eurobox_v60_base_left':LEFT_FULL,'eurobox_v60_rack_lower':LOWER,'eurobox_v60_rack_pin':PIN,'eurobox_v60_rack_pin_clip':PIN_CLIP,'eurobox_v60_clamp_plate':PLATE,'eurobox_v60_lead_nut':LEAD_NUT,'eurobox_v60_lead_nut_retaining_pin':NUT_PIN,'eurobox_v60_lead_nut_pin_clip':NUT_PIN_CLIP,'eurobox_v60_lead_screw':SPINDLE,'eurobox_v60_knob':KNOB,'eurobox_v60_knob_retainer_nut':CAP_NUT,'eurobox_v60_plate_retainer_clip':PLATE_CLIP}
 for name,sh in parts.items(): C.require_single(sh,name); C.export_shape(name,sh)
 
 stage('assembly')
