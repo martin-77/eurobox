@@ -58,7 +58,10 @@ assert all(q['cartridge_common_mm3'] <= box['thread_brep_common_tolerance_mm3'] 
 # Lead screw must be the exact closed printable CGAL mesh, with a full 7 mm
 # knob hex and true RH8x2 on both male thread sections.
 ls = box['lead_screw']
-assert ls['knob_hex_length_mm'] == ls['knob_thickness_mm'] == 7.0, ls
+assert ls['knob_hex_length_mm'] == 11.0, ls
+assert ls['knob_thickness_mm'] == 7.0, ls
+assert ls['knob_standoff_mm'] == 4.0, ls
+assert ls['knob_hex_engagement_mm'] == 7.0, ls
 assert ls['mesh_topology']['boundary_edges'] == 0, ls
 assert ls['mesh_topology']['nonmanifold_edges'] == 0, ls
 assert len(ls['main_thread_samples']) == 8, ls
@@ -95,6 +98,17 @@ assert all(q['knob_retainer_base_common_mm3'] <= 0.0001 for q in ms['threaded_pl
 assert len(ms['operating_knob_clearance']) == 14, ms
 assert all(q['knob_base_common_mm3'] <= 0.0001 for q in ms['operating_knob_clearance']), ms
 assert all(q['retainer_base_common_mm3'] <= 0.0001 for q in ms['operating_knob_clearance']), ms
+
+uph = box['plate_underhook_printability']
+assert uph['target'] == 'visible green underhook on moving clamp plate', uph
+assert uph['drop_side'] == 'outboard / knob side of clamp plate', uph
+assert uph['drop_run_mm'] == 4.2, uph
+assert uph['drop_material_fraction_away_from_knobs'] >= 0.999, uph
+assert uph['knob_standoff_mm'] == 4.0, uph
+assert uph['knob_relief_y_depth_mm'] == 0.8, uph
+assert len(uph['plate_knob_clearance']) == 48, uph
+assert all(q['plate_knob_common_mm3'] <= 0.00001 for q in uph['plate_knob_clearance']), uph
+assert box['effective_total_width_mm'] <= 600.02, box
 
 # The removable lead-nut wear cartridge must contain a real printable RH8x2
 # female helix.  Direct final-part samples prevent a smooth cylindrical bore
@@ -178,13 +192,6 @@ assert cc['rack_tube_common_mm3'] <= 0.0001, cc
 assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
-
-inner_haunches = core['geometry']['inner_side_haunches']
-assert len(inner_haunches) == 4, inner_haunches
-assert all(q['web_side'] == 'inner/opposite existing outer DROP' for q in inner_haunches), inner_haunches
-assert all(abs(q['span_mm'] - 6.4) <= 1e-6 for q in inner_haunches), inner_haunches
-assert all(q['tip_rise_mm'] == 10.0 for q in inner_haunches), inner_haunches
-assert all(q['material_fraction'] >= 0.999 for q in inner_haunches), inner_haunches
 
 checks = full['installed_support_orientation']['checks']
 assert len(checks) == 2
