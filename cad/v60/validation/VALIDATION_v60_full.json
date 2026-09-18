@@ -38,6 +38,53 @@
         "boss_to_holm_gap_mm": 12.0
       }
     ],
+    "cage_reinforcement_checks": [
+      {
+        "name": "holm_left",
+        "material_fraction": 0.996731,
+        "volume_mm3": 8928.735
+      },
+      {
+        "name": "holm_right",
+        "material_fraction": 0.993418,
+        "volume_mm3": 8928.735
+      },
+      {
+        "name": "cross_bottom",
+        "material_fraction": 1.0,
+        "volume_mm3": 16799.38
+      },
+      {
+        "name": "cross_top",
+        "material_fraction": 0.994764,
+        "volume_mm3": 16799.38
+      },
+      {
+        "name": "cross_drop_rear",
+        "material_fraction": 1.0,
+        "volume_mm3": 10704.96
+      },
+      {
+        "name": "cross_drop_front",
+        "material_fraction": 1.0,
+        "volume_mm3": 10704.96
+      },
+      {
+        "name": "station_floor_left",
+        "material_fraction": 1.0,
+        "volume_mm3": 4204.74
+      },
+      {
+        "name": "station_floor_right",
+        "material_fraction": 1.0,
+        "volume_mm3": 4204.74
+      }
+    ],
+    "cage_struct_y_mm": [
+      190.68,
+      214.115
+    ],
+    "station_floor_y1_mm": 214.215,
     "cage_top_z_mm": 39.54
   },
   "rack": {
@@ -668,11 +715,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 2312699
+    "file_bytes": 2315932
   },
   "handed_stl_export": {
-    "right_sha256": "a26737c5d784652c25450364b75b60b8a2c60ad47cb18fac0e965e010f6822c2",
-    "left_sha256": "8afa95b990f197eeffc7a5b5581c359a6201a6b013e29a10196e78c07d26f59d",
+    "right_sha256": "634d8edb22229483a68e1e956b90d06d34da92b9aa92e21816df69a2c594a1bf",
+    "left_sha256": "241b238ef0b3050ef9a144752315e78fbc4a6e376274a1cbcb5967c82a0a5936",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -695,13 +742,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 29956,
-    "left_facets": 29956,
-    "right_volume_mm3": 543259.231638,
-    "left_volume_mm3": 543259.231638,
+    "right_facets": 30060,
+    "left_facets": 30060,
+    "right_volume_mm3": 609182.043862,
+    "left_volume_mm3": 609182.043862,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 181178.293179,
-    "left_area_mm2": 181178.293179,
+    "right_area_mm2": 208515.722658,
+    "left_area_mm2": 208515.722658,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
