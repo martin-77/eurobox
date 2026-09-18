@@ -105,7 +105,7 @@ assert uph['drop_side'] == 'outboard / knob side of clamp plate', uph
 assert uph['drop_run_mm'] == 4.2, uph
 assert uph['drop_material_fraction_away_from_knobs'] >= 0.999, uph
 assert uph['knob_standoff_mm'] == 1.8, uph
-assert uph['knob_relief_y_depth_mm'] == 2.8, uph
+assert abs(uph['knob_relief_y_depth_mm'] - 2.8) <= 1e-9, uph
 assert len(uph['plate_knob_clearance']) == 48, uph
 assert all(q['plate_knob_common_mm3'] <= 0.00001 for q in uph['plate_knob_clearance']), uph
 assert box['effective_total_width_mm'] <= 600.02, box
