@@ -111,59 +111,8 @@ def translated(shape, x=0.0, y=0.0, z=0.0):
     return q
 
 
-stage('compile tall coarse retainer threads')
-ret_male_scad = os.path.join(C.OUT, 'v60_rack_nut_retainer_male.scad')
-ret_female_scad = os.path.join(C.OUT, 'v60_rack_nut_retainer_female.scad')
-F.write_thread_scad(
-    ret_male_scad,
-    RETAINER_MALE_CORE_R,
-    RETAINER_MALE_MAJOR_R,
-    RETAINER_PITCH,
-    RETAINER_LEN,
-    0.76,
-    0.30,
-)
-F.write_thread_scad(
-    ret_female_scad,
-    RETAINER_FEMALE_CORE_R,
-    RETAINER_FEMALE_MAJOR_R,
-    RETAINER_PITCH,
-    RETAINER_THREAD_LEN,
-    0.92,
-    0.46,
-)
-RETAINER_THREAD = F.import_scad_shape(ret_male_scad).common(
-    Part.makeCylinder(RETAINER_MALE_MAJOR_R + 0.03, RETAINER_LEN)
-).removeSplitter()
-FEMALE_THREAD_CUTTER = F.import_scad_shape(ret_female_scad).common(
-    Part.makeCylinder(RETAINER_FEMALE_MAJOR_R + 0.03, RETAINER_THREAD_LEN)
-).removeSplitter()
-
-# Hollow printed retainer.  A narrow annular nose reaches down into the hex
-# pocket and bears on the metal nut; the larger threaded body reaches nearly to
-# the common top surface.  Two top pin holes allow service removal.
-retainer_nose = Part.makeCylinder(
-    RETAINER_NOSE_OD / 2.0,
-    RETAINER_NOSE_LEN,
-    App.Vector(0, 0, -RETAINER_NOSE_LEN),
-)
-RACK_NUT_RETAINER = RETAINER_THREAD.fuse(retainer_nose).removeSplitter()
-RACK_NUT_RETAINER = RACK_NUT_RETAINER.cut(
-    Part.makeCylinder(
-        RETAINER_BORE_D / 2.0,
-        RETAINER_LEN + RETAINER_NOSE_LEN + 0.4,
-        App.Vector(0, 0, -RETAINER_NOSE_LEN - 0.2),
-    )
-).removeSplitter()
-for sx in (-RETAINER_TOOL_HOLE_R, RETAINER_TOOL_HOLE_R):
-    RACK_NUT_RETAINER = RACK_NUT_RETAINER.cut(
-        Part.makeCylinder(
-            RETAINER_TOOL_HOLE_D / 2.0,
-            RETAINER_TOOL_HOLE_DEPTH + 0.2,
-            App.Vector(sx, 0, RETAINER_LEN - RETAINER_TOOL_HOLE_DEPTH),
-        )
-    ).removeSplitter()
-C.require_single(RACK_NUT_RETAINER, 'rack-nut-retainer')
+# Structural-only rack closure. The printable 12x2 retainer pair is
+# generated exactly once by apply_v60_retainer_thread_final.py.
 
 stage('rebuild fixed Upper closure stations on common carrier planes')
 RIGHT = F.RIGHT_FULL
@@ -225,10 +174,6 @@ for xc in C.CLAMP_X:
             App.Vector(0, 0, 1),
         )
     ).removeSplitter()
-
-    female = FEMALE_THREAD_CUTTER.copy()
-    female.translate(App.Vector(xc, C.RACK_CLOSURE_Y, RETAINER_THREAD_Z0))
-    RIGHT = RIGHT.cut(female).removeSplitter()
 
 C.require_single(RIGHT, 'RIGHT base with flush carrier closure stations')
 LEFT = C.mirror_x(RIGHT)
@@ -358,13 +303,6 @@ for xc in C.CLAMP_X:
     if floor_fraction < 0.92:
         fail(f'M4 nut support floor too weak at X={xc}: {floor_fraction:.4f}')
 
-    # At the thread-aligned nominal position the taller printed retainer must
-    # enter without gross collision and end below the common carrier top plane.
-    ret = RACK_NUT_RETAINER.copy()
-    ret.translate(App.Vector(xc, C.RACK_CLOSURE_Y, RETAINER_THREAD_Z0))
-    ret_common = RIGHT.common(ret).Volume
-    if ret_common > 1.5:
-        fail(f'rack nut retainer does not fit female service thread X={xc}: {ret_common:.6f} mm3')
 
 retainer_top_z = RETAINER_THREAD_Z0 + RETAINER_LEN
 if retainer_top_z > CARRIER_TOP_PLANE_Z + 1e-6:
@@ -421,7 +359,6 @@ F.LOWER = LOWER
 C.export_shape('eurobox_v60_base_right', RIGHT)
 C.export_shape('eurobox_v60_base_left', LEFT)
 C.export_shape('eurobox_v60_rack_lower', LOWER)
-C.export_shape('eurobox_v60_rack_nut_retainer', RACK_NUT_RETAINER)
 C.export_shape('eurobox_v60_rack_hand_knob', RACK_HAND_KNOB)
 
 stage('rewrite assembly with revised closure hardware')
@@ -447,7 +384,6 @@ rb = RIGHT.copy(); rb.translate(App.Vector(0, RY, 0)); add_obj('RIGHT_base', rb)
 rp = F.PLATE.copy(); rp.translate(App.Vector(0, RY, 0)); add_obj('RIGHT_plate', rp)
 for xc in C.CLAMP_X:
     lo = LOWER.copy(); lo.translate(App.Vector(xc, RY, 0)); add_obj('RIGHT_lower_' + str(int(xc)), lo)
-    ret = RACK_NUT_RETAINER.copy(); ret.translate(App.Vector(xc, RY + C.RACK_CLOSURE_Y, RETAINER_THREAD_Z0)); add_obj('RIGHT_rack_nut_retainer_' + str(int(xc)), ret)
     knob = RACK_HAND_KNOB.copy(); knob.translate(App.Vector(xc, RY + C.RACK_CLOSURE_Y, LOWER_PAD_Z0 - KNOB_H)); add_obj('RIGHT_rack_hand_knob_' + str(int(xc)), knob)
 for sx in F.SPINDLE_X:
     sp = F.SPINDLE.copy(); sp.translate(App.Vector(sx, RY + F.PLATE_SPINDLE_Y, F.SPINDLE_Z)); add_obj('RIGHT_spindle_' + str(int(sx)), sp)
@@ -464,7 +400,6 @@ add_obj('LEFT_base', left_transform(LEFT))
 add_obj('LEFT_plate', left_transform(F.PLATE))
 for xc in C.CLAMP_X:
     lo = LOWER.copy(); lo.translate(App.Vector(xc, 0, 0)); add_obj('LEFT_lower_' + str(int(xc)), left_transform(lo))
-    ret = RACK_NUT_RETAINER.copy(); ret.translate(App.Vector(xc, C.RACK_CLOSURE_Y, RETAINER_THREAD_Z0)); add_obj('LEFT_rack_nut_retainer_' + str(int(xc)), left_transform(ret))
     knob = RACK_HAND_KNOB.copy(); knob.translate(App.Vector(xc, C.RACK_CLOSURE_Y, LOWER_PAD_Z0 - KNOB_H)); add_obj('LEFT_rack_hand_knob_' + str(int(xc)), left_transform(knob))
 for sx in F.SPINDLE_X:
     sp = F.SPINDLE.copy(); sp.translate(App.Vector(sx, F.PLATE_SPINDLE_Y, F.SPINDLE_Z)); add_obj('LEFT_spindle_' + str(int(sx)), left_transform(sp))
@@ -504,10 +439,8 @@ validation['rack']['m4_closure'] = {
     'upper_nut_pocket_height_mm': RACK_NUT_H,
     'upper_nut_floor_z_mm': RACK_NUT_Z0,
     'upper_nut_floor_thickness_mm': RACK_NUT_FLOOR_T,
-    'retainer_thread': 'printed coarse 12x2-class service thread',
+    'retainer_thread': 'reserved structural seat; final 12x2 pair generated once in apply_v60_retainer_thread_final',
     'retainer_pitch_mm': RETAINER_PITCH,
-    'retainer_male_major_d_mm': 2.0 * RETAINER_MALE_MAJOR_R,
-    'retainer_female_major_d_mm': 2.0 * RETAINER_FEMALE_MAJOR_R,
     'retainer_length_mm': round(RETAINER_LEN, 3),
     'retainer_top_z_mm': round(retainer_top_z, 3),
     'retainer_top_recess_mm': round(CARRIER_TOP_PLANE_Z - retainer_top_z, 3),
@@ -529,7 +462,7 @@ with open(readme_path, 'a', encoding='utf-8') as f:
     f.write(
         '\nRack closure revision: common carrier top/bottom planes, raised M4 nut, '
         'M4x30 hand screw, raised 7 mm Lower tongue, 6.90 mm AF nut pocket, '
-        'tall hollow screw-in printed nut retainer with top service access.\n'
+        'structural seat for the single final 12x2 service-retainer stage.\n'
     )
 
 stage('complete')
