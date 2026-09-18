@@ -34,6 +34,7 @@ PLATE_RETAINER_COUNTERBORE_DEPTH = 2.0
 PLATE_RETAINER_CHANNEL_W = 11.4
 UNDERHOOK = 4.2
 UNDERHOOK_T = 4.0
+KNOB_STANDOFF = 1.8
 # Support-free DROP for the visible green underhook.  This is deliberately on
 # the OUTBOARD / knob side of the clamp plate -- the previous support attempts
 # modified BASE/holm geometry and could never appear under this ledge.
@@ -67,7 +68,6 @@ SPINDLE_LOCAL_SHOULDER = 1.8
 # moving clamp plate.  Keep the proven 7 mm full-depth hex engagement.  A
 # 1.8 mm exposed stand-off plus a local hook-tip relief gives 0.4 mm running
 # clearance while keeping the COMPLETE knob + retainer stack inside 600 mm.
-KNOB_STANDOFF = 1.8
 HEX_LEN = KNOB_STANDOFF + KP.KNOB_H
 OUTER_STUD_LEN = 7.0
 
