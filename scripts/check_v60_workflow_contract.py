@@ -39,6 +39,8 @@ assert box['plate_travel_mm'] == 5.5, box
 assert box['effective_total_width_mm'] <= 600.02, box
 assert box['axial_slide_without_rotation_common_mm3'] >= 0.5, box
 assert box['wrong_phase_common_mm3'] >= 0.5, box
+assert len(box['cartridge_insertion']) == 8, box
+assert all(q['base_common_mm3'] <= 0.0001 for q in box['cartridge_insertion']), box['cartridge_insertion']
 assert box['final_assembly_replaceable_module_count'] == 0, box
 assert box['final_assembly_contains_separate_lead_nut_hardware'] is True, box
 assert box['final_assembly_lead_nut_cartridge_count'] == 4, box
