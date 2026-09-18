@@ -55,6 +55,23 @@ assert box['final_assembly_installed_spindle_x_mm'] == expected_spindles, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['thread_motion']), box['thread_motion']
 assert all(q['cartridge_common_mm3'] <= 0.10 for q in box['thread_motion']), box['thread_motion']
 
+# The separate box-clamp knob retainer must contain a real printable RH8x2
+# female helix, matched to the actual outer stud on the exported lead screw.
+kr = box['knob_retainer_thread']
+assert kr['standard'] == 'RH8x2 true radial/axial printable pair', kr
+assert kr['pitch_mm'] == 2.0, kr
+assert kr['male_major_d_mm'] == 8.0, kr
+assert kr['male_crest_width_mm'] >= 0.50, kr
+assert kr['female_crest_material_between_turns_mm'] >= 0.45, kr
+assert kr['radial_core_clearance_mm'] >= 0.20, kr
+assert kr['radial_major_clearance_mm'] >= 0.20, kr
+assert len(kr['samples']) == 4, kr
+assert all(q['male_ridge_center_solid'] for q in kr['samples']), kr
+assert all(not q['male_between_turns_solid'] for q in kr['samples']), kr
+assert all(not q['female_groove_center_solid'] for q in kr['samples']), kr
+assert all(q['female_between_turns_solid'] for q in kr['samples']), kr
+assert kr['validated_export_part'] == 'eurobox_v60_knob_retainer_nut', kr
+
 # Rack retainer: one final printable 12x3 pair only.  The contract checks the
 # actual radial/axial profile dimensions and direct point samples from the final
 # BASE/retainer, rather than expensive whole-body phase booleans.

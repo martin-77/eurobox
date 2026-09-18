@@ -29,8 +29,19 @@ SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
 THREAD_CORE_R = 3.25
-THREAD_FEMALE_CORE_R = 3.42
-THREAD_FEMALE_MAJOR_R = 4.22
+THREAD_FEMALE_CORE_R = 3.50
+THREAD_FEMALE_MAJOR_R = 4.25
+
+# Printable RH8x2 profile for the clamp spindle, wear cartridge and outer
+# knob-retainer stud.  The old OpenSCAD twisted XY ribbon gave only ~0.1 mm of
+# axial thread thickness in the exported STL.  These dimensions are true
+# radial/axial trapezoids and are deliberately sized for a 0.4 mm nozzle.
+RH8_MALE_ROOT_W = 1.20
+RH8_MALE_CREST_W = 0.60
+RH8_FEMALE_ROOT_W = 1.50
+RH8_FEMALE_CREST_W = 0.90
+RH8_FEMALE_CREST_MATERIAL_W = THREAD_PITCH - RH8_FEMALE_ROOT_W
+
 LEAD_THREAD_LEN = 22.2
 NUT_THREAD_LEN = 14.0
 SHOULDER_D = 11.0
@@ -133,9 +144,56 @@ def rotate_z180(shape):
     q = shape.copy(); q.rotate(App.Vector(0,0,0), App.Vector(0,0,1), 180.0); return q.removeSplitter()
 
 
-def write_thread_scad(path, core_r, major_r, pitch, length, root_w, crest_w):
-    txt = f'''$fn=48;\nmodule thread_solid(){{\n union(){{\n  cylinder(r={core_r},h={length});\n  linear_extrude(height={length},twist=360*{length}/{pitch},slices=ceil({length}/{pitch}*18),convexity=30)\n   polygon(points=[[{core_r}-0.08,-{root_w}/2],[{major_r},-{crest_w}/2],[{major_r},{crest_w}/2],[{core_r}-0.08,{root_w}/2]]);\n }}\n}}\nthread_solid();\n'''
-    with open(path, 'w', encoding='utf-8') as f: f.write(txt)
+def write_thread_scad(path, core_r, major_r, pitch, length, root_w, crest_w, overrun=0.0):
+    # Build a TRUE radial/axial trapezoid around a helix.  The old
+    # linear_extrude() implementation put root_w/crest_w in the tangential XY
+    # direction; at RH8x2 that converted to only ~0.1 mm axial thread thickness.
+    if root_w >= pitch or crest_w >= pitch:
+        raise RuntimeError(
+            f'Invalid RH thread profile: root={root_w:.3f} crest={crest_w:.3f} '
+            f'must both be < pitch={pitch:.3f}'
+        )
+    inner_r = core_r - 0.12
+    root_half = root_w / 2.0
+    crest_half = crest_w / 2.0
+    a0 = -360.0 * overrun / pitch
+    a1 = 360.0 * (length + overrun) / pitch
+    span = length + 2.0*overrun
+    steps = max(48, int(math.ceil((a1-a0)/360.0 * 40.0)))
+    txt = f'''$fn=96;
+pitch={pitch};
+core_r={core_r};
+inner_r={inner_r};
+major_r={major_r};
+root_half={root_half};
+crest_half={crest_half};
+a0={a0};
+a1={a1};
+steps={steps};
+overrun={overrun};
+length={length};
+function ang(i)=a0+(a1-a0)*i/steps;
+function zc(i)=pitch*ang(i)/360;
+function pt(r,a,z)=[r*cos(a),r*sin(a),z];
+pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
+       each [pt(inner_r,a,z-root_half),
+             pt(major_r,a,z-crest_half),
+             pt(major_r,a,z+crest_half),
+             pt(inner_r,a,z+root_half)]];
+side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
+  [4*(i+1)+((j+1)%4),4*(i+1)+j,4*i+j],
+  [4*i+((j+1)%4),4*(i+1)+((j+1)%4),4*i+j]
+]];
+start_face=[[2,1,0],[3,2,0]];
+e=4*steps;
+end_face=[[e+1,e+2,e+3],[e,e+1,e+3]];
+union(){{
+  translate([0,0,-overrun]) cylinder(r=core_r,h={span});
+  polyhedron(points=pts,faces=concat(side_faces,start_face,end_face),convexity=100);
+}}
+'''
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(txt)
 
 
 def import_scad_shape(path):
@@ -331,13 +389,30 @@ for xc in C.CLAMP_X:
 C.require_single(RIGHT_FULL,'RIGHT full after rack-closure machining')
 
 stage('thread solids')
-MALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_male.scad'); FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_female.scad'); CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female.scad')
-write_thread_scad(MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,0.58,0.24)
-write_thread_scad(FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,THREAD_PITCH,NUT_THREAD_LEN,0.76,0.40)
-write_thread_scad(CAP_FEMALE_SCAD,3.36,4.34,THREAD_PITCH,5.4,1.05,0.24)
-MALE_Z=import_scad_shape(MALE_SCAD).common(Part.makeCylinder(4.06,LEAD_THREAD_LEN)).removeSplitter()
-FEMALE_Z=import_scad_shape(FEMALE_SCAD).common(Part.makeCylinder(4.28,NUT_THREAD_LEN)).removeSplitter()
-CAP_FEMALE_Z=import_scad_shape(CAP_FEMALE_SCAD).common(Part.makeCylinder(4.38,5.4)).removeSplitter()
+MALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_male.scad')
+FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_female.scad')
+CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female.scad')
+
+write_thread_scad(
+    MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,
+    RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
+)
+write_thread_scad(
+    FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,
+    THREAD_PITCH,NUT_THREAD_LEN,RH8_FEMALE_ROOT_W,RH8_FEMALE_CREST_W,
+    overrun=THREAD_PITCH,
+)
+write_thread_scad(
+    CAP_FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,
+    THREAD_PITCH,5.4,RH8_FEMALE_ROOT_W,RH8_FEMALE_CREST_W,
+    overrun=THREAD_PITCH,
+)
+
+MALE_Z=import_scad_shape(MALE_SCAD).common(
+    Part.makeCylinder(THREAD_MAJOR/2+0.06,LEAD_THREAD_LEN)
+).removeSplitter()
+FEMALE_Z=import_scad_shape(FEMALE_SCAD)
+CAP_FEMALE_Z=import_scad_shape(CAP_FEMALE_SCAD)
 
 stage('v50 direct cartridge pockets - no integral box-clamp threads in BASE')
 FEMALE_NEGY=rotate_z180(z_to_y(FEMALE_Z))
@@ -425,17 +500,79 @@ PLATE=PLATE.removeSplitter(); C.require_single(PLATE,'box-clamp-plate')
 
 stage('lead screw and knob')
 SPINDLE_POSY=C.fuse_seq([cyl_y(3.0,0.4),cyl_y(2.5,1.4,0,0.4,0),cyl_y(3.0,SPINDLE_LOCAL_JOURNAL-1.8,0,1.8,0),cyl_y(SHOULDER_D/2,SPINDLE_LOCAL_SHOULDER,0,SPINDLE_LOCAL_JOURNAL,0),z_to_y(MALE_Z,0,SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER,0),z_to_y(hex_z(10.0,HEX_LEN),0,SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN,0)],'lead-spindle-positive-y')
-STUD_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_stud.scad'); write_thread_scad(STUD_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,OUTER_STUD_LEN,0.58,0.24)
-STUD_Z=import_scad_shape(STUD_SCAD).common(Part.makeCylinder(4.06,OUTER_STUD_LEN)).removeSplitter(); SPINDLE_POSY=SPINDLE_POSY.fuse(z_to_y(STUD_Z,0,SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN+HEX_LEN,0)).removeSplitter(); C.require_single(SPINDLE_POSY,'lead-spindle-with-stud')
+STUD_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_stud.scad')
+write_thread_scad(
+    STUD_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,OUTER_STUD_LEN,
+    RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
+)
+STUD_Z=import_scad_shape(STUD_SCAD).common(
+    Part.makeCylinder(THREAD_MAJOR/2+0.06,OUTER_STUD_LEN)
+).removeSplitter()
+SPINDLE_POSY=SPINDLE_POSY.fuse(
+    z_to_y(
+        STUD_Z,0,
+        SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN+HEX_LEN,
+        0,
+    )
+).removeSplitter()
+C.require_single(SPINDLE_POSY,'lead-spindle-with-stud')
 SPINDLE=rotate_z180(SPINDLE_POSY)
 KNOB=cyl_y(15.0,7.0)
 for a in range(0,360,45):
     rr=16.2; x=rr*math.cos(math.radians(a)); z=rr*math.sin(math.radians(a)); KNOB=KNOB.cut(cyl_y(3.4,7.4,x,-0.2,z))
 KNOB=KNOB.cut(cyl_y(4.3,7.4,0,-0.2,0)); KNOB=KNOB.cut(z_to_y(hex_z(10.35,5.2))).removeSplitter(); KNOB=rotate_z180(KNOB)
-CAP_FEMALE_NEGY=rotate_z180(z_to_y(CAP_FEMALE_Z)); CAP_NUT=rotate_z180(z_to_y(hex_z(13.0,5.4))); CAP_NUT=CAP_NUT.cut(CAP_FEMALE_NEGY).removeSplitter(); C.require_single(CAP_NUT,'lead-knob-retainer-nut')
+CAP_NUT_Z=hex_z(13.0,5.4)
+CAP_NUT_Z=CAP_NUT_Z.cut(CAP_FEMALE_Z).removeSplitter()
+C.require_single(CAP_NUT_Z,'lead-knob-retainer-nut true RH8x2 Z master')
+CAP_NUT=rotate_z180(z_to_y(CAP_NUT_Z))
+C.require_single(CAP_NUT,'lead-knob-retainer-nut')
 
 stage('hard validation')
 failures=[]
+
+# Explicit regression gate for the exact part the user prints:
+# cad/v60/STL/eurobox_v60_knob_retainer_nut.stl.  Sample the actual outer-stud
+# master and actual cap-nut BRep at the helical centre and half a pitch away.
+# A smooth bore or the former ~0.1 mm twisted-ribbon groove cannot pass.
+def _inside(shape,x,y,z):
+    return bool(shape.isInside(App.Vector(x,y,z),1e-5,False))
+
+knob_retainer_thread_samples=[]
+male_sample_r=(THREAD_CORE_R+THREAD_MAJOR/2.0)/2.0
+female_sample_r=(THREAD_FEMALE_CORE_R+THREAD_FEMALE_MAJOR_R)/2.0
+for angle_deg in (0.0,90.0,180.0,270.0):
+    a=math.radians(angle_deg)
+    zc=THREAD_PITCH*(1.0+angle_deg/360.0)
+
+    mx=male_sample_r*math.cos(a); my=male_sample_r*math.sin(a)
+    male_ridge=_inside(STUD_Z,mx,my,zc)
+    male_between=_inside(STUD_Z,mx,my,zc+THREAD_PITCH/2.0)
+
+    fx=female_sample_r*math.cos(a); fy=female_sample_r*math.sin(a)
+    female_groove=_inside(CAP_NUT_Z,fx,fy,zc)
+    female_between=_inside(CAP_NUT_Z,fx,fy,zc+THREAD_PITCH/2.0)
+
+    rec={
+        'angle_deg':angle_deg,
+        'male_ridge_center_solid':male_ridge,
+        'male_between_turns_solid':male_between,
+        'female_groove_center_solid':female_groove,
+        'female_between_turns_solid':female_between,
+    }
+    knob_retainer_thread_samples.append(rec)
+    if not male_ridge:
+        failures.append(f'RH8x2 outer stud ridge missing at angle={angle_deg}')
+    if male_between:
+        failures.append(f'RH8x2 outer stud fills space between turns at angle={angle_deg}')
+    if female_groove:
+        failures.append(f'RH8x2 knob-retainer groove missing at angle={angle_deg}')
+    if not female_between:
+        failures.append(f'RH8x2 knob-retainer crest missing between turns at angle={angle_deg}')
+
+if RH8_MALE_CREST_W < 0.50:
+    failures.append('RH8x2 male crest is too narrow for 0.4 mm FDM')
+if RH8_FEMALE_CREST_MATERIAL_W < 0.45:
+    failures.append('RH8x2 female crest material is too narrow for 0.4 mm FDM')
 def fail(msg): failures.append(msg)
 for side,sh in (('RIGHT',RIGHT_FULL),('LEFT',LEFT_FULL)):
     C.require_single(sh,side+' full')
@@ -620,6 +757,23 @@ width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_C
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
 V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'axial_slide_without_rotation_common_mm3':round(axial_slide_common,6),'wrong_phase_common_mm3':round(wrong_phase_common,6),'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V['box_clamp']['knob_retainer_thread']={
+    'standard':'RH8x2 true radial/axial printable pair',
+    'pitch_mm':THREAD_PITCH,
+    'male_core_d_mm':round(2.0*THREAD_CORE_R,3),
+    'male_major_d_mm':round(THREAD_MAJOR,3),
+    'female_crest_bore_d_mm':round(2.0*THREAD_FEMALE_CORE_R,3),
+    'female_groove_root_d_mm':round(2.0*THREAD_FEMALE_MAJOR_R,3),
+    'male_root_width_mm':RH8_MALE_ROOT_W,
+    'male_crest_width_mm':RH8_MALE_CREST_W,
+    'female_groove_root_width_mm':RH8_FEMALE_ROOT_W,
+    'female_groove_crest_width_mm':RH8_FEMALE_CREST_W,
+    'female_crest_material_between_turns_mm':round(RH8_FEMALE_CREST_MATERIAL_W,3),
+    'radial_core_clearance_mm':round(THREAD_FEMALE_CORE_R-THREAD_CORE_R,3),
+    'radial_major_clearance_mm':round(THREAD_FEMALE_MAJOR_R-THREAD_MAJOR/2.0,3),
+    'samples':knob_retainer_thread_samples,
+    'validated_export_part':'eurobox_v60_knob_retainer_nut',
+}
 with open(os.path.join(OUT,'VALIDATION_v60_full.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 FULL HARD CHECKS FAILED: '+' | '.join(failures))
