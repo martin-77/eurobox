@@ -4,6 +4,16 @@ name: Build v60 rack hand knob
 # the rack-retainer thread stage or the final v60 assembly.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/v60_rack_hand_knob.py"
+      - "scripts/run_v60_rack_hand_knob_ci.py"
+      - ".github/workflows/build-v60-rack-hand-knob.yml"
+
+concurrency:
+  group: v60-rack-hand-knob-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
