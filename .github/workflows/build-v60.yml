@@ -5,7 +5,7 @@ name: Build Eurobox v60
 on:
   workflow_dispatch:
   push:
-    branches: [main, v60-clean]
+    branches: [main, v60-clean, fix/v60-v50-box-clamp-thread-access]
     paths:
       - "scripts/build_v60.py"
       - "scripts/build_v60_continuous_carrier.py"
