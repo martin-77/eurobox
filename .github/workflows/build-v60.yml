@@ -211,6 +211,10 @@ jobs:
             echo "Validated v60 repository outputs already current"
           else
             git commit -m "Publish continuous-carrier v60 meshes and preview"
+            # Another component workflow may have published while this long
+            # build was running. Rebase the generated-output commit onto the
+            # current main before pushing instead of failing non-fast-forward.
+            git pull --rebase origin main
             git push
           fi
 

@@ -90,6 +90,10 @@ jobs:
             echo "Rack hand knob outputs already current"
           else
             git commit -m "Publish v60 rack hand knob"
+            # The structural workflow may finish in parallel.  This component
+            # owns disjoint files, so rebasing before push is safe and avoids a
+            # non-fast-forward race.
+            git pull --rebase origin main
             git push
           fi
 
