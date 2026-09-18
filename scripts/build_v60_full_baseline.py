@@ -501,17 +501,22 @@ PLATE=PLATE.removeSplitter(); C.require_single(PLATE,'box-clamp-plate')
 stage('lead screw and knob')
 SPINDLE_POSY=C.fuse_seq([cyl_y(3.0,0.4),cyl_y(2.5,1.4,0,0.4,0),cyl_y(3.0,SPINDLE_LOCAL_JOURNAL-1.8,0,1.8,0),cyl_y(SHOULDER_D/2,SPINDLE_LOCAL_SHOULDER,0,SPINDLE_LOCAL_JOURNAL,0),z_to_y(MALE_Z,0,SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER,0),z_to_y(hex_z(10.0,HEX_LEN),0,SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN,0)],'lead-spindle-positive-y')
 STUD_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_stud.scad')
+# Give the true helical stud a small axial overlap into the hex drive.  Exact
+# face-on-face contact is not a robust OCC fuse and produced two solids in CI.
+# The protruding threaded length remains exactly OUTER_STUD_LEN.
+STUD_FUSE_OVERLAP=0.25
+STUD_BUILD_LEN=OUTER_STUD_LEN+STUD_FUSE_OVERLAP
 write_thread_scad(
-    STUD_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,OUTER_STUD_LEN,
+    STUD_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,STUD_BUILD_LEN,
     RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
 )
 STUD_Z=import_scad_shape(STUD_SCAD).common(
-    Part.makeCylinder(THREAD_MAJOR/2+0.06,OUTER_STUD_LEN)
+    Part.makeCylinder(THREAD_MAJOR/2+0.06,STUD_BUILD_LEN)
 ).removeSplitter()
 SPINDLE_POSY=SPINDLE_POSY.fuse(
     z_to_y(
         STUD_Z,0,
-        SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN+HEX_LEN,
+        SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN+HEX_LEN-STUD_FUSE_OVERLAP,
         0,
     )
 ).removeSplitter()
