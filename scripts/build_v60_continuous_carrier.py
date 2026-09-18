@@ -36,38 +36,6 @@ CARRIER_SIDE_T = C.WEB_T
 CARRIER_SIDE_Z0 = CARRIER_BOTTOM_Z1
 CARRIER_SIDE_Z1 = CARRIER_TOP_Z0
 
-# Real print orientation: the BASE is printed upside-down, with the installed
-# top/support plane toward the bed.  The long green-looking inner shelf is the
-# bottom flange spanning from the central saddle web (Y=+7) to the inner face
-# of the +Y side wall (Y=22.8).  In the inverted print that flange appears late
-# and would otherwise bridge/overhang the whole ~15.8 mm span.
-#
-# Support it exactly like the lower haunches on the long side holms: material
-# exists ABOVE the flange in installed coordinates, so it is printed BEFORE the
-# flange.  A 45-degree DROP grows from the +Y wall inward to the saddle web.
-CARRIER_INNER_DROP_Y0 = CARRIER_WEB_Y1
-CARRIER_INNER_DROP_Y1 = CARRIER_Y1 - CARRIER_SIDE_T
-CARRIER_INNER_DROP_RUN = CARRIER_INNER_DROP_Y1 - CARRIER_INNER_DROP_Y0
-CARRIER_INNER_DROP_Z0 = CARRIER_BOTTOM_Z1
-CARRIER_INNER_DROP_Z1 = CARRIER_INNER_DROP_Z0 + CARRIER_INNER_DROP_RUN
-
-
-def make_inner_bottom_flange_drop():
-    # Full-length 45-degree support wedge for the inner bottom flange.
-    # In installed coordinates it rises from the flange top at the web-side
-    # edge to the +Y wall.  With the BASE printed upside-down this becomes a
-    # self-supporting outward growth, not a later hanging gusset.
-    yz = [
-        App.Vector(0.0, CARRIER_INNER_DROP_Y0, CARRIER_INNER_DROP_Z0),
-        App.Vector(0.0, CARRIER_INNER_DROP_Y1, CARRIER_INNER_DROP_Z0),
-        App.Vector(0.0, CARRIER_INNER_DROP_Y1, CARRIER_INNER_DROP_Z1),
-    ]
-    face = Part.Face(Part.makePolygon(yz + [yz[0]]))
-    q = face.extrude(App.Vector(CARRIER_X1-CARRIER_X0,0,0))
-    q.translate(App.Vector(CARRIER_X0,0,0))
-    C.require_single(q, 'continuous-carrier-inner-bottom-flange-drop')
-    return q
-
 
 def make_continuous_carrier():
     dx = CARRIER_X1 - CARRIER_X0
@@ -104,10 +72,9 @@ def make_continuous_carrier():
         CARRIER_X0, CARRIER_Y1 - CARRIER_SIDE_T, CARRIER_SIDE_Z0,
         dx, CARRIER_SIDE_T, CARRIER_SIDE_Z1 - CARRIER_SIDE_Z0,
     )
-    inner_drop = make_inner_bottom_flange_drop()
     q = C.fuse_seq(
-        [top, bottom, web, side_y0, side_y1, inner_drop],
-        'continuous-rack-carrier-closed-box-with-print-drop',
+        [top, bottom, web, side_y0, side_y1],
+        'continuous-rack-carrier-closed-box',
     )
     C.require_single(q, 'continuous-rack-carrier-closed-box')
     return q
@@ -239,7 +206,6 @@ def build_clean_right():
 
 
 RIGHT, CARRIER, FRONT_LONG, REAR_LONG, FRONT_CLAMP, REAR_CLAMP, BACKSTOP = build_clean_right()
-INNER_BOTTOM_DROP = make_inner_bottom_flange_drop()
 LEFT = C.mirror_x(RIGHT)
 
 # Make the clean architecture canonical for the full builder and all downstream
@@ -250,15 +216,6 @@ C.make_upper_station = make_hanging_upper_station
 C.make_backstop = make_hanging_backstop
 
 failures = []
-
-# The inverted-print support DROP must survive the final carrier/core fusions.
-# Functional machining in later stages may cut local holes, but the structural
-# core itself must contain the complete full-length wedge.
-inner_drop_fraction = RIGHT.common(INNER_BOTTOM_DROP).Volume / INNER_BOTTOM_DROP.Volume
-if inner_drop_fraction < 0.999:
-    failures.append(
-        f'inner bottom-flange print DROP not fully incorporated: {inner_drop_fraction:.6f}'
-    )
 
 # Main carrier must be fully incorporated and continuously tie all three hanging
 # functions plus both long box-support holms.
@@ -338,14 +295,6 @@ report['geometry']['continuous_carrier'] = {
     'side_wall_thickness_mm': CARRIER_SIDE_T,
     'side_wall_z_mm': [CARRIER_SIDE_Z0, CARRIER_SIDE_Z1],
     'side_wall_material_fractions': side_wall_fractions,
-    'inner_bottom_flange_drop': {
-        'print_orientation': 'BASE upside-down; installed top/support plane toward bed',
-        'y_mm': [round(CARRIER_INNER_DROP_Y0,3), round(CARRIER_INNER_DROP_Y1,3)],
-        'z_mm': [round(CARRIER_INNER_DROP_Z0,3), round(CARRIER_INNER_DROP_Z1,3)],
-        'run_mm': round(CARRIER_INNER_DROP_RUN,3),
-        'angle_deg': 45.0,
-        'material_fraction': round(inner_drop_fraction,6),
-    },
     'saddle_radius_mm': CARRIER_SADDLE_R,
     'material_fraction': round(carrier_fraction,6),
     'rack_tube_common_mm3': round(tube_common,9),
