@@ -201,6 +201,36 @@ union(){{
     with open(path, 'w', encoding='utf-8') as f:
         f.write(txt)
 
+def build_segmented_true_thread(prefix, core_r, major_r, pitch, length, root_w, crest_w):
+    # Long mesh-reconstructed helices can become topologically over-broad after
+    # OpenSCAD -> STL -> OCC reconstruction.  Build the 22.2 mm main spindle as
+    # short three-pitch sections (the same scale that already works for the
+    # knob-retainer stud), overlap them by 0.10 mm, then fuse them through one
+    # continuous core.  Chunk starts are whole-pitch multiples, so helix phase
+    # is preserved exactly.
+    chunk_nominal = 3.0 * pitch
+    overlap = 0.10
+    parts = [Part.makeCylinder(core_r, length)]
+    z0 = 0.0
+    idx = 0
+    while z0 < length - 1e-9:
+        chunk_len = min(chunk_nominal, length - z0)
+        path = os.path.join(OUT, f'{prefix}_chunk_{idx}.scad')
+        write_true_thread_scad(
+            path, core_r, major_r, pitch, chunk_len,
+            root_w, crest_w, overrun=overlap,
+        )
+        q = import_scad_shape(path)
+        q.translate(App.Vector(0,0,z0))
+        parts.append(q)
+        z0 += chunk_len
+        idx += 1
+    out = C.fuse_seq(parts, prefix+' segmented true thread')
+    out = out.common(Part.makeCylinder(major_r+0.06, length)).removeSplitter()
+    C.require_single(out, prefix+' segmented true thread clipped')
+    return out
+
+
 def import_scad_shape(path):
     stl = os.path.splitext(path)[0] + '_compiled.stl'
     subprocess.run(['openscad','-o',stl,path], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -400,8 +430,11 @@ CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female_true.scad')
 
 # Main spindle / removable wear-cartridge pair: use the same TRUE
 # radial/axial RH8x2 construction as the already-fixed knob-retainer interface.
-write_true_thread_scad(
-    MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,
+# The long 22.2 mm male uses segmented true-helix sections to prevent the
+# reconstructed mesh from turning the spaces between turns into a sleeve.
+MALE_Z=build_segmented_true_thread(
+    'v60_thread_RH_8x2_male',
+    THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,
     RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
 )
 write_true_thread_scad(
@@ -409,9 +442,6 @@ write_true_thread_scad(
     THREAD_PITCH,NUT_THREAD_LEN,RH8_FEMALE_ROOT_W,RH8_FEMALE_CREST_W,
     overrun=THREAD_PITCH,
 )
-MALE_Z=import_scad_shape(MALE_SCAD).common(
-    Part.makeCylinder(THREAD_MAJOR/2+0.06,LEAD_THREAD_LEN)
-).removeSplitter()
 FEMALE_Z=import_scad_shape(FEMALE_SCAD)
 
 # The knob-retainer gets its own real radial/axial female RH8x2 cutter.
