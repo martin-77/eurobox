@@ -33,8 +33,8 @@ assert box['architecture'] == 'v50_direct_removable_lead_nut_cartridge', box
 assert box['integral_female_threads'] is False, box
 assert box['base_has_working_thread'] is False, box
 assert box['working_female_thread_location'] == 'removable_lead_nut_cartridge', box
-assert box['spindle_x_mm'] == [-55.0, 55.0], box
-assert box['spindle_spacing_mm'] == 110.0, box
+assert box['spindle_x_mm'] == [-65.0, 65.0], box
+assert box['spindle_spacing_mm'] == 130.0, box
 assert box['plate_travel_mm'] == 5.5, box
 assert box['effective_total_width_mm'] <= 600.02, box
 assert box['axial_slide_without_rotation_common_mm3'] >= 0.5, box
@@ -48,7 +48,7 @@ assert box['final_assembly_lead_nut_pin_count'] == 4, box
 assert box['final_assembly_lead_nut_clip_count'] == 4, box
 assert box['final_assembly_box_clamp_knob_count'] == 4, box
 assert box['final_assembly_knob_retainer_count'] == 4, box
-assert box['final_assembly_installed_spindle_x_mm'] == [-55.0, 55.0], box
+assert box['final_assembly_installed_spindle_x_mm'] == [-65.0, 65.0], box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['thread_motion']), box['thread_motion']
 assert all(q['cartridge_common_mm3'] <= 0.10 for q in box['thread_motion']), box['thread_motion']
 
