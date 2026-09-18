@@ -36,6 +36,8 @@ FEMALE_CREST_W = MALE_CREST_W + 2.0*FLANK_CLEAR
 THREAD_LEN = R.RETAINER_LEN
 THREAD_Z0 = R.RETAINER_THREAD_Z0
 TOP_OVERRUN = PITCH
+ENTRY_CLEAR_R = MALE_MAJOR_R + 0.30
+ENTRY_CLEAR_DEPTH = 1.20
 FN = 72
 SLICES_PER_PITCH = 32
 
@@ -106,6 +108,18 @@ for xc in C.CLAMP_X:
     cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
     before = RIGHT.Volume
     RIGHT = RIGHT.cut(cutter).removeSplitter()
+    # Explicit open mouth: remove the full male-major envelope through the
+    # carrier top. A valid helix hidden behind a roof/ring wall must be impossible.
+    entry = Part.makeCylinder(
+        ENTRY_CLEAR_R,
+        ENTRY_CLEAR_DEPTH + 0.50,
+        App.Vector(
+            xc, C.RACK_CLOSURE_Y,
+            R.CARRIER_TOP_PLANE_Z - ENTRY_CLEAR_DEPTH,
+        ),
+        App.Vector(0,0,1),
+    )
+    RIGHT = RIGHT.cut(entry).removeSplitter()
     removed = before - RIGHT.Volume
     stop_timer(label, _t, removed_mm3=round(removed,6))
     female_cut_volumes.append(round(removed,6))
@@ -132,47 +146,74 @@ male_helix_volume = RACK_NUT_RETAINER.common(outer_annulus).Volume
 if male_helix_volume < 12.0:
     fail(f'male retainer helix too weak/absent: {male_helix_volume:.3f} mm3')
 
-# The final BASE itself is witnessed by the actual production subtraction above.
-# Land/groove and phase are checked on a compact coupon cut by the exact same
-# FEMALE_CUTTER, avoiding repeated global commons against the carrier BRep.
-coupon_r = FEMALE_MAJOR_R + 0.8
-coupon = Part.makeCylinder(coupon_r, THREAD_LEN + TOP_OVERRUN)
-threaded_coupon = coupon.cut(FEMALE_CUTTER).removeSplitter()
-C.require_single(threaded_coupon, 'compact female retainer thread witness coupon')
+# Validate the actual final BASE against the actual final retainer. No coupon is
+# allowed to stand in for the production female thread.
+female_witness = []
+fit_checks = []
+entry_checks = []
+for xc in C.CLAMP_X:
+    # The complete outer envelope of the screw must be open at the top surface.
+    mouth_probe = Part.makeCylinder(
+        ENTRY_CLEAR_R - 0.05,
+        ENTRY_CLEAR_DEPTH,
+        App.Vector(
+            xc, C.RACK_CLOSURE_Y,
+            R.CARRIER_TOP_PLANE_Z - ENTRY_CLEAR_DEPTH,
+        ),
+        App.Vector(0,0,1),
+    )
+    mouth_block = RIGHT.common(mouth_probe).Volume
+    female_witness.append({
+        'x_mm': xc,
+        'final_base_removed_mm3': female_cut_volumes[len(female_witness)],
+        'mouth_block_mm3': round(mouth_block,6),
+        'entry_clear_d_mm': round(2.0*ENTRY_CLEAR_R,3),
+    })
+    if mouth_block > 1e-4:
+        fail(f'female thread mouth is hidden behind BASE material X={xc}: {mouth_block:.6f} mm3')
 
-z0 = 1.0
-h = max(1.0, THREAD_LEN - 2.0)
-outer = Part.makeCylinder(5.90, h, App.Vector(0,0,z0))
-inner = Part.makeCylinder(5.35, h, App.Vector(0,0,z0))
-annulus = outer.cut(inner)
-frac = threaded_coupon.common(annulus).Volume / annulus.Volume
-female_witness = [
-    {'x_mm': xc, 'annular_material_fraction': round(frac,6),
-     'final_base_removed_mm3': female_cut_volumes[i]}
-    for i, xc in enumerate(C.CLAMP_X)
-]
-if frac > 0.995:
-    fail(f'female thread groove absent in matched cutter witness: annular material={frac:.6f}')
-if frac < 0.35:
-    fail(f'female thread collapsed to oversized smooth bore in matched cutter witness: annular material={frac:.6f}')
+    nominal = RACK_NUT_RETAINER.copy()
+    nominal.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
+    nominal_common = RIGHT.common(nominal).Volume
 
-nominal_common = threaded_coupon.common(RACK_NUT_RETAINER).Volume
-wrong = RACK_NUT_RETAINER.copy()
-wrong.translate(App.Vector(0,0,PITCH/2.0))
-wrong_common = threaded_coupon.common(wrong).Volume
-fit_checks = [
-    {
+    wrong = RACK_NUT_RETAINER.copy()
+    wrong.rotate(App.Vector(0,0,0), App.Vector(0,0,1), 180.0)
+    wrong.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
+    wrong_common = RIGHT.common(wrong).Volume
+    fit_checks.append({
         'x_mm': xc,
         'nominal_common_mm3': round(nominal_common,6),
         'half_pitch_wrong_phase_common_mm3': round(wrong_common,6),
-        'witness': 'compact coupon from exact production FEMALE_CUTTER',
-    }
-    for xc in C.CLAMP_X
-]
-if nominal_common > 2.0:
-    fail(f'nominal retainer fit collision: {nominal_common:.3f} mm3')
-if wrong_common < nominal_common + 2.0:
-    fail(f'half-pitch wrong phase does not prove helical engagement: nominal={nominal_common:.3f}, wrong={wrong_common:.3f}')
+        'witness': 'actual final BASE against actual final retainer',
+    })
+    if nominal_common > 0.20:
+        fail(f'nominal retainer collides with final BASE X={xc}: {nominal_common:.6f} mm3')
+    if wrong_common < nominal_common + 2.0:
+        fail(f'final BASE female thread lacks phase-sensitive engagement X={xc}: nominal={nominal_common:.6f} wrong={wrong_common:.6f}')
+
+    # Prove physical entry from free space, not merely motion after the part is
+    # already buried in the thread. The retainer starts with its thread body
+    # above the carrier top and is screwed into the first two millimetres.
+    entry_lift = R.CARRIER_TOP_PLANE_Z - THREAD_Z0 + 0.20
+    for depth in (0.0,0.5,1.0,2.0):
+        lift = entry_lift - depth
+        q = RACK_NUT_RETAINER.copy()
+        q.rotate(
+            App.Vector(0,0,0), App.Vector(0,0,1),
+            -360.0*lift/PITCH,
+        )
+        q.translate(App.Vector(
+            xc, C.RACK_CLOSURE_Y, THREAD_Z0 + lift,
+        ))
+        common = RIGHT.common(q).Volume
+        entry_checks.append({
+            'x_mm': xc,
+            'entry_depth_mm': depth,
+            'lift_from_installed_mm': round(lift,3),
+            'base_common_mm3': round(common,6),
+        })
+        if common > 0.20:
+            fail(f'retainer cannot enter female thread from outside X={xc} depth={depth}: {common:.6f} mm3')
 
 through = Part.makeCylinder(R.RETAINER_BORE_D/2.0-0.15, THREAD_LEN+R.RETAINER_NOSE_LEN,
                             App.Vector(0,0,-R.RETAINER_NOSE_LEN))
@@ -215,12 +256,15 @@ validation['rack']['m4_closure']['male_helical_material_mm3']=round(male_helix_v
 validation['rack']['m4_closure']['female_thread_removed_mm3']=female_cut_volumes
 validation['rack']['m4_closure']['female_helical_witness']=female_witness
 validation['rack']['m4_closure']['retainer_phase_fit_checks']=fit_checks
-validation['rack']['m4_closure']['witness_strategy']='final BASE removal volumes plus compact coupon from exact production FEMALE_CUTTER; avoids repeated full-carrier BRep commons'
+validation['rack']['m4_closure']['entry_clear_d_mm']=round(2.0*ENTRY_CLEAR_R,3)
+validation['rack']['m4_closure']['entry_clear_depth_mm']=ENTRY_CLEAR_DEPTH
+validation['rack']['m4_closure']['retainer_entry_checks']=entry_checks
+validation['rack']['m4_closure']['witness_strategy']='actual final BASE + actual final retainer; open-mouth envelope and entry motion from free space'
 validation['failures']=[]
 with open(validation_path,'w',encoding='utf-8') as fh:
     json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFinal retainer: explicit pronounced matched 12x2 male/female thread pair; female top overrun; actual final-BASE cutter removal plus compact exact-cutter helix/land/phase hard witnesses.\n')
+    fh.write('\nFinal retainer: one matched 12x2 male/female pair; explicit full-diameter open mouth; actual final BASE/retainer fit, phase and insertion-from-free-space hard checks.\n')
 
 stage('complete')
