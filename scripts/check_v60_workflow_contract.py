@@ -55,6 +55,18 @@ assert box['final_assembly_installed_spindle_x_mm'] == expected_spindles, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['thread_motion']), box['thread_motion']
 assert all(q['cartridge_common_mm3'] <= 0.10 for q in box['thread_motion']), box['thread_motion']
 
+# The removable lead-nut wear cartridge must contain a real printable RH8x2
+# female helix.  Direct final-part samples prevent a smooth cylindrical bore
+# from ever satisfying the workflow contract again.
+ln = box['lead_nut_thread']
+assert ln['standard'] == 'RH8x2 true radial/axial printable female thread', ln
+assert ln['pitch_mm'] == 2.0, ln
+assert ln['female_crest_material_between_turns_mm'] >= 0.45, ln
+assert len(ln['samples']) == 8, ln
+assert all(not q['groove_center_solid'] for q in ln['samples']), ln
+assert all(q['between_turns_solid'] for q in ln['samples']), ln
+assert ln['validated_export_part'] == 'eurobox_v60_lead_nut', ln
+
 # The separate box-clamp knob retainer must contain a real printable RH8x2
 # female helix, matched to the actual outer stud on the exported lead screw.
 kr = box['knob_retainer_thread']

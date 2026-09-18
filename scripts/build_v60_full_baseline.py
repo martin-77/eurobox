@@ -29,14 +29,12 @@ SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
 THREAD_CORE_R = 3.25
-# Keep the already-proven main spindle/cartridge pair unchanged in this fix.
-THREAD_FEMALE_CORE_R = 3.42
-THREAD_FEMALE_MAJOR_R = 4.22
-
-# Separate true radial/axial profile for the outer-stud / knob-retainer pair.
-# This is the interface exported as eurobox_v60_knob_retainer_nut.stl.
-CAP_THREAD_FEMALE_CORE_R = 3.50
-CAP_THREAD_FEMALE_MAJOR_R = 4.25
+# Real printable RH8x2 female geometry shared by BOTH printed female parts:
+# the removable lead-nut wear cartridge and the knob-retainer nut.
+THREAD_FEMALE_CORE_R = 3.50
+THREAD_FEMALE_MAJOR_R = 4.25
+CAP_THREAD_FEMALE_CORE_R = THREAD_FEMALE_CORE_R
+CAP_THREAD_FEMALE_MAJOR_R = THREAD_FEMALE_MAJOR_R
 RH8_MALE_ROOT_W = 1.20
 RH8_MALE_CREST_W = 0.60
 RH8_FEMALE_ROOT_W = 1.50
@@ -400,11 +398,21 @@ MALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_male.scad')
 FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_female.scad')
 CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female_true.scad')
 
-# Proven main spindle / removable wear-cartridge pair: unchanged here.
-write_thread_scad(MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,0.58,0.24)
-write_thread_scad(FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,THREAD_PITCH,NUT_THREAD_LEN,0.76,0.40)
-MALE_Z=import_scad_shape(MALE_SCAD).common(Part.makeCylinder(4.06,LEAD_THREAD_LEN)).removeSplitter()
-FEMALE_Z=import_scad_shape(FEMALE_SCAD).common(Part.makeCylinder(4.28,NUT_THREAD_LEN)).removeSplitter()
+# Main spindle / removable wear-cartridge pair: use the same TRUE
+# radial/axial RH8x2 construction as the already-fixed knob-retainer interface.
+write_true_thread_scad(
+    MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,
+    RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
+)
+write_true_thread_scad(
+    FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,
+    THREAD_PITCH,NUT_THREAD_LEN,RH8_FEMALE_ROOT_W,RH8_FEMALE_CREST_W,
+    overrun=THREAD_PITCH,
+)
+MALE_Z=import_scad_shape(MALE_SCAD).common(
+    Part.makeCylinder(THREAD_MAJOR/2+0.06,LEAD_THREAD_LEN)
+).removeSplitter()
+FEMALE_Z=import_scad_shape(FEMALE_SCAD)
 
 # The knob-retainer gets its own real radial/axial female RH8x2 cutter.
 write_true_thread_scad(
@@ -558,6 +566,46 @@ failures=[]
 # A smooth bore or the former ~0.1 mm twisted-ribbon groove cannot pass.
 def _inside(shape,x,y,z):
     return bool(shape.isInside(App.Vector(x,y,z),1e-5,False))
+
+# Regression gate for the other printed female RH8x2 part:
+# cad/v60/STL/eurobox_v60_lead_nut.stl.  Sample the ACTUAL exported cartridge
+# local BRep at helical groove centres and half-pitch crest positions.
+lead_nut_thread_samples=[]
+lead_sample_r=(THREAD_FEMALE_CORE_R+THREAD_FEMALE_MAJOR_R)/2.0
+for turn in (2,5):
+    for angle_deg in (0.0,90.0,180.0,270.0):
+        a=math.radians(angle_deg)
+        zc=THREAD_PITCH*(turn+angle_deg/360.0)
+        # FEMALE_NEGY transform maps Z-master [r,angle,zc] to
+        # cartridge-local [-r*cos(a), -zc, -r*sin(a)].
+        gx=-lead_sample_r*math.cos(a)
+        gy=-zc
+        gz=-lead_sample_r*math.sin(a)
+        groove_solid=_inside(LEAD_NUT,gx,gy,gz)
+
+        zcrest=zc+THREAD_PITCH/2.0
+        crest_solid=_inside(
+            LEAD_NUT,
+            -lead_sample_r*math.cos(a),
+            -zcrest,
+            -lead_sample_r*math.sin(a),
+        )
+        rec={
+            'turn':turn,
+            'angle_deg':angle_deg,
+            'radius_mm':round(lead_sample_r,3),
+            'groove_center_solid':groove_solid,
+            'between_turns_solid':crest_solid,
+        }
+        lead_nut_thread_samples.append(rec)
+        if groove_solid:
+            failures.append(
+                f'RH8x2 lead-nut groove missing turn={turn} angle={angle_deg}'
+            )
+        if not crest_solid:
+            failures.append(
+                f'RH8x2 lead-nut crest missing between turns turn={turn} angle={angle_deg}'
+            )
 
 knob_retainer_thread_samples=[]
 male_sample_r=(THREAD_CORE_R+THREAD_MAJOR/2.0)/2.0
@@ -779,6 +827,17 @@ width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_C
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
 V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'axial_slide_without_rotation_common_mm3':round(axial_slide_common,6),'wrong_phase_common_mm3':round(wrong_phase_common,6),'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V['box_clamp']['lead_nut_thread']={
+    'standard':'RH8x2 true radial/axial printable female thread',
+    'pitch_mm':THREAD_PITCH,
+    'female_crest_bore_d_mm':round(2.0*THREAD_FEMALE_CORE_R,3),
+    'female_groove_root_d_mm':round(2.0*THREAD_FEMALE_MAJOR_R,3),
+    'female_groove_root_width_mm':RH8_FEMALE_ROOT_W,
+    'female_groove_crest_width_mm':RH8_FEMALE_CREST_W,
+    'female_crest_material_between_turns_mm':round(RH8_FEMALE_CREST_MATERIAL_W,3),
+    'samples':lead_nut_thread_samples,
+    'validated_export_part':'eurobox_v60_lead_nut',
+}
 V['box_clamp']['knob_retainer_thread']={
     'standard':'RH8x2 true radial/axial printable pair',
     'pitch_mm':THREAD_PITCH,
