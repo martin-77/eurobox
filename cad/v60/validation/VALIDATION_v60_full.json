@@ -373,7 +373,7 @@
       "upper_nut_pocket_height_mm": 3.6,
       "upper_nut_floor_z_mm": 11.04,
       "upper_nut_floor_thickness_mm": 1.5,
-      "retainer_thread": "explicit matched printable 12x2 service thread; final BASE cut + compact matched-pair witness",
+      "retainer_thread": "explicit matched printable 12x2 true radial/axial service thread; final BASE cut + compact matched-pair witness",
       "retainer_pitch_mm": 2.0,
       "retainer_length_mm": 24.3,
       "retainer_top_z_mm": 39.34,
@@ -386,98 +386,243 @@
       "usable_screw_length_above_knob_mm": 23.6,
       "calculated_screw_tip_z_mm": 15.1,
       "base_tube_common_mm3": 0.0,
+      "retainer_thread_profile_generator": "true_radial_axial_OCC_fused",
       "retainer_male_major_d_mm": 12.0,
-      "retainer_female_major_d_mm": 12.44,
+      "retainer_female_major_d_mm": 12.5,
       "retainer_male_core_d_mm": 10.0,
-      "retainer_female_core_d_mm": 10.4,
+      "retainer_female_core_d_mm": 10.5,
       "retainer_thread_top_overrun_mm": 2.0,
-      "male_helical_material_mm3": 25.227951,
+      "thread_printability": {
+        "pitch_mm": 2.0,
+        "male_root_width_mm": 1.2,
+        "male_crest_width_mm": 0.6,
+        "female_groove_root_width_mm": 1.5,
+        "female_groove_crest_width_mm": 0.9,
+        "female_crest_material_between_turns_mm": 0.5,
+        "male_core_d_mm": 10.0,
+        "male_major_d_mm": 12.0,
+        "female_crest_bore_d_mm": 10.5,
+        "female_groove_root_d_mm": 12.5,
+        "radial_core_clearance_mm": 0.25,
+        "radial_major_clearance_mm": 0.25,
+        "axial_root_clearance_mm": 0.3,
+        "axial_crest_clearance_mm": 0.3,
+        "target_nozzle_mm": 0.4
+      },
       "female_thread_removed_mm3": [
-        1640.412409,
-        1640.412409
+        540.991623,
+        540.991623
       ],
       "female_helical_witness": [
         {
           "x_mm": -80.0,
-          "final_base_removed_mm3": 1640.412409,
-          "mouth_block_mm3": 0.0,
+          "blocked_sample_points": 0,
+          "sample_radius_mm": 6.3,
+          "sample_z_mm": 39.34,
+          "final_base_removed_mm3": 540.991623,
           "entry_clear_d_mm": 13.0
         },
         {
           "x_mm": 80.0,
-          "final_base_removed_mm3": 1640.412409,
-          "mouth_block_mm3": 0.0,
+          "blocked_sample_points": 0,
+          "sample_radius_mm": 6.3,
+          "sample_z_mm": 39.34,
+          "final_base_removed_mm3": 540.991623,
           "entry_clear_d_mm": 13.0
         }
       ],
-      "retainer_phase_fit_checks": [
+      "female_thread_point_samples": [
         {
-          "x_mm": -80.0,
-          "nominal_common_mm3": 0.069276,
-          "half_pitch_wrong_phase_common_mm3": 25.099548,
-          "witness": "actual final BASE against actual final retainer"
+          "x_station_mm": -80.0,
+          "turn": 3,
+          "angle_deg": 0.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
         },
         {
-          "x_mm": 80.0,
-          "nominal_common_mm3": 0.069276,
-          "half_pitch_wrong_phase_common_mm3": 25.099548,
-          "witness": "actual final BASE against actual final retainer"
+          "x_station_mm": -80.0,
+          "turn": 3,
+          "angle_deg": 90.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": -80.0,
+          "turn": 3,
+          "angle_deg": 180.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": -80.0,
+          "turn": 3,
+          "angle_deg": 270.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": -80.0,
+          "turn": 7,
+          "angle_deg": 0.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": -80.0,
+          "turn": 7,
+          "angle_deg": 90.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": -80.0,
+          "turn": 7,
+          "angle_deg": 180.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": -80.0,
+          "turn": 7,
+          "angle_deg": 270.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 3,
+          "angle_deg": 0.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 3,
+          "angle_deg": 90.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 3,
+          "angle_deg": 180.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 3,
+          "angle_deg": 270.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 7,
+          "angle_deg": 0.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 7,
+          "angle_deg": 90.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 7,
+          "angle_deg": 180.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "x_station_mm": 80.0,
+          "turn": 7,
+          "angle_deg": 270.0,
+          "radius_mm": 5.75,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        }
+      ],
+      "male_thread_point_samples": [
+        {
+          "turn": 3,
+          "angle_deg": 0.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 3,
+          "angle_deg": 90.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 3,
+          "angle_deg": 180.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 3,
+          "angle_deg": 270.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 0.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 90.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 180.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 270.0,
+          "radius_mm": 5.5,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
         }
       ],
       "entry_clear_d_mm": 13.0,
       "entry_clear_depth_mm": 0.45,
       "female_thread_start_recess_mm": 0.45,
-      "retainer_entry_checks": [
-        {
-          "x_mm": -80.0,
-          "entry_depth_mm": 0.0,
-          "lift_from_installed_mm": 24.7,
-          "base_common_mm3": 0.0
-        },
-        {
-          "x_mm": -80.0,
-          "entry_depth_mm": 0.5,
-          "lift_from_installed_mm": 24.2,
-          "base_common_mm3": 0.0
-        },
-        {
-          "x_mm": -80.0,
-          "entry_depth_mm": 1.0,
-          "lift_from_installed_mm": 23.7,
-          "base_common_mm3": 0.000941
-        },
-        {
-          "x_mm": -80.0,
-          "entry_depth_mm": 2.0,
-          "lift_from_installed_mm": 22.7,
-          "base_common_mm3": 0.003639
-        },
-        {
-          "x_mm": 80.0,
-          "entry_depth_mm": 0.0,
-          "lift_from_installed_mm": 24.7,
-          "base_common_mm3": 0.0
-        },
-        {
-          "x_mm": 80.0,
-          "entry_depth_mm": 0.5,
-          "lift_from_installed_mm": 24.2,
-          "base_common_mm3": 0.0
-        },
-        {
-          "x_mm": 80.0,
-          "entry_depth_mm": 1.0,
-          "lift_from_installed_mm": 23.7,
-          "base_common_mm3": 0.000941
-        },
-        {
-          "x_mm": 80.0,
-          "entry_depth_mm": 2.0,
-          "lift_from_installed_mm": 22.7,
-          "base_common_mm3": 0.003639
-        }
-      ],
-      "witness_strategy": "actual final BASE + actual final retainer; open-mouth envelope and entry motion from free space"
+      "witness_strategy": "actual final BASE/retainer sampled directly with isInside at helical centres and half-pitch crest positions; no full-body validation booleans"
     }
   },
   "box_clamp": {
@@ -716,11 +861,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 2336526
+    "file_bytes": 3302145
   },
   "handed_stl_export": {
-    "right_sha256": "a06e44ff4d32221f61189f4972128351813459e1721911afd585b89ea409a481",
-    "left_sha256": "1f7ab03a263b8603f1e99661841ea85955402c3ba3fcfc98118b8a06d4129dc3",
+    "right_sha256": "fb6866b7a7bb870f287e88321050fae36b94c64ec9ee148b7b47ee56e32bae4c",
+    "left_sha256": "b13a87e2343aae40828e90f38f889c9da402d0b81801c17ba9a30ed32380cfba",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -743,13 +888,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 30828,
-    "left_facets": 30828,
-    "right_volume_mm3": 609231.20361,
-    "left_volume_mm3": 609231.20361,
+    "right_facets": 49932,
+    "left_facets": 49932,
+    "right_volume_mm3": 607993.778546,
+    "left_volume_mm3": 607993.778546,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 208563.790379,
-    "left_area_mm2": 208563.790379,
+    "right_area_mm2": 208377.24051,
+    "left_area_mm2": 208377.24051,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
