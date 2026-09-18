@@ -42,6 +42,9 @@ assert box['plate_travel_mm'] == 5.5, box
 assert box['effective_total_width_mm'] <= 600.02, box
 assert box['axial_slide_without_rotation_common_mm3'] >= 0.5, box
 assert box['wrong_phase_common_mm3'] >= 0.5, box
+assert len(box['cartridge_service_mouth']) == 2, box
+assert all(q['blocked_common_mm3'] <= 0.0001 for q in box['cartridge_service_mouth']), box['cartridge_service_mouth']
+assert box['cartridge_pocket_y_mm'][1] > 214.615, box
 assert len(box['cartridge_insertion']) == 8, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['cartridge_insertion']), box['cartridge_insertion']
 assert box['final_assembly_replaceable_module_count'] == 0, box

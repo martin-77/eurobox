@@ -354,6 +354,19 @@ NUT_PIN_GROOVE_W = 1.6
 NUT_PIN_CLIP_T = 1.3
 NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
 
+# The removable lead-nut cartridge must be exposed at the service face.  The
+# old pocket stopped at NUT_Y0+0.35 and left 1.85 mm of cage wall in front of
+# the cartridge, making the thread look/behave as if it were buried behind the
+# BASE.  Keep the proven X/Z clearance, but carry the pocket through CAGE_Y1.
+CARTRIDGE_POCKET_SIDE_CLEAR = 0.35
+CARTRIDGE_POCKET_FRONT_BREAKOUT = 0.35
+CARTRIDGE_POCKET_X0_OFFSET = 8.0 + CARTRIDGE_POCKET_SIDE_CLEAR
+CARTRIDGE_POCKET_Z0_OFFSET = 7.0 + CARTRIDGE_POCKET_SIDE_CLEAR
+CARTRIDGE_POCKET_Y0 = NUT_THREAD_Y0 - CARTRIDGE_POCKET_SIDE_CLEAR
+CARTRIDGE_POCKET_Y1 = CAGE_Y1 + CARTRIDGE_POCKET_FRONT_BREAKOUT
+CARTRIDGE_POCKET_X = 16.0 + 2.0*CARTRIDGE_POCKET_SIDE_CLEAR
+CARTRIDGE_POCKET_Z = 20.0 + 2.0*CARTRIDGE_POCKET_SIDE_CLEAR
+
 LEAD_NUT = C.box(-8.0,-NUT_THREAD_LEN,-7.0,16.0,NUT_THREAD_LEN,14.0)
 LEAD_NUT = LEAD_NUT.fuse(C.box(-6.0,-11.0,7.0,12.0,8.0,6.0)).removeSplitter()
 LEAD_NUT = LEAD_NUT.cut(FEMALE_NEGY).removeSplitter()
@@ -372,10 +385,17 @@ NUT_PIN = C.fuse_seq([
 NUT_PIN_CLIP = make_c_clip(3.2,1.25,NUT_PIN_CLIP_T,2.4)
 
 for sx in SPINDLE_X:
-    # Cartridge pocket is open to the inboard service side and carries no thread.
+    # Cartridge pocket is a real through-service opening, not a blind cavity.
+    # X/Z retain the proven 0.35 mm side clearance; Y deliberately breaks
+    # through the cage service face so the replaceable threaded cartridge is
+    # accessible and its thread is not hidden behind a printed wall.
     pocket = C.box(
-        sx-8.35,NUT_THREAD_Y0-0.35,SPINDLE_Z-7.35,
-        16.70,NUT_THREAD_LEN+0.70,20.70,
+        sx-CARTRIDGE_POCKET_X0_OFFSET,
+        CARTRIDGE_POCKET_Y0,
+        SPINDLE_Z-CARTRIDGE_POCKET_Z0_OFFSET,
+        CARTRIDGE_POCKET_X,
+        CARTRIDGE_POCKET_Y1-CARTRIDGE_POCKET_Y0,
+        CARTRIDGE_POCKET_Z,
     )
     RIGHT_FULL = RIGHT_FULL.cut(pocket).removeSplitter()
 
@@ -445,6 +465,26 @@ left_back=C.mirror_x(LEFT_FULL); full_mirror_delta=abs(RIGHT_FULL.Volume-left_ba
 mirror_bound_delta=max(abs(RIGHT_FULL.BoundBox.XMin-left_back.BoundBox.XMin),abs(RIGHT_FULL.BoundBox.XMax-left_back.BoundBox.XMax),abs(RIGHT_FULL.BoundBox.YMin-left_back.BoundBox.YMin),abs(RIGHT_FULL.BoundBox.YMax-left_back.BoundBox.YMax),abs(RIGHT_FULL.BoundBox.ZMin-left_back.BoundBox.ZMin),abs(RIGHT_FULL.BoundBox.ZMax-left_back.BoundBox.ZMax)); mirror_face_delta=abs(len(RIGHT_FULL.Faces)-len(left_back.Faces))
 if full_mirror_delta>1e-4 or mirror_bound_delta>1e-6 or mirror_face_delta!=0: fail('full handed bases are not exact construction mirrors')
 stage('mirror gate complete')
+
+# Prove both cartridge service mouths are actually open at the cage face.  This
+# is the regression gate for the former 1.85 mm wall hiding the working thread.
+cartridge_service_mouth=[]
+for sx in SPINDLE_X:
+    mouth = C.box(
+        sx-8.0,
+        CAGE_Y1-0.05,
+        SPINDLE_Z-7.0,
+        16.0,
+        CARTRIDGE_POCKET_FRONT_BREAKOUT+0.10,
+        20.0,
+    )
+    cv = RIGHT_FULL.common(mouth).Volume
+    cartridge_service_mouth.append({
+        'x_mm':round(sx,3),
+        'blocked_common_mm3':round(cv,6),
+    })
+    if cv>1e-4:
+        fail(f'lead-nut cartridge service mouth blocked at X={sx}: {cv:.6f} mm3')
 
 cage_reinforcement_checks=[]
 for name,probe in make_cage_reinforcement().items():
@@ -619,7 +659,7 @@ def local_y_extent(d):
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
-V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'axial_slide_without_rotation_common_mm3':round(axial_slide_common,6),'wrong_phase_common_mm3':round(wrong_phase_common,6),'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_service_mouth':cartridge_service_mouth,'cartridge_pocket_y_mm':[round(CARTRIDGE_POCKET_Y0,3),round(CARTRIDGE_POCKET_Y1,3)],'cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'axial_slide_without_rotation_common_mm3':round(axial_slide_common,6),'wrong_phase_common_mm3':round(wrong_phase_common,6),'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60_full.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 FULL HARD CHECKS FAILED: '+' | '.join(failures))
@@ -651,7 +691,7 @@ with open(os.path.join(OUT,'README_BUILD_v60_full.txt'),'w',encoding='utf-8') as
     f.write('Eurobox v60 direct build with proven v50 mechanical solutions restored.\n')
     f.write('Broad fixed Upper pivot, relieved replaceable Lower fork, positive M4 closure with dedicated tightening tongue and side-loaded captive nut.\n')
     f.write('Rack closure is dimensioned for an M4x20 from below with full captive-nut engagement, blind-tip clearance and positive tightening travel.\n')
-    f.write('Outboard rear-stop contact wall, closed holm heads with DROPs; serviceable box-clamp cage uses full-area holm ties, a hollow transverse DROP beam and low station gussets while the lead-nut cartridges remain removable.\n')
+    f.write('Outboard rear-stop contact wall, closed holm heads with DROPs; serviceable box-clamp cage uses full-area holm ties, a hollow transverse DROP beam and low station gussets while the lead-nut cartridges remain removable through open service mouths.\n')
     f.write(f'Final cage top is exactly the 39.54 mm box support plane; {PLATE_X:.1f} mm clamp plate with holm-referenced lead screws at {SPINDLE_X[0]:.2f}/{SPINDLE_X[1]:.2f} mm.\n')
     f.write('160 mm rack-clamp spacing; CORE One L INDX hard envelope 298 x 275 mm.\n')
 stage('complete'); print(json.dumps(V,indent=2),flush=True)
