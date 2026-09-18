@@ -520,6 +520,23 @@ SPINDLE_POSY=SPINDLE_POSY.fuse(
         0,
     )
 ).removeSplitter()
+
+# Mesh-reconstructed helical solids can miss an exact coplanar fuse by a few
+# microns at the shoulder/hex/stud boundaries.  A continuous central shaft is
+# mechanically correct and guarantees one watertight spindle without changing
+# any external thread surface.
+THREAD_STACK_Y0=SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER-0.25
+THREAD_STACK_Y1=(
+    SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+
+    LEAD_THREAD_LEN+HEX_LEN+OUTER_STUD_LEN
+)
+SPINDLE_POSY=SPINDLE_POSY.fuse(
+    cyl_y(
+        THREAD_CORE_R,
+        THREAD_STACK_Y1-THREAD_STACK_Y0,
+        0,THREAD_STACK_Y0,0,
+    )
+).removeSplitter()
 C.require_single(SPINDLE_POSY,'lead-spindle-with-stud')
 SPINDLE=rotate_z180(SPINDLE_POSY)
 KNOB=cyl_y(15.0,7.0)
