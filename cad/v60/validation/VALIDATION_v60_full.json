@@ -1,7 +1,7 @@
 {
   "version": "v60",
   "stage": "full_direct_mechanism_v50_box_clamp_single_source",
-  "architecture": "continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow 12x2 printed service plug",
+  "architecture": "continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow 12x3 printed service plug",
   "base": {
     "right_bbox_mm": [
       295.0,
@@ -373,8 +373,8 @@
       "upper_nut_pocket_height_mm": 3.6,
       "upper_nut_floor_z_mm": 11.04,
       "upper_nut_floor_thickness_mm": 1.5,
-      "retainer_thread": "explicit matched printable 12x2 true radial/axial service thread; final BASE cut + compact matched-pair witness",
-      "retainer_pitch_mm": 2.0,
+      "retainer_thread": "explicit matched printable 12x3 true radial/axial service thread; final BASE cut + compact matched-pair witness",
+      "retainer_pitch_mm": 3.0,
       "retainer_length_mm": 24.3,
       "retainer_top_z_mm": 39.34,
       "retainer_top_recess_mm": 0.2,
@@ -391,14 +391,14 @@
       "retainer_female_major_d_mm": 12.5,
       "retainer_male_core_d_mm": 10.0,
       "retainer_female_core_d_mm": 10.5,
-      "retainer_thread_top_overrun_mm": 2.0,
+      "retainer_thread_top_overrun_mm": 3.0,
       "thread_printability": {
-        "pitch_mm": 2.0,
-        "male_root_width_mm": 1.2,
-        "male_crest_width_mm": 0.6,
-        "female_groove_root_width_mm": 1.5,
-        "female_groove_crest_width_mm": 0.9,
-        "female_crest_material_between_turns_mm": 0.5,
+        "pitch_mm": 3.0,
+        "male_root_width_mm": 1.8,
+        "male_crest_width_mm": 0.8,
+        "female_groove_root_width_mm": 2.1,
+        "female_groove_crest_width_mm": 1.1,
+        "female_crest_material_between_turns_mm": 0.9,
         "male_core_d_mm": 10.0,
         "male_major_d_mm": 12.0,
         "female_crest_bore_d_mm": 10.5,
@@ -407,11 +407,12 @@
         "radial_major_clearance_mm": 0.25,
         "axial_root_clearance_mm": 0.3,
         "axial_crest_clearance_mm": 0.3,
-        "target_nozzle_mm": 0.4
+        "target_nozzle_mm": 0.4,
+        "approx_full_turns": 8.1
       },
       "female_thread_removed_mm3": [
-        540.991623,
-        540.991623
+        495.126261,
+        495.126261
       ],
       "female_helical_witness": [
         {
@@ -419,7 +420,7 @@
           "blocked_sample_points": 0,
           "sample_radius_mm": 6.3,
           "sample_z_mm": 39.34,
-          "final_base_removed_mm3": 540.991623,
+          "final_base_removed_mm3": 495.126261,
           "entry_clear_d_mm": 13.0
         },
         {
@@ -427,14 +428,14 @@
           "blocked_sample_points": 0,
           "sample_radius_mm": 6.3,
           "sample_z_mm": 39.34,
-          "final_base_removed_mm3": 540.991623,
+          "final_base_removed_mm3": 495.126261,
           "entry_clear_d_mm": 13.0
         }
       ],
       "female_thread_point_samples": [
         {
           "x_station_mm": -80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 0.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -442,7 +443,7 @@
         },
         {
           "x_station_mm": -80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 90.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -450,7 +451,7 @@
         },
         {
           "x_station_mm": -80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 180.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -458,7 +459,7 @@
         },
         {
           "x_station_mm": -80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 270.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -466,7 +467,7 @@
         },
         {
           "x_station_mm": -80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 0.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -474,7 +475,7 @@
         },
         {
           "x_station_mm": -80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 90.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -482,7 +483,7 @@
         },
         {
           "x_station_mm": -80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 180.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -490,7 +491,7 @@
         },
         {
           "x_station_mm": -80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 270.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -498,7 +499,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 0.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -506,7 +507,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 90.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -514,7 +515,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 180.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -522,7 +523,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 270.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -530,7 +531,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 0.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -538,7 +539,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 90.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -546,7 +547,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 180.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -554,7 +555,7 @@
         },
         {
           "x_station_mm": 80.0,
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 270.0,
           "radius_mm": 5.75,
           "groove_center_solid": false,
@@ -563,56 +564,56 @@
       ],
       "male_thread_point_samples": [
         {
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 0.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
           "between_turns_solid": false
         },
         {
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 90.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
           "between_turns_solid": false
         },
         {
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 180.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
           "between_turns_solid": false
         },
         {
-          "turn": 3,
+          "turn": 2,
           "angle_deg": 270.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
           "between_turns_solid": false
         },
         {
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 0.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
           "between_turns_solid": false
         },
         {
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 90.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
           "between_turns_solid": false
         },
         {
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 180.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
           "between_turns_solid": false
         },
         {
-          "turn": 7,
+          "turn": 5,
           "angle_deg": 270.0,
           "radius_mm": 5.5,
           "ridge_center_solid": true,
@@ -861,11 +862,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3302145
+    "file_bytes": 2522313
   },
   "handed_stl_export": {
-    "right_sha256": "fb6866b7a7bb870f287e88321050fae36b94c64ec9ee148b7b47ee56e32bae4c",
-    "left_sha256": "b13a87e2343aae40828e90f38f889c9da402d0b81801c17ba9a30ed32380cfba",
+    "right_sha256": "fe73fb64856bedc3ca70fff2b1584fbb0539f50040c7f33e20fbe0adf84c622e",
+    "left_sha256": "5181a1ab397349d65984b5a6343c2e3bc0228f5fb71d72b6a3256cccf45f63a6",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -888,13 +889,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 49932,
-    "left_facets": 49932,
-    "right_volume_mm3": 607993.778546,
-    "left_volume_mm3": 607993.778546,
+    "right_facets": 35952,
+    "left_facets": 35952,
+    "right_volume_mm3": 607994.883683,
+    "left_volume_mm3": 607994.883683,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 208377.24051,
-    "left_area_mm2": 208377.24051,
+    "right_area_mm2": 207798.539656,
+    "left_area_mm2": 207798.539656,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
