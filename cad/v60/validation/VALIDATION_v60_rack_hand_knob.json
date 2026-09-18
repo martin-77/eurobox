@@ -9,8 +9,8 @@
     29.375,
     7.0
   ],
-  "volume_mm3": 4194.938054,
-  "facets": 1168,
+  "volume_mm3": 3753.052952,
+  "facets": 1418,
   "scallops": 8,
   "outer_diameter_mm": 30.0,
   "knob_height_mm": 7.0,
@@ -41,5 +41,107 @@
   "nut_floor_fraction": 1.0,
   "screw_bore_d_mm": 4.6,
   "screw_bore_common_mm3": 0.0,
-  "usable_m4x30_shank_above_knob_mm": 23.6
+  "usable_m4x30_shank_above_knob_mm": 23.6,
+  "body_to_lower_clearance_mm": 0.8,
+  "thrust_boss_d_mm": 10.0,
+  "thrust_boss_h_mm": 0.8,
+  "outer_top_common_mm3": 0.0,
+  "rotation_checks": [
+    {
+      "deg": 0,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 15,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 30,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 45,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 60,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 75,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 90,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 105,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 120,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 135,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 150,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 165,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 180,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 195,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 210,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 225,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 240,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 255,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 270,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 285,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 300,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 315,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 330,
+      "lower_common_mm3": 0.0
+    },
+    {
+      "deg": 345,
+      "lower_common_mm3": 0.0
+    }
+  ]
 }
