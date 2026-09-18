@@ -43,37 +43,95 @@ TOP_OVERRUN = PITCH
 # essentially at the top surface.
 ENTRY_CLEAR_R = MALE_MAJOR_R + 0.50
 ENTRY_CLEAR_DEPTH = 0.45
-FN = 72
-SLICES_PER_PITCH = 32
+FN = 96
+SLICES_PER_PITCH = 48
+THREAD_PROFILE_GENERATOR = 'true_radial_axial_OCC_fused'
 
 
 def stage(msg):
     print('V60_RETAINER_THREAD_FINAL ' + msg, flush=True)
 
 
-def write_thread(path, core_r, major_r, length, root_w, crest_w, top_overrun=0.0):
-    span = length + top_overrun
-    slices = max(24, int(math.ceil(span/PITCH*SLICES_PER_PITCH)))
-    txt = f'''$fn={FN};\nmodule thread_solid(){{\n union(){{\n  translate([0,0,-0.05]) cylinder(r={core_r},h={span+0.10});\n  linear_extrude(height={span},twist=360*{span}/{PITCH},slices={slices},convexity=50)\n   polygon(points=[[{core_r-0.08},-{root_w}/2],[{major_r},-{crest_w}/2],[{major_r},{crest_w}/2],[{core_r-0.08},{root_w}/2]]);\n }}\n}}\nthread_solid();\n'''
+def write_true_helical_ridge(path, core_r, major_r, length, root_w, crest_w, overrun):
+    # Build one closed radial/axial trapezoid swept around a real helix.
+    # The previous linear_extrude XY ribbon could leave a visually smooth,
+    # functionally useless bore even though volume/phase checks passed.
+    inner_r = core_r - 0.12
+    root_half = root_w / 2.0
+    crest_half = crest_w / 2.0
+    a0 = -360.0 * overrun / PITCH
+    a1 = 360.0 * (length + overrun) / PITCH
+    turn_span = (a1-a0)/360.0
+    steps = max(48, int(math.ceil(turn_span*SLICES_PER_PITCH)))
+    txt = f'''$fn={FN};
+pitch={PITCH};
+inner_r={inner_r};
+major_r={major_r};
+root_half={root_half};
+crest_half={crest_half};
+a0={a0};
+a1={a1};
+steps={steps};
+function ang(i)=a0+(a1-a0)*i/steps;
+function zc(i)=pitch*ang(i)/360;
+function pt(r,a,z)=[r*cos(a),r*sin(a),z];
+pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
+       each [pt(inner_r,a,z-root_half),
+             pt(major_r,a,z-crest_half),
+             pt(major_r,a,z+crest_half),
+             pt(inner_r,a,z+root_half)]];
+side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
+  [4*(i+1)+((j+1)%4),4*(i+1)+j,4*i+j],
+  [4*i+((j+1)%4),4*(i+1)+((j+1)%4),4*i+j]
+]];
+start_face=[[2,1,0],[3,2,0]];
+e=4*steps;
+end_face=[[e+1,e+2,e+3],[e,e+1,e+3]];
+polyhedron(points=pts,faces=concat(side_faces,start_face,end_face),convexity=100);
+'''
     with open(path, 'w', encoding='utf-8') as fh:
         fh.write(txt)
+
+
+def make_true_thread_solid(path, core_r, major_r, length, z0=0.0):
+    ridge = B.import_scad_shape(path)
+    clip = Part.makeCylinder(
+        major_r + 0.10,
+        length,
+        App.Vector(0,0,z0),
+    )
+    ridge = ridge.common(clip).removeSplitter()
+    C.require_single(ridge, 'true helical ridge '+os.path.basename(path))
+    core = Part.makeCylinder(
+        core_r,
+        length,
+        App.Vector(0,0,z0),
+    )
+    q = core.fuse(ridge).removeSplitter()
+    C.require_single(q, 'true thread solid '+os.path.basename(path))
+    return q
 
 
 stage('compile matched pronounced 12x2 service thread pair')
 _t = start_timer('retainer.compile_matched_12x2_thread_pair')
 male_scad = os.path.join(C.OUT, 'v60_retainer_final_male_12x2.scad')
 female_scad = os.path.join(C.OUT, 'v60_retainer_final_female_12x2.scad')
-write_thread(male_scad, MALE_CORE_R, MALE_MAJOR_R, THREAD_LEN,
-             MALE_ROOT_W, MALE_CREST_W, 0.0)
-write_thread(female_scad, FEMALE_CORE_R, FEMALE_MAJOR_R, THREAD_LEN,
-             FEMALE_ROOT_W, FEMALE_CREST_W, TOP_OVERRUN)
+write_true_helical_ridge(
+    male_scad, MALE_CORE_R, MALE_MAJOR_R, THREAD_LEN,
+    MALE_ROOT_W, MALE_CREST_W, PITCH,
+)
+write_true_helical_ridge(
+    female_scad, FEMALE_CORE_R, FEMALE_MAJOR_R, THREAD_LEN+TOP_OVERRUN,
+    FEMALE_ROOT_W, FEMALE_CREST_W, PITCH,
+)
 
-MALE_THREAD = B.import_scad_shape(male_scad).common(
-    Part.makeCylinder(MALE_MAJOR_R+0.04, THREAD_LEN)
-).removeSplitter()
-FEMALE_CUTTER = B.import_scad_shape(female_scad).common(
-    Part.makeCylinder(FEMALE_MAJOR_R+0.04, THREAD_LEN+TOP_OVERRUN)
-).removeSplitter()
+MALE_THREAD = make_true_thread_solid(
+    male_scad, MALE_CORE_R, MALE_MAJOR_R, THREAD_LEN, 0.0,
+)
+FEMALE_CUTTER = make_true_thread_solid(
+    female_scad, FEMALE_CORE_R, FEMALE_MAJOR_R,
+    THREAD_LEN+TOP_OVERRUN, 0.0,
+)
 C.require_single(MALE_THREAD, 'final retainer male 12x2')
 C.require_single(FEMALE_CUTTER, 'final base female 12x2 cutter')
 stop_timer('retainer.compile_matched_12x2_thread_pair', _t)
@@ -104,6 +162,7 @@ C.require_single(RACK_NUT_RETAINER, 'final threaded rack-nut retainer')
 stop_timer('retainer.build_threaded_service_retainer', _t)
 
 stage('cut explicit female helical grooves into final bases')
+RIGHT_PRETHREAD = R.RIGHT.copy()
 RIGHT = R.RIGHT
 female_cut_volumes = []
 for xc in C.CLAMP_X:
@@ -156,6 +215,7 @@ if male_helix_volume < 12.0:
 female_witness = []
 fit_checks = []
 entry_checks = []
+bore_connected_groove_checks = []
 for xc in C.CLAMP_X:
     # The complete outer envelope of the screw must be open at the top surface.
     mouth_probe = Part.makeCylinder(
@@ -176,6 +236,49 @@ for xc in C.CLAMP_X:
     })
     if mouth_block > 1e-4:
         fail(f'female thread mouth is hidden behind BASE material X={xc}: {mouth_block:.6f} mm3')
+
+    # Compare the actual threaded BASE with a smooth-bore-only reference in a
+    # mid-span annulus.  A real female thread must remove substantial additional
+    # helical material from the bore wall; a visually smooth cylinder cannot pass.
+    smooth_ref = RIGHT_PRETHREAD.copy()
+    smooth_core = Part.makeCylinder(
+        FEMALE_CORE_R,
+        THREAD_LEN+TOP_OVERRUN,
+        App.Vector(xc,C.RACK_CLOSURE_Y,THREAD_Z0),
+        App.Vector(0,0,1),
+    )
+    smooth_ref = smooth_ref.cut(smooth_core).removeSplitter()
+    smooth_ref = smooth_ref.cut(Part.makeCylinder(
+        ENTRY_CLEAR_R,
+        ENTRY_CLEAR_DEPTH+0.50,
+        App.Vector(
+            xc,C.RACK_CLOSURE_Y,
+            R.CARRIER_TOP_PLANE_Z-ENTRY_CLEAR_DEPTH,
+        ),
+        App.Vector(0,0,1),
+    )).removeSplitter()
+    shell_z0 = THREAD_Z0 + 2.0*PITCH
+    shell_h = max(PITCH, THREAD_LEN - 4.0*PITCH)
+    shell = Part.makeCylinder(
+        FEMALE_MAJOR_R+0.04, shell_h,
+        App.Vector(xc,C.RACK_CLOSURE_Y,shell_z0),
+        App.Vector(0,0,1),
+    ).cut(Part.makeCylinder(
+        FEMALE_CORE_R-0.02, shell_h,
+        App.Vector(xc,C.RACK_CLOSURE_Y,shell_z0),
+        App.Vector(0,0,1),
+    )).removeSplitter()
+    smooth_shell_material = smooth_ref.common(shell).Volume
+    threaded_shell_material = RIGHT.common(shell).Volume
+    helical_removed = smooth_shell_material - threaded_shell_material
+    bore_connected_groove_checks.append({
+        'x_mm':xc,
+        'helical_removed_midspan_mm3':round(helical_removed,6),
+        'smooth_shell_material_mm3':round(smooth_shell_material,6),
+        'threaded_shell_material_mm3':round(threaded_shell_material,6),
+    })
+    if helical_removed < 20.0:
+        fail(f'female retainer bore lacks substantial connected helical groove X={xc}: {helical_removed:.6f} mm3')
 
     nominal = RACK_NUT_RETAINER.copy()
     nominal.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
@@ -250,7 +353,8 @@ validation_path = os.path.join(C.OUT,'VALIDATION_v60_full.json')
 with open(validation_path,'r',encoding='utf-8') as fh:
     validation=json.load(fh)
 validation['stage']='full_direct_mechanism_actual_front_and_explicit_retainer_threads'
-validation['rack']['m4_closure']['retainer_thread']='explicit matched printable 12x2 service thread; final BASE cut + compact matched-pair witness'
+validation['rack']['m4_closure']['retainer_thread']='explicit matched printable 12x2 true radial/axial service thread; final BASE cut + compact matched-pair witness'
+validation['rack']['m4_closure']['retainer_thread_profile_generator']=THREAD_PROFILE_GENERATOR
 validation['rack']['m4_closure']['retainer_pitch_mm']=PITCH
 validation['rack']['m4_closure']['retainer_male_major_d_mm']=2.0*MALE_MAJOR_R
 validation['rack']['m4_closure']['retainer_female_major_d_mm']=2.0*FEMALE_MAJOR_R
@@ -260,6 +364,7 @@ validation['rack']['m4_closure']['retainer_thread_top_overrun_mm']=TOP_OVERRUN
 validation['rack']['m4_closure']['male_helical_material_mm3']=round(male_helix_volume,6)
 validation['rack']['m4_closure']['female_thread_removed_mm3']=female_cut_volumes
 validation['rack']['m4_closure']['female_helical_witness']=female_witness
+validation['rack']['m4_closure']['female_bore_connected_groove_checks']=bore_connected_groove_checks
 validation['rack']['m4_closure']['retainer_phase_fit_checks']=fit_checks
 validation['rack']['m4_closure']['entry_clear_d_mm']=round(2.0*ENTRY_CLEAR_R,3)
 validation['rack']['m4_closure']['entry_clear_depth_mm']=ENTRY_CLEAR_DEPTH
@@ -271,6 +376,6 @@ with open(validation_path,'w',encoding='utf-8') as fh:
     json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFinal retainer: one matched 12x2 male/female pair; Ø13.0 mm shallow service lead-in with the female thread starting 0.45 mm below the carrier top; actual final BASE/retainer fit, phase and insertion-from-free-space hard checks.\n')
+    fh.write('\nFinal retainer: one matched 12x2 true radial/axial male/female pair; Ø13.0 mm shallow service lead-in with the female thread starting 0.45 mm below the carrier top; actual final BASE/retainer fit, bore-connected helical-groove, phase and insertion-from-free-space hard checks.\n')
 
 stage('complete')
