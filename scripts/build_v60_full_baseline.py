@@ -853,14 +853,18 @@ for turn in (2,7):
             )
 
 for angle_deg in (0.0,90.0,180.0,270.0):
+    # The outboard stud is generated as a negative-angle master helix because
+    # the final rigid transform reverses the master-Z axis into physical +Y.
+    # Sample that actual phase with -angle; the female master remains +angle.
     a=math.radians(angle_deg)
+    am=-a
     zc=THREAD_PITCH*(1.0+angle_deg/360.0)
 
-    mx=-male_sample_r*math.cos(a)
+    mx=-male_sample_r*math.cos(am)
     # ridge_lh starts at the outer tip in master Z and progresses toward the
     # knob.  After the rigid transform this maps from +Y tip toward +Y root.
     my=stud_tip_y-zc
-    mz=-male_sample_r*math.sin(a)
+    mz=-male_sample_r*math.sin(am)
     male_ridge=_inside(SPINDLE,mx,my,mz)
     male_between=_inside(
         SPINDLE,mx,stud_tip_y-(zc+THREAD_PITCH/2.0),mz
