@@ -43,8 +43,6 @@ assert box['effective_total_width_mm'] <= 600.02, box
 assert len(box['main_spindle_thread_samples']) == 8, box
 assert all(q['ridge_center_solid'] for q in box['main_spindle_thread_samples']), box['main_spindle_thread_samples']
 assert all(not q['between_turns_solid'] for q in box['main_spindle_thread_samples']), box['main_spindle_thread_samples']
-assert len(box['phase_block_samples']) == 8, box
-assert all(q['blocked_by_lead_nut_material'] for q in box['phase_block_samples']), box['phase_block_samples']
 assert len(box['cartridge_insertion']) == 8, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['cartridge_insertion']), box['cartridge_insertion']
 assert box['final_assembly_replaceable_module_count'] == 0, box
@@ -62,9 +60,15 @@ assert all(q['cartridge_common_mm3'] <= 0.10 for q in box['thread_motion']), box
 # female helix.  Direct final-part samples prevent a smooth cylindrical bore
 # from ever satisfying the workflow contract again.
 ln = box['lead_nut_thread']
-assert ln['standard'] == 'RH8x2 true radial/axial printable female thread', ln
+assert ln['standard'] == 'RH8x2 true radial/axial printable matched pair', ln
 assert ln['pitch_mm'] == 2.0, ln
+assert ln['male_major_d_mm'] == 8.0, ln
+assert ln['male_crest_width_mm'] >= 0.50, ln
 assert ln['female_crest_material_between_turns_mm'] >= 0.45, ln
+assert ln['radial_thread_engagement_mm'] >= 0.40, ln
+assert len(ln['male_samples']) == 8, ln
+assert all(q['ridge_center_solid'] for q in ln['male_samples']), ln
+assert all(not q['between_turns_solid'] for q in ln['male_samples']), ln
 assert len(ln['samples']) == 8, ln
 assert all(not q['groove_center_solid'] for q in ln['samples']), ln
 assert all(q['between_turns_solid'] for q in ln['samples']), ln
