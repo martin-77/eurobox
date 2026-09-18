@@ -70,6 +70,31 @@ assert pr['clip_count_final_assembly'] == 4, pr
 assert len(pr['checks']) == 2, pr
 assert all(q['spindle_common_mm3'] <= 0.0001 for q in pr['checks']), pr
 assert all(q['plate_common_mm3'] <= 0.0001 for q in pr['checks']), pr
+assert pr['service_channel_width_mm'] >= 11.2, pr
+assert pr['service_channel_depth_mm'] == 2.0, pr
+assert len(pr['clip_insertion_path']) == 10, pr
+assert all(q['plate_common_mm3'] <= 0.00001 for q in pr['clip_insertion_path']), pr
+
+ms = box['mounting_sequence']
+assert ms['order'] == [
+    'lead_nut_into_base',
+    'lead_nut_cross_pin',
+    'lead_nut_pin_clip',
+    'lead_screw_through_plate',
+    'plate_retainer_clip_via_bottom_service_channel',
+    'plate_spindle_subassembly_threaded_into_fixed_lead_nut',
+    'knob_on_full_7mm_hex',
+    'knob_retainer_nut_on_outer_RH8x2_stud',
+], ms
+assert len(ms['threaded_plate_approach']) == 10, ms
+assert all(q['plate_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
+assert all(q['spindle_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
+assert all(q['spindle_lead_nut_common_mm3'] <= box['thread_brep_common_tolerance_mm3'] for q in ms['threaded_plate_approach']), ms
+assert all(q['knob_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
+assert all(q['knob_retainer_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
+assert len(ms['operating_knob_clearance']) == 14, ms
+assert all(q['knob_base_common_mm3'] <= 0.0001 for q in ms['operating_knob_clearance']), ms
+assert all(q['retainer_base_common_mm3'] <= 0.0001 for q in ms['operating_knob_clearance']), ms
 
 # The removable lead-nut wear cartridge must contain a real printable RH8x2
 # female helix.  Direct final-part samples prevent a smooth cylindrical bore

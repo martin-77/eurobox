@@ -26,6 +26,12 @@ PLATE_Z0 = 16.0
 PLATE_Z1 = 46.0
 PLATE_OPEN = 5.5
 PLATE_HOLE_D = 6.5
+PLATE_RETAINER_COUNTERBORE_D = 12.0
+PLATE_RETAINER_COUNTERBORE_DEPTH = 2.0
+# Radial service channel in the OUTBOARD face.  Without this, the C-clip could
+# exist in CAD but could never be slid sideways into the shaft groove because
+# the circular counterbore was completely enclosed by plate material.
+PLATE_RETAINER_CHANNEL_W = 11.4
 UNDERHOOK = 4.2
 UNDERHOOK_T = 4.0
 SPINDLE_Z = 31.0
@@ -616,8 +622,25 @@ PLATE=C.box(PLATE_X0,PLATE_BODY_Y0,PLATE_Z0,PLATE_X,PLATE_Y,PLATE_Z1-PLATE_Z0)
 PLATE=PLATE.fuse(C.box(PLATE_X0,PLATE_HOOK_Y0,RIM_BOTTOM_Z-UNDERHOOK_T,PLATE_X,PLATE_HOOK_Y1-PLATE_HOOK_Y0,UNDERHOOK_T))
 for sx in SPINDLE_X:
     PLATE=PLATE.cut(cyl_y(PLATE_HOLE_D/2,PLATE_Y+1,sx,PLATE_BODY_Y0-0.5,SPINDLE_Z))
-    # v50 final: retainer counterbore belongs on the outboard face after Z180.
-    PLATE=PLATE.cut(cyl_y(6.0,2.0,sx,PLATE_SPINDLE_Y-2.0,SPINDLE_Z))
+    # Outboard retainer recess plus a bottom-open radial service channel.  The
+    # channel is only counterbore-deep, so the remaining ~6 mm plate thickness
+    # stays structurally continuous while the printed C-clip can actually be
+    # installed after the spindle journal is through the plate.
+    PLATE=PLATE.cut(cyl_y(
+        PLATE_RETAINER_COUNTERBORE_D/2.0,
+        PLATE_RETAINER_COUNTERBORE_DEPTH,
+        sx,
+        PLATE_SPINDLE_Y-PLATE_RETAINER_COUNTERBORE_DEPTH,
+        SPINDLE_Z,
+    ))
+    PLATE=PLATE.cut(C.box(
+        sx-PLATE_RETAINER_CHANNEL_W/2.0,
+        PLATE_SPINDLE_Y-PLATE_RETAINER_COUNTERBORE_DEPTH,
+        PLATE_Z0-0.50,
+        PLATE_RETAINER_CHANNEL_W,
+        PLATE_RETAINER_COUNTERBORE_DEPTH+0.10,
+        SPINDLE_Z-PLATE_Z0+0.50,
+    ))
 PLATE=PLATE.removeSplitter(); C.require_single(PLATE,'box-clamp-plate')
 
 stage('lead screw and knob')
@@ -659,6 +682,7 @@ PLATE_CLIP_INSTALLED.translate(App.Vector(0.0,-0.40,0.0))
 C.require_single(PLATE_CLIP_INSTALLED,'installed plate-retainer clip local')
 
 plate_retainer_checks=[]
+plate_retainer_clip_insertion=[]
 for sx in SPINDLE_X:
     sp=SPINDLE.copy()
     sp.translate(App.Vector(sx,PLATE_SPINDLE_Y,SPINDLE_Z))
@@ -672,7 +696,9 @@ for sx in SPINDLE_X:
         'spindle_common_mm3':round(spindle_common,6),
         'plate_common_mm3':round(plate_common,6),
         'counterbore_d_mm':12.0,
-        'counterbore_depth_mm':2.0,
+        'counterbore_depth_mm':PLATE_RETAINER_COUNTERBORE_DEPTH,
+        'service_channel_width_mm':PLATE_RETAINER_CHANNEL_W,
+        'service_channel_depth_mm':PLATE_RETAINER_COUNTERBORE_DEPTH,
         'clip_outer_d_mm':10.8,
         'clip_inner_d_mm':5.1,
         'shaft_groove_d_mm':5.0,
@@ -688,6 +714,25 @@ for sx in SPINDLE_X:
             f'plate retainer clip intersects plate counterbore at X={sx}: '
             f'{plate_common:.6f} mm3'
         )
+
+    # Rigid-body service-path check for the plate clip itself.  The opening in
+    # the C-clip still snaps over the Ø5 groove, but its body must be able to
+    # travel upward through the new outboard service channel without crossing
+    # any plate material.
+    for dz in (-10.0,-7.0,-4.0,-2.0,0.0):
+        qcl=PLATE_CLIP_INSTALLED.copy()
+        qcl.translate(App.Vector(sx,PLATE_SPINDLE_Y,SPINDLE_Z+dz))
+        pc=PLATE.common(qcl).Volume
+        plate_retainer_clip_insertion.append({
+            'x_mm':sx,
+            'centre_z_offset_mm':dz,
+            'plate_common_mm3':round(pc,9),
+        })
+        if pc>1e-5:
+            raise RuntimeError(
+                f'plate retainer clip service path blocked by plate '
+                f'X={sx} dz={dz}: {pc:.6f} mm3'
+            )
 
 stage('hard validation')
 failures=[]
@@ -948,6 +993,8 @@ stage('plate motion complete')
 
 cartridge_insertion=[]
 thread_motion=[]
+knob_motion=[]
+assembly_approach=[]
 for sx in SPINDLE_X:
     nut=LEAD_NUT.copy(); nut.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z))
     if RIGHT_FULL.common(nut).Volume>1e-4:
@@ -986,6 +1033,36 @@ for sx in SPINDLE_X:
         if nc>1.20:
             fail(f'RH8x2 spindle/cartridge collision X={sx} open={d}: {nc:.6f} mm3')
 
+        # Knob and its retainer are rigidly carried by the spindle.  Validate
+        # their complete rotational envelope against the actual BASE over the
+        # full 0..5.5 mm operating travel.
+        knob_y=PLATE_SPINDLE_Y-(
+            SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN
+        )-d
+        cap_y=knob_y-KP.KNOB_H
+
+        qkn=KNOB.copy()
+        qkn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
+        qkn.translate(App.Vector(sx,knob_y,SPINDLE_Z))
+        kbc=RIGHT_FULL.common(qkn).Volume
+
+        qcap=CAP_NUT.copy()
+        qcap.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
+        qcap.translate(App.Vector(sx,cap_y,SPINDLE_Z))
+        cbc=RIGHT_FULL.common(qcap).Volume
+
+        knob_motion.append({
+            'x_mm':sx,
+            'open_mm':d,
+            'rotation_deg':rot_deg,
+            'knob_base_common_mm3':round(kbc,6),
+            'retainer_base_common_mm3':round(cbc,6),
+        })
+        if kbc>1e-4:
+            fail(f'box-clamp knob/base collision X={sx} open={d}: {kbc:.6f} mm3')
+        if cbc>1e-4:
+            fail(f'knob retainer/base collision X={sx} open={d}: {cbc:.6f} mm3')
+
 # The requested regression gate is intentionally local to the actual printed
 # wear cartridge.  The direct lead_nut_thread_samples above prove that the final
 # LEAD_NUT BRep has a helical groove and solid crest material between turns.
@@ -999,6 +1076,64 @@ if lead_thread_radial_engagement < 0.40:
         f'{lead_thread_radial_engagement:.3f} mm'
     )
 
+# Real mounting sequence for one station:
+#   lead nut fixed in BASE -> plate/spindle subassembly starts outside guides ->
+#   spindle is rotated into the fixed nut while the plate approaches its
+#   working corridor.  At d=-16.5 the main-thread tip is still 0.3 mm clear of
+#   the nut entrance; d=0 is the nominal closed datum.
+for sx in SPINDLE_X:
+    nut=LEAD_NUT.copy()
+    nut.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z))
+
+    for d in (-16.5,-12.0,-8.0,-4.0,0.0):
+        rot_deg=-360*d/THREAD_PITCH
+
+        apl=PLATE.copy()
+        apl.translate(App.Vector(0,-d,0))
+        plate_base=RIGHT_FULL.common(apl).Volume
+
+        asp=SPINDLE.copy()
+        asp.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
+        asp.translate(App.Vector(sx,PLATE_SPINDLE_Y-d,SPINDLE_Z))
+        spindle_base=RIGHT_FULL.common(asp).Volume
+        spindle_nut=nut.common(asp).Volume
+
+        knob_y=PLATE_SPINDLE_Y-(
+            SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN
+        )-d
+        akn=KNOB.copy()
+        akn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
+        akn.translate(App.Vector(sx,knob_y,SPINDLE_Z))
+        knob_base=RIGHT_FULL.common(akn).Volume
+
+        cap_y=knob_y-KP.KNOB_H
+        acap=CAP_NUT.copy()
+        acap.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
+        acap.translate(App.Vector(sx,cap_y,SPINDLE_Z))
+        cap_base=RIGHT_FULL.common(acap).Volume
+
+        rec={
+            'x_mm':sx,
+            'assembly_d_mm':d,
+            'rotation_deg':rot_deg,
+            'plate_base_common_mm3':round(plate_base,6),
+            'spindle_base_common_mm3':round(spindle_base,6),
+            'spindle_lead_nut_common_mm3':round(spindle_nut,6),
+            'knob_base_common_mm3':round(knob_base,6),
+            'knob_retainer_base_common_mm3':round(cap_base,6),
+        }
+        assembly_approach.append(rec)
+        if plate_base>1e-4:
+            fail(f'plate cannot approach BASE during assembly X={sx} d={d}: {plate_base:.6f} mm3')
+        if spindle_base>1e-4:
+            fail(f'lead screw cannot approach BASE during assembly X={sx} d={d}: {spindle_base:.6f} mm3')
+        if spindle_nut>1.20:
+            fail(f'lead screw cannot thread into installed lead nut X={sx} d={d}: {spindle_nut:.6f} mm3')
+        if knob_base>1e-4:
+            fail(f'knob blocks assembly approach X={sx} d={d}: {knob_base:.6f} mm3')
+        if cap_base>1e-4:
+            fail(f'knob retainer blocks assembly approach X={sx} d={d}: {cap_base:.6f} mm3')
+
 stage('thread motion complete')
 
 def local_y_extent(d):
@@ -1006,7 +1141,7 @@ def local_y_extent(d):
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
-V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'thread_brep_common_tolerance_mm3':1.20,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'knob_motion':knob_motion,'assembly_approach':assembly_approach,'thread_brep_common_tolerance_mm3':1.20,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
 V['box_clamp']['lead_screw']={
     'construction':'single OpenSCAD CGAL union; exact final printable STL retained',
     'main_thread':'true radial/axial RH8x2',
@@ -1021,10 +1156,29 @@ V['box_clamp']['lead_screw']={
     'main_thread_samples':main_spindle_thread_samples,
 }
 V['box_clamp']['plate_spindle_retention']={
-    'mode':'inboard Ø11 shoulder + outboard printable C-clip in Ø12x2 counterbore',
+    'mode':'inboard Ø11 shoulder + outboard printable C-clip in Ø12x2 counterbore with bottom-open service channel',
     'clip_export':'eurobox_v60_plate_retainer_clip',
     'clip_count_final_assembly':4,
+    'service_channel_width_mm':PLATE_RETAINER_CHANNEL_W,
+    'service_channel_depth_mm':PLATE_RETAINER_COUNTERBORE_DEPTH,
+    'clip_insertion_path':plate_retainer_clip_insertion,
     'checks':plate_retainer_checks,
+}
+V['box_clamp']['mounting_sequence']={
+    'order':[
+        'lead_nut_into_base',
+        'lead_nut_cross_pin',
+        'lead_nut_pin_clip',
+        'lead_screw_through_plate',
+        'plate_retainer_clip_via_bottom_service_channel',
+        'plate_spindle_subassembly_threaded_into_fixed_lead_nut',
+        'knob_on_full_7mm_hex',
+        'knob_retainer_nut_on_outer_RH8x2_stud',
+    ],
+    'lead_nut_drop_in':cartridge_insertion,
+    'plate_clip_service_path':plate_retainer_clip_insertion,
+    'threaded_plate_approach':assembly_approach,
+    'operating_knob_clearance':knob_motion,
 }
 V['box_clamp']['lead_nut_thread']={
     'standard':'RH8x2 true radial/axial printable matched pair',
