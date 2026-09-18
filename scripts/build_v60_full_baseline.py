@@ -385,7 +385,7 @@ station_check_refs=(
     (SPINDLE_X[1],C.REAR_HOLM_INNER_X,1.0),
 )
 for sx,holm_inner_x,side in station_check_refs:
-    boss_near_holm = sx - side*C.BOX_CLAMP_BOSS_HALF_X
+    boss_near_holm = sx + side*C.BOX_CLAMP_BOSS_HALF_X
     gap = side*(holm_inner_x-boss_near_holm)
     holm_station_checks.append({'spindle_x_mm':round(sx,3),'holm_inner_x_mm':round(holm_inner_x,3),'boss_to_holm_gap_mm':round(gap,3)})
     if abs(gap-C.BOX_CLAMP_HOLM_CLEAR_X)>1e-6:
