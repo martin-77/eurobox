@@ -139,10 +139,19 @@ write_true_helical_ridge(
 MALE_THREAD = make_true_thread_solid(
     male_scad, MALE_CORE_R, MALE_MAJOR_R, THREAD_LEN, 0.0,
 )
-FEMALE_CUTTER = make_true_thread_solid(
-    female_scad, FEMALE_CORE_R, FEMALE_MAJOR_R,
-    THREAD_LEN+TOP_OVERRUN, 0.0,
+# Keep the female helical ridge overrun intact.  OCC can collapse the common()
+# between this wider faceted ridge and a coaxial clip cylinder even though the
+# imported ridge is one valid solid.  The cutter is allowed to overrun both
+# ends, so fuse the valid ridge directly to an overrun smooth core instead.
+female_ridge = B.import_scad_shape(female_scad)
+C.require_single(female_ridge, 'final female true helical ridge')
+female_core = Part.makeCylinder(
+    FEMALE_CORE_R,
+    THREAD_LEN + TOP_OVERRUN + 2.0*PITCH,
+    App.Vector(0,0,-PITCH),
 )
+FEMALE_CUTTER = female_core.fuse(female_ridge).removeSplitter()
+C.require_single(FEMALE_CUTTER, 'final base female 12x2 true cutter')
 C.require_single(MALE_THREAD, 'final retainer male 12x2')
 C.require_single(FEMALE_CUTTER, 'final base female 12x2 cutter')
 stop_timer('retainer.compile_matched_12x2_thread_pair', _t)
