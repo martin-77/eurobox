@@ -46,6 +46,23 @@ CLAMP_X = (FRONT_CLAMP_X, REAR_CLAMP_X)
 CLAMP_SPACING = REAR_CLAMP_X - FRONT_CLAMP_X
 REAR_SUPPORT_X = 180.0
 
+# Box-clamp layout is referenced to the two load-bearing holms, not to X=0.
+# This uses the previously wasted span between the holms while keeping both
+# screw stations equally clear of their nearest structural member.  The clamp
+# plate follows the stations and therefore becomes wider without growing the
+# printable BASE envelope.
+BOX_CLAMP_BOSS_HALF_X = 11.35
+BOX_CLAMP_HOLM_CLEAR_X = 12.0
+BOX_CLAMP_EDGE_MARGIN_X = 15.0
+FRONT_HOLM_INNER_X = FRONT_CLAMP_X + ARM_W/2.0
+REAR_HOLM_INNER_X = REAR_SUPPORT_X - ARM_W/2.0
+BOX_CLAMP_SPINDLE_X = (
+    FRONT_HOLM_INNER_X + BOX_CLAMP_BOSS_HALF_X + BOX_CLAMP_HOLM_CLEAR_X,
+    REAR_HOLM_INNER_X - BOX_CLAMP_BOSS_HALF_X - BOX_CLAMP_HOLM_CLEAR_X,
+)
+BOX_CLAMP_PLATE_X0 = BOX_CLAMP_SPINDLE_X[0] - BOX_CLAMP_EDGE_MARGIN_X
+BOX_CLAMP_PLATE_X1 = BOX_CLAMP_SPINDLE_X[1] + BOX_CLAMP_EDGE_MARGIN_X
+
 FIXED_STATION_HALF_X = 19.0
 PHYSICAL_X_ORIGIN = 20.0 - (FRONT_CLAMP_X - FIXED_STATION_HALF_X)
 FRONT_CLAMP_PHYS_X = FRONT_CLAMP_X + PHYSICAL_X_ORIGIN
@@ -80,12 +97,12 @@ RACK_M4_NUT_AF = 7.4
 RACK_M4_NUT_H = 3.6
 RACK_M4_NUT_Z0 = 3.0
 
-# Final box-clamp plate corridor. The widened clamp plate is 160 mm wide and
-# moves 5.5 mm toward -Y; 0.4 mm side/Z running clearance is kept.
-# The support/head geometry is built closed first, then only this real moving
-# body envelope is cleared.
-PLATE_SWEEP_X0 = -80.4
-PLATE_SWEEP_X1 = 80.4
+# Final box-clamp plate corridor.  The plate is now centred between the two
+# load-bearing holm inner faces instead of around X=0.  It moves 5.5 mm toward
+# -Y; 0.4 mm side/Z running clearance is kept.  Clearing exactly this envelope
+# also removes the former one-sided massive crosshead region.
+PLATE_SWEEP_X0 = BOX_CLAMP_PLATE_X0 - 0.4
+PLATE_SWEEP_X1 = BOX_CLAMP_PLATE_X1 + 0.4
 PLATE_SWEEP_Y0 = (BOX_RIM_INNER_Y - 8.0) - 5.5 - 0.4
 PLATE_SWEEP_Y1 = (BOX_RIM_INNER_Y - 8.0) + 8.0 + 0.4
 PLATE_SWEEP_Z0 = 16.0 - 0.4
@@ -310,7 +327,7 @@ for xc,support in ((FRONT_CLAMP_X,front_support),(REAR_SUPPORT_X,rear_support)):
 # The real final core must have the complete motion corridor free.
 plate_sweep_common = RIGHT.common(make_plate_sweep_clearance()).Volume
 if plate_sweep_common > 1e-4: failures.append(f'Final plate sweep corridor is blocked by {plate_sweep_common:.6f} mm3')
-V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'holm_head_closures':drop_fractions},'failures':failures}
+V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'box_clamp_spindle_x_mm':[round(x,3) for x in BOX_CLAMP_SPINDLE_X],'box_clamp_plate_x_mm':[round(BOX_CLAMP_PLATE_X0,3),round(BOX_CLAMP_PLATE_X1,3)],'box_clamp_holm_clearance_mm':BOX_CLAMP_HOLM_CLEAR_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'holm_head_closures':drop_fractions},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 HARD CHECKS FAILED: '+' | '.join(failures))

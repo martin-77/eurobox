@@ -9,7 +9,15 @@ import build_v60 as C
 
 OUT = C.OUT
 RIM_BOTTOM_Z = C.BOX_SUPPORT_Z - C.RIM_H
-PLATE_X = 160.0
+
+# The box-clamp stations are no longer symmetric around X=0.  Each station is
+# positioned from the inner face of its nearest load-bearing holm with the same
+# boss-to-holm clearance.  The plate keeps the proven 15 mm screw-to-edge margin
+# on both ends and therefore grows with the useful station span.
+SPINDLE_X = tuple(C.BOX_CLAMP_SPINDLE_X)
+PLATE_X0 = C.BOX_CLAMP_PLATE_X0
+PLATE_X1 = C.BOX_CLAMP_PLATE_X1
+PLATE_X = PLATE_X1 - PLATE_X0
 PLATE_Y = 8.0
 PLATE_Z0 = 16.0
 PLATE_Z1 = 46.0
@@ -17,10 +25,6 @@ PLATE_OPEN = 5.5
 PLATE_HOLE_D = 6.5
 UNDERHOOK = 4.2
 UNDERHOOK_T = 4.0
-# Spread the two box-clamp screw stations farther apart for better anti-twist
-# fixation of the Eurobox. The plate grows with them so the edge margin remains
-# 15 mm on both sides; the outer bosses also stitch directly into the cage guides.
-SPINDLE_X = (-65.0, 65.0)
 SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
@@ -45,11 +49,13 @@ WIDTH_RIM_CLEAR = 0.20
 PRINT_GUIDE_Y0 = CAGE_Y1 - 0.40
 PRINT_GUIDE_Y1 = C.BOX_RIM_INNER_Y - WIDTH_RIM_CLEAR
 PRINT_GUIDE_Z0 = 14.0
-PLATE_HALF_X = PLATE_X / 2.0
 GUIDE_RUNNING_CLEAR_X = 0.40
-GUIDE_INNER_X = PLATE_HALF_X + GUIDE_RUNNING_CLEAR_X
 GUIDE_T = 7.60
-GUIDE_OUTER_X = GUIDE_INNER_X + GUIDE_T
+GUIDE_LEFT_INNER_X = PLATE_X0 - GUIDE_RUNNING_CLEAR_X
+GUIDE_LEFT_OUTER_X = GUIDE_LEFT_INNER_X - GUIDE_T
+GUIDE_RIGHT_INNER_X = PLATE_X1 + GUIDE_RUNNING_CLEAR_X
+GUIDE_RIGHT_OUTER_X = GUIDE_RIGHT_INNER_X + GUIDE_T
+STATION_TIE_OVERLAP_X = 0.35
 # Final v50 datum: the complete cage terminates on the box support plane.  The
 # first v60 rebuild incorrectly grew the guides/tie to Z=49.8 and changed the
 # front architecture substantially.
@@ -194,22 +200,50 @@ PLATE_CLIP=make_c_clip(5.4,2.45,1.4,3.8)
 
 
 def make_cage_structure():
+    # No full-width deck/tie here: that was the unnecessary massive block seen
+    # in the preview.  Each screw station is now a local boss tied directly to
+    # its nearest holm, and each plate guide is supported by that same local tie.
     parts=[
-        C.box(-GUIDE_OUTER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(GUIDE_INNER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(-GUIDE_OUTER_X,CAGE_Y0-0.10,PRINT_BASE_PLANE_Z-PRINT_FRAME_TIE_T,2.0*GUIDE_OUTER_X,CAGE_Y1-CAGE_Y0+0.20,PRINT_FRAME_TIE_T),
-        C.box(-GUIDE_INNER_X,CAGE_Y0,FINAL_DECK_Z0,2.0*GUIDE_INNER_X,PRINT_GUIDE_Y1-CAGE_Y0,FINAL_DECK_Z1-FINAL_DECK_Z0),
-        C.box(-GUIDE_OUTER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(GUIDE_INNER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(-GUIDE_INNER_X-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,
-              2*GUIDE_STITCH_OVERLAP,PRINT_GUIDE_Y1-CAGE_Y0,2*GUIDE_STITCH_OVERLAP),
-        C.box(GUIDE_INNER_X-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,
-              2*GUIDE_STITCH_OVERLAP,PRINT_GUIDE_Y1-CAGE_Y0,2*GUIDE_STITCH_OVERLAP),
+        C.box(GUIDE_LEFT_OUTER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,
+              GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
+        C.box(GUIDE_RIGHT_INNER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,
+              GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
+        C.box(GUIDE_LEFT_OUTER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,
+              GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
+        C.box(GUIDE_RIGHT_INNER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,
+              GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
     ]
-    for sx in SPINDLE_X:
-        parts.append(C.box(sx-11.0,CAGE_Y0,PRINT_FRAME_BOSS_Z0,22.0,CAGE_Y1-CAGE_Y0,PRINT_BASE_PLANE_Z-PRINT_FRAME_BOSS_Z0))
-        parts.append(C.box(sx-11.35,CAGE_Y0,FINAL_DECK_Z1-0.35,22.70,CAGE_Y1-CAGE_Y0,PRINT_FRAME_BOSS_Z0-(FINAL_DECK_Z1-0.35)+0.35))
-    return C.fuse_seq(parts,'direct-final-box-clamp-cage')
+
+    station_refs = (
+        (SPINDLE_X[0], C.FRONT_HOLM_INNER_X, -1.0),
+        (SPINDLE_X[1], C.REAR_HOLM_INNER_X, 1.0),
+    )
+    for sx, holm_inner_x, side in station_refs:
+        boss_x0 = sx - C.BOX_CLAMP_BOSS_HALF_X
+        boss_x1 = sx + C.BOX_CLAMP_BOSS_HALF_X
+        parts.append(C.box(
+            boss_x0,CAGE_Y0,PRINT_FRAME_BOSS_Z0,
+            boss_x1-boss_x0,CAGE_Y1-CAGE_Y0,PRINT_BASE_PLANE_Z-PRINT_FRAME_BOSS_Z0,
+        ))
+        parts.append(C.box(
+            boss_x0,CAGE_Y0,FINAL_DECK_Z1-0.35,
+            boss_x1-boss_x0,CAGE_Y1-CAGE_Y0,
+            PRINT_FRAME_BOSS_Z0-(FINAL_DECK_Z1-0.35)+0.35,
+        ))
+
+        if side < 0.0:
+            tie_x0 = holm_inner_x - STATION_TIE_OVERLAP_X
+            tie_x1 = boss_x0 + STATION_TIE_OVERLAP_X
+        else:
+            tie_x0 = boss_x1 - STATION_TIE_OVERLAP_X
+            tie_x1 = holm_inner_x + STATION_TIE_OVERLAP_X
+
+        parts.append(C.box(
+            tie_x0,CAGE_Y0-0.10,PRINT_BASE_PLANE_Z-PRINT_FRAME_TIE_T,
+            tie_x1-tie_x0,CAGE_Y1-CAGE_Y0+0.20,PRINT_FRAME_TIE_T,
+        ))
+
+    return C.fuse_seq(parts,'local-holm-referenced-box-clamp-cage')
 
 
 stage('cage fusion')
@@ -314,8 +348,8 @@ C.require_single(RIGHT_FULL,'RIGHT full final'); LEFT_FULL=C.mirror_x(RIGHT_FULL
 
 stage('plate')
 PLATE_BODY_Y0=C.BOX_RIM_INNER_Y-PLATE_Y; PLATE_HOOK_Y0=C.BOX_RIM_INNER_Y-WIDTH_RIM_CLEAR; PLATE_HOOK_Y1=C.BOX_RIM_INNER_Y+UNDERHOOK
-PLATE=C.box(-PLATE_X/2,PLATE_BODY_Y0,PLATE_Z0,PLATE_X,PLATE_Y,PLATE_Z1-PLATE_Z0)
-PLATE=PLATE.fuse(C.box(-PLATE_X/2,PLATE_HOOK_Y0,RIM_BOTTOM_Z-UNDERHOOK_T,PLATE_X,PLATE_HOOK_Y1-PLATE_HOOK_Y0,UNDERHOOK_T))
+PLATE=C.box(PLATE_X0,PLATE_BODY_Y0,PLATE_Z0,PLATE_X,PLATE_Y,PLATE_Z1-PLATE_Z0)
+PLATE=PLATE.fuse(C.box(PLATE_X0,PLATE_HOOK_Y0,RIM_BOTTOM_Z-UNDERHOOK_T,PLATE_X,PLATE_HOOK_Y1-PLATE_HOOK_Y0,UNDERHOOK_T))
 for sx in SPINDLE_X:
     PLATE=PLATE.cut(cyl_y(PLATE_HOLE_D/2,PLATE_Y+1,sx,PLATE_BODY_Y0-0.5,SPINDLE_Z))
     # v50 final: retainer counterbore belongs on the outboard face after Z180.
@@ -345,14 +379,29 @@ mirror_bound_delta=max(abs(RIGHT_FULL.BoundBox.XMin-left_back.BoundBox.XMin),abs
 if full_mirror_delta>1e-4 or mirror_bound_delta>1e-6 or mirror_face_delta!=0: fail('full handed bases are not exact construction mirrors')
 stage('mirror gate complete')
 
-for x in (-GUIDE_INNER_X,GUIDE_INNER_X):
-    stitch=C.box(x-GUIDE_STITCH_OVERLAP,CAGE_Y0,FINAL_DECK_Z1-GUIDE_STITCH_OVERLAP,2*GUIDE_STITCH_OVERLAP,PRINT_GUIDE_Y1-CAGE_Y0,2*GUIDE_STITCH_OVERLAP)
-    if RIGHT_FULL.common(stitch).Volume/stitch.Volume<0.999: fail(f'guide/deck structural stitch missing at X={x}')
+holm_station_checks=[]
+station_check_refs=(
+    (SPINDLE_X[0],C.FRONT_HOLM_INNER_X,-1.0),
+    (SPINDLE_X[1],C.REAR_HOLM_INNER_X,1.0),
+)
+for sx,holm_inner_x,side in station_check_refs:
+    boss_near_holm = sx - side*C.BOX_CLAMP_BOSS_HALF_X
+    gap = side*(holm_inner_x-boss_near_holm)
+    holm_station_checks.append({'spindle_x_mm':round(sx,3),'holm_inner_x_mm':round(holm_inner_x,3),'boss_to_holm_gap_mm':round(gap,3)})
+    if abs(gap-C.BOX_CLAMP_HOLM_CLEAR_X)>1e-6:
+        fail(f'box-clamp station at X={sx} lost symmetric holm clearance: {gap:.3f} mm')
 
 if C.UPPER_PIVOT_W<16.0: fail('Upper central rack-pivot bearing is too narrow')
 if LOWER_FORK_EAR_T<4.2: fail('Replaceable Lower fork ears are too thin')
 if not (0.6<=2*LOWER_FORK_SIDE_CLEAR<=1.2): fail('Upper/Lower fork running clearance outside 0.6..1.2 mm')
-if abs(SPINDLE_X[0]+65.0)>1e-9 or abs(SPINDLE_X[1]-65.0)>1e-9: fail('v60 lead screws are not at widened +/-65 mm positions')
+holm_mid_x = (C.FRONT_HOLM_INNER_X + C.REAR_HOLM_INNER_X)/2.0
+spindle_mid_x = (SPINDLE_X[0] + SPINDLE_X[1])/2.0
+left_plate_margin = SPINDLE_X[0] - PLATE_X0
+right_plate_margin = PLATE_X1 - SPINDLE_X[1]
+if abs(spindle_mid_x-holm_mid_x)>1e-9: fail('box-clamp screw pair is not centred between holm inner faces')
+if abs(left_plate_margin-C.BOX_CLAMP_EDGE_MARGIN_X)>1e-9 or abs(right_plate_margin-C.BOX_CLAMP_EDGE_MARGIN_X)>1e-9:
+    fail('box-clamp plate no longer has equal screw-to-edge margins')
+if PLATE_X <= 160.0: fail(f'box-clamp plate did not widen: {PLATE_X:.3f} mm')
 if abs(PRINT_BASE_PLANE_Z-C.BOX_SUPPORT_Z)>1e-9: fail('screw cage no longer terminates on box support plane')
 
 # Rack M4 closure hard gates.  The screw bears on the underside of the dedicated
@@ -487,7 +536,7 @@ def local_y_extent(d):
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
-V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'guide_stitch_overlap_mm':GUIDE_STITCH_OVERLAP,'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'spindle_x_mm':list(SPINDLE_X),'spindle_spacing_mm':SPINDLE_X[1]-SPINDLE_X[0],'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'axial_slide_without_rotation_common_mm3':round(axial_slide_common,6),'wrong_phase_common_mm3':round(wrong_phase_common,6),'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'axial_slide_without_rotation_common_mm3':round(axial_slide_common,6),'wrong_phase_common_mm3':round(wrong_phase_common,6),'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60_full.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 FULL HARD CHECKS FAILED: '+' | '.join(failures))
@@ -519,7 +568,7 @@ with open(os.path.join(OUT,'README_BUILD_v60_full.txt'),'w',encoding='utf-8') as
     f.write('Eurobox v60 direct build with proven v50 mechanical solutions restored.\n')
     f.write('Broad fixed Upper pivot, relieved replaceable Lower fork, positive M4 closure with dedicated tightening tongue and side-loaded captive nut.\n')
     f.write('Rack closure is dimensioned for an M4x20 from below with full captive-nut engagement, blind-tip clearance and positive tightening travel.\n')
-    f.write('Outboard rear-stop contact wall, closed holm heads with DROPs, stitched cage/deck seams.\n')
-    f.write('Final cage top is exactly the 39.54 mm box support plane; 160 mm clamp plate with lead screws widened to +/-65 mm.\n')
+    f.write('Outboard rear-stop contact wall, closed holm heads with DROPs; box-clamp cage is local to the two holms with no massive full-width deck.\n')
+    f.write(f'Final cage top is exactly the 39.54 mm box support plane; {PLATE_X:.1f} mm clamp plate with holm-referenced lead screws at {SPINDLE_X[0]:.2f}/{SPINDLE_X[1]:.2f} mm.\n')
     f.write('160 mm rack-clamp spacing; CORE One L INDX hard envelope 298 x 275 mm.\n')
 stage('complete'); print(json.dumps(V,indent=2),flush=True)
