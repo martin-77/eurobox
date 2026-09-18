@@ -1040,8 +1040,8 @@
     ],
     "thread_brep_common_tolerance_mm3": 1.2,
     "width_states_local_y_mm": {
-      "0.0": 242.815,
-      "5.5": 237.315
+      "0.0": 244.615,
+      "5.5": 239.115
     },
     "effective_total_width_mm": 600.0,
     "lead_screw": {
@@ -1051,15 +1051,17 @@
       "journal_length_mm": 8.0,
       "shoulder_length_mm": 1.8,
       "main_thread_length_mm": 22.2,
-      "knob_hex_length_mm": 7.0,
+      "knob_hex_length_mm": 8.8,
       "knob_thickness_mm": 7.0,
+      "knob_standoff_mm": 1.8,
+      "knob_hex_engagement_mm": 7.0,
       "outer_stud_length_mm": 7.0,
       "knob_side": "outboard of clamp plate",
       "working_thread_side": "inboard toward fixed lead-nut cartridge",
       "outer_stack_y_from_plate_mm": [
         0.0,
-        7.0,
-        14.0
+        8.8,
+        15.8
       ],
       "mesh_topology": {
         "triangles": 14054,
@@ -1115,6 +1117,260 @@
           "angle_deg": 270.0,
           "ridge_center_solid": true,
           "between_turns_solid": false
+        }
+      ]
+    },
+    "plate_underhook_printability": {
+      "target": "visible green underhook on moving clamp plate",
+      "drop_side": "outboard / knob side of clamp plate",
+      "hook_top_contact_z_mm": 23.09,
+      "hook_outer_y_mm": 232.415,
+      "drop_root_z_mm": 14.89,
+      "drop_run_mm": 4.2,
+      "drop_material_fraction_away_from_knobs": 1.0,
+      "knob_relief_y_depth_mm": 2.8000000000000003,
+      "knob_relief_radius_mm": 15.5,
+      "knob_standoff_mm": 1.8,
+      "plate_knob_clearance": [
+        {
+          "x_mm": -40.65,
+          "deg": 0,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 15,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 30,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 45,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 60,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 75,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 90,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 105,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 120,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 135,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 150,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 165,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 180,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 195,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 210,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 225,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 240,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 255,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 270,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 285,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 300,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 315,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 330,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": -40.65,
+          "deg": 345,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 0,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 15,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 30,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 45,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 60,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 75,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 90,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 105,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 120,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 135,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 150,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 165,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 180,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 195,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 210,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 225,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 240,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 255,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 270,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 285,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 300,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 315,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 330,
+          "plate_knob_common_mm3": 0.0
+        },
+        {
+          "x_mm": 140.65,
+          "deg": 345,
+          "plate_knob_common_mm3": 0.0
         }
       ]
     },
@@ -1652,11 +1908,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3153035
+    "file_bytes": 3156813
   },
   "handed_stl_export": {
-    "right_sha256": "7ad9ad1417bb2622b521540411c40e180e6f3643e1ed0ddfaf5a3299e9f405c5",
-    "left_sha256": "49665e076715338b3a26c1e3485a560c3d0b9acb41ed74e5fd5d01b764a571b5",
+    "right_sha256": "3271f18f9c39f3cfffa8fdf0d3373f88ed2b9c97468a8191f34c41c9653c5447",
+    "left_sha256": "5dac15346dd1279cdb8764f6ee4f224deeb583f286107c28cb2f3f7b4a1cd44e",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -1679,13 +1935,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 36280,
-    "left_facets": 36280,
-    "right_volume_mm3": 632820.460643,
-    "left_volume_mm3": 632820.460643,
+    "right_facets": 35952,
+    "left_facets": 35952,
+    "right_volume_mm3": 607994.883683,
+    "left_volume_mm3": 607994.883683,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 204168.947064,
-    "left_area_mm2": 204168.947064,
+    "right_area_mm2": 207798.539656,
+    "left_area_mm2": 207798.539656,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {

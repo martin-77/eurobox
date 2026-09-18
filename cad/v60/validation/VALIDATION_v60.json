@@ -87,48 +87,14 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 537532.945,
-    "left_volume_mm3": 537532.945,
+    "right_volume_mm3": 512707.345,
+    "left_volume_mm3": 512707.345,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 3742.644,
-    "rear_support_backstop_common_mm3": 5891.2,
-    "rear_support_crosshead_common_mm3": 3742.644,
-    "inner_side_haunches": [
-      {
-        "x_mm": -80.0,
-        "side": -1,
-        "web_side": "inner/opposite existing outer DROP",
-        "span_mm": 6.4,
-        "tip_rise_mm": 10.0,
-        "material_fraction": 1.0
-      },
-      {
-        "x_mm": -80.0,
-        "side": 1,
-        "web_side": "inner/opposite existing outer DROP",
-        "span_mm": 6.4,
-        "tip_rise_mm": 10.0,
-        "material_fraction": 1.0
-      },
-      {
-        "x_mm": 180.0,
-        "side": -1,
-        "web_side": "inner/opposite existing outer DROP",
-        "span_mm": 6.4,
-        "tip_rise_mm": 10.0,
-        "material_fraction": 1.0
-      },
-      {
-        "x_mm": 180.0,
-        "side": 1,
-        "web_side": "inner/opposite existing outer DROP",
-        "span_mm": 6.4,
-        "tip_rise_mm": 10.0,
-        "material_fraction": 1.0
-      }
-    ],
+    "front_support_crosshead_common_mm3": 3486.644,
+    "rear_support_backstop_common_mm3": 5251.2,
+    "rear_support_crosshead_common_mm3": 3486.644,
     "holm_head_closures": [
       {
         "x_mm": -80.0,
@@ -177,8 +143,8 @@
       "saddle_radius_mm": 6.31,
       "material_fraction": 0.999781,
       "rack_tube_common_mm3": 0.0,
-      "front_holm_common_mm3": 1228.8,
-      "rear_holm_common_mm3": 10817.28,
+      "front_holm_common_mm3": 1100.8,
+      "rear_holm_common_mm3": 10164.48,
       "clamp_overlaps": [
         {
           "station": "front",
