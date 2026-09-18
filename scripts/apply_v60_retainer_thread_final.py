@@ -139,21 +139,20 @@ write_true_helical_ridge(
 MALE_THREAD = make_true_thread_solid(
     male_scad, MALE_CORE_R, MALE_MAJOR_R, THREAD_LEN, 0.0,
 )
-# Keep the female helical ridge overrun intact.  OCC can collapse the common()
-# between this wider faceted ridge and a coaxial clip cylinder even though the
-# imported ridge is one valid solid.  The cutter is allowed to overrun both
-# ends, so fuse the valid ridge directly to an overrun smooth core instead.
-female_ridge = B.import_scad_shape(female_scad)
-C.require_single(female_ridge, 'final female true helical ridge')
-female_core = Part.makeCylinder(
+# Keep the female helical ridge and smooth crest bore as two cutters.
+# Fusing the faceted helical ridge to the long coaxial core produced an invalid
+# result after subtraction from the complex BASE.  Sequential subtraction is
+# both more robust and more explicit: first open the crest bore, then cut the
+# connected radial/axial helical groove into that bore wall.
+FEMALE_RIDGE_CUTTER = B.import_scad_shape(female_scad)
+C.require_single(FEMALE_RIDGE_CUTTER, 'final female true helical ridge')
+FEMALE_CORE_CUTTER = Part.makeCylinder(
     FEMALE_CORE_R,
     THREAD_LEN + TOP_OVERRUN + 2.0*PITCH,
     App.Vector(0,0,-PITCH),
 )
-FEMALE_CUTTER = female_core.fuse(female_ridge).removeSplitter()
-C.require_single(FEMALE_CUTTER, 'final base female 12x2 true cutter')
+C.require_single(FEMALE_CORE_CUTTER, 'final female smooth crest-bore cutter')
 C.require_single(MALE_THREAD, 'final retainer male 12x2')
-C.require_single(FEMALE_CUTTER, 'final base female 12x2 cutter')
 stop_timer('retainer.compile_matched_12x2_thread_pair', _t)
 
 _t = start_timer('retainer.build_threaded_service_retainer')
@@ -188,10 +187,17 @@ female_cut_volumes = []
 for xc in C.CLAMP_X:
     label = f'retainer.cut_final_base_female_thread_x{int(xc)}'
     _t = start_timer(label)
-    cutter = FEMALE_CUTTER.copy()
-    cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
     before = RIGHT.Volume
-    RIGHT = RIGHT.cut(cutter).removeSplitter()
+
+    core_cutter = FEMALE_CORE_CUTTER.copy()
+    core_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
+    RIGHT = RIGHT.cut(core_cutter).removeSplitter()
+    C.require_single(RIGHT, f'BASE after female crest-bore cut X={xc}')
+
+    ridge_cutter = FEMALE_RIDGE_CUTTER.copy()
+    ridge_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
+    RIGHT = RIGHT.cut(ridge_cutter).removeSplitter()
+    C.require_single(RIGHT, f'BASE after true female helical groove cut X={xc}')
     # Explicit open mouth: remove the full male-major envelope through the
     # carrier top. A valid helix hidden behind a roof/ring wall must be impossible.
     entry = Part.makeCylinder(
