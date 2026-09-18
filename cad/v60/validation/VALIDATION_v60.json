@@ -90,8 +90,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 548834.483,
-    "left_volume_mm3": 548834.483,
+    "right_volume_mm3": 522051.345,
+    "left_volume_mm3": 522051.345,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -144,36 +144,22 @@
         "y0": 1.0,
         "y1": 1.0
       },
-      "inner_bottom_flange_drop": {
-        "print_orientation": "BASE upside-down; installed top/support plane toward bed",
-        "y_mm": [
-          7.0,
-          22.8
-        ],
-        "z_mm": [
-          14.04,
-          29.84
-        ],
-        "run_mm": 15.8,
-        "angle_deg": 45.0,
-        "material_fraction": 1.0
-      },
       "saddle_radius_mm": 6.31,
-      "material_fraction": 0.999812,
+      "material_fraction": 0.999781,
       "rack_tube_common_mm3": 0.0,
       "front_holm_common_mm3": 1100.8,
-      "rear_holm_common_mm3": 11796.079,
+      "rear_holm_common_mm3": 10164.48,
       "clamp_overlaps": [
         {
           "station": "front",
-          "carrier_common_mm3": 9885.041
+          "carrier_common_mm3": 8634.869
         },
         {
           "station": "rear",
-          "carrier_common_mm3": 10734.45
+          "carrier_common_mm3": 9377.12
         }
       ],
-      "backstop_common_mm3": 29540.0
+      "backstop_common_mm3": 23299.0
     }
   },
   "failures": []
