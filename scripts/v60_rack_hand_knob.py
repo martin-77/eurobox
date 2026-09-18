@@ -1,26 +1,20 @@
-import math
-
 import FreeCAD as App
 import Part
 
-# Canonical v60 rack hand-knob component.
-#
-# This removable part is intentionally independent from the heavy BASE/rack
-# thread pipeline.  It prints flat, needs no support and accepts the real M4 nut
-# from the Upper-facing side before the screw is fitted.
+import v60_knob_profile as KP
 
-KNOB_H = 7.0
-KNOB_HUB_R = 10.0
-KNOB_LOBES = 6
-KNOB_LOBE_CENTER_R = 10.0
-KNOB_LOBE_R = 5.0
-# Compatibility datum used by the rack-closure assembly/validation.
-KNOB_R = KNOB_LOBE_CENTER_R + KNOB_LOBE_R
+# Canonical v60 rack hand knob.
+# External ergonomics are intentionally identical to eurobox_v60_knob:
+# Ø30 x 7 mm with the same eight perimeter scallops.  Only the central M4/nut
+# interface is different.
+KNOB_R = KP.KNOB_R
+KNOB_H = KP.KNOB_H
+GRIP_SCALLOPS = KP.SCALLOPS
 
-# User-measured M4 nut is ~6.81 mm AF.  Give a real FDM insertion clearance,
-# rather than the former 6.90 mm almost-press-fit pocket.
 MEASURED_NUT_AF = 6.81
 MEASURED_NUT_H = 3.20
+
+# Real FDM clearance for the measured metal M4 nut.
 KNOB_NUT_AF = 7.10
 KNOB_NUT_H = 3.60
 KNOB_NUT_Z0 = 3.20
@@ -30,6 +24,7 @@ KNOB_BORE_D = 4.60
 
 
 def hex_z(af, height, z0=0.0):
+    import math
     radius = af / math.sqrt(3.0)
     pts = [
         App.Vector(
@@ -44,29 +39,10 @@ def hex_z(af, height, z0=0.0):
     )
 
 
-def build_grip_body():
-    # Rounded six-lobe hand wheel: substantially easier to grip than the former
-    # featureless 12-gon puck, while staying compact under the rack clamp.
-    q = Part.makeCylinder(KNOB_HUB_R, KNOB_H)
-    for i in range(KNOB_LOBES):
-        a = 2.0 * math.pi * i / KNOB_LOBES
-        cx = KNOB_LOBE_CENTER_R * math.cos(a)
-        cy = KNOB_LOBE_CENTER_R * math.sin(a)
-        q = q.fuse(
-            Part.makeCylinder(
-                KNOB_LOBE_R,
-                KNOB_H,
-                App.Vector(cx, cy, 0.0),
-            )
-        )
-    return q.removeSplitter()
-
-
 def build_rack_hand_knob():
-    """Return the support-free, top-loaded v60 rack hand knob BRep."""
-    q = build_grip_body()
+    q = KP.build_scalloped_knob_body()
 
-    # M4 shank from underside into the nut seat.
+    # M4 shank from underside to the captive nut seat.
     q = q.cut(
         Part.makeCylinder(
             KNOB_BORE_D / 2.0,
@@ -75,9 +51,8 @@ def build_rack_hand_knob():
         )
     ).removeSplitter()
 
-    # The old part stopped the hex pocket 1 mm below the top, so the nut could
-    # not actually be inserted.  This pocket intentionally breaks through the
-    # Upper-facing top surface.
+    # Top-open captive nut pocket.  The former rack knob had a closed roof and
+    # therefore could not actually accept the nut.
     q = q.cut(
         hex_z(
             KNOB_NUT_AF,
@@ -86,8 +61,7 @@ def build_rack_hand_knob():
         )
     ).removeSplitter()
 
-    # Slightly wider lead-in for the first 0.6 mm to make the measured metal nut
-    # easy to start in PETG without weakening the load-bearing pocket below.
+    # Short wider lead-in at the top for reliable PETG insertion.
     q = q.cut(
         hex_z(
             KNOB_NUT_ENTRY_AF,

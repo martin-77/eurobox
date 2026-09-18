@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "scripts/v60_rack_hand_knob.py"
+      - "scripts/v60_knob_profile.py"
       - "scripts/run_v60_rack_hand_knob_ci.py"
       - ".github/workflows/build-v60-rack-hand-knob.yml"
 
@@ -58,6 +59,7 @@ jobs:
       - name: Compile component builder
         run: |
           python3 -m py_compile \
+            scripts/v60_knob_profile.py \
             scripts/v60_rack_hand_knob.py \
             scripts/run_v60_rack_hand_knob_ci.py
 

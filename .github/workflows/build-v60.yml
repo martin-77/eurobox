@@ -11,6 +11,7 @@ on:
       - "scripts/build_v60_continuous_carrier.py"
       - "scripts/build_v60_full.py"
       - "scripts/build_v60_full_baseline.py"
+      - "scripts/v60_knob_profile.py"
       - "scripts/apply_v60_final_assembly.py"
       - "scripts/apply_v60_rack_closure.py"
       - "scripts/apply_v60_retainer_thread_final.py"
@@ -75,6 +76,7 @@ jobs:
             scripts/build_v60_continuous_carrier.py \
             scripts/build_v60_full.py \
             scripts/build_v60_full_baseline.py \
+            scripts/v60_knob_profile.py \
             scripts/apply_v60_final_assembly.py \
             scripts/apply_v60_rack_closure.py \
             scripts/v60_rack_hand_knob.py \

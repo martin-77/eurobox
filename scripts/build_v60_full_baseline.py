@@ -6,6 +6,7 @@ import FreeCAD as App
 import Part
 import Mesh
 import build_v60 as C
+import v60_knob_profile as KP
 
 OUT = C.OUT
 RIM_BOTTOM_Z = C.BOX_SUPPORT_Z - C.RIM_H
@@ -552,10 +553,12 @@ SPINDLE_POSY=SPINDLE_POSY.fuse(
 ).removeSplitter()
 C.require_single(SPINDLE_POSY,'lead-spindle-with-stud')
 SPINDLE=rotate_z180(SPINDLE_POSY)
-KNOB=cyl_y(15.0,7.0)
-for a in range(0,360,45):
-    rr=16.2; x=rr*math.cos(math.radians(a)); z=rr*math.sin(math.radians(a)); KNOB=KNOB.cut(cyl_y(3.4,7.4,x,-0.2,z))
-KNOB=KNOB.cut(cyl_y(4.3,7.4,0,-0.2,0)); KNOB=KNOB.cut(z_to_y(hex_z(10.35,5.2))).removeSplitter(); KNOB=rotate_z180(KNOB)
+# Shared external grip profile with rack_hand_knob: the established Ø30 x 7
+# scalloped box-clamp knob.  Only the central interface differs between knobs.
+KNOB=z_to_y(KP.build_scalloped_knob_body())
+KNOB=KNOB.cut(cyl_y(4.3,KP.KNOB_H+0.4,0,-0.2,0))
+KNOB=KNOB.cut(z_to_y(hex_z(10.35,5.2))).removeSplitter()
+KNOB=rotate_z180(KNOB)
 CAP_NUT_Z=hex_z(13.0,5.4)
 CAP_NUT_Z=CAP_NUT_Z.cut(CAP_FEMALE_Z).removeSplitter()
 C.require_single(CAP_NUT_Z,'lead-knob-retainer-nut true RH8x2 Z master')

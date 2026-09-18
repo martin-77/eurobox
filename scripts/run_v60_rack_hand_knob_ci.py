@@ -85,16 +85,15 @@ if usable_screw_above_knob < 23.0:
     )
 grip_x = shape.BoundBox.XLength
 grip_y = shape.BoundBox.YLength
-# A six-lobe hand wheel is intentionally not circular in bounding-box terms:
-# with one lobe on +X it is 30.0 mm in X and ~27.3 mm in Y.
-if not (27.0 <= grip_x <= 30.5 and 27.0 <= grip_y <= 30.5):
+# Same outer profile as the established box-clamp knob.  The scallops trim the
+# exact cylinder extrema slightly, so validate the compact ~Ø30 envelope rather
+# than requiring a mathematically full 30.0 mm bounding box in both axes.
+if not (28.0 <= grip_x <= 30.5 and 28.0 <= grip_y <= 30.5):
     failures.append(
         f'grip envelope changed unexpectedly: X={grip_x:.3f} Y={grip_y:.3f} mm'
     )
-if max(grip_x, grip_y) < 29.5:
-    failures.append(
-        f'grip has no full 30 mm lobe span: X={grip_x:.3f} Y={grip_y:.3f} mm'
-    )
+if K.GRIP_SCALLOPS != 8:
+    failures.append(f'shared knob profile must have 8 scallops, got {K.GRIP_SCALLOPS}')
 
 if failures:
     raise RuntimeError('V60 RACK HAND KNOB CHECKS FAILED: ' + ' | '.join(failures))
@@ -125,7 +124,7 @@ mesh.write(stl_path)
 validation = {
     'component': name,
     'scope': 'rack_hand_knob_only',
-    'design': 'six_lobe_top_loaded_m4_nut',
+    'design': 'shared_box_knob_scalloped_profile_top_loaded_m4_nut',
     'single_valid_solid': True,
     'support_free_flat_print': True,
     'bbox_mm': [
@@ -135,7 +134,7 @@ validation = {
     ],
     'volume_mm3': round(shape.Volume, 6),
     'facets': mesh.CountFacets,
-    'lobes': K.KNOB_LOBES,
+    'scallops': K.GRIP_SCALLOPS,
     'outer_diameter_mm': round(2.0 * K.KNOB_R, 3),
     'knob_height_mm': K.KNOB_H,
     'measured_nut_af_mm': K.MEASURED_NUT_AF,
