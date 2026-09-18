@@ -74,7 +74,13 @@ def add_box_clamp_hardware(prefix, rack_y, left=False):
         return left_turnaround(shape, rack_y) if left else right_finish(shape, rack_y)
 
     plate = finish(P.PLATE.copy())
-    expected_plate_x = (P.PLATE.BoundBox.XMin, P.PLATE.BoundBox.XMax)
+    if left:
+        expected_plate_x = (
+            2.0 * FRONT_CENTER_X - P.PLATE.BoundBox.XMax,
+            2.0 * FRONT_CENTER_X - P.PLATE.BoundBox.XMin,
+        )
+    else:
+        expected_plate_x = (P.PLATE.BoundBox.XMin, P.PLATE.BoundBox.XMax)
     actual_plate_x = (plate.BoundBox.XMin, plate.BoundBox.XMax)
     if any(abs(a - b) > 1e-6 for a, b in zip(actual_plate_x, expected_plate_x)):
         raise RuntimeError(
@@ -137,7 +143,10 @@ def add_box_clamp_hardware(prefix, rack_y, left=False):
             2.0 * FRONT_CENTER_X - sx if left else sx
         )
 
-    expected_centres = sorted(float(x) for x in P.SPINDLE_X)
+    expected_centres = sorted(
+        2.0 * FRONT_CENTER_X - float(x) if left else float(x)
+        for x in P.SPINDLE_X
+    )
     actual_centres = sorted(float(x) for x in installed_spindle_centres)
     if any(abs(a - b) > 1e-9 for a, b in zip(actual_centres, expected_centres)):
         raise RuntimeError(
