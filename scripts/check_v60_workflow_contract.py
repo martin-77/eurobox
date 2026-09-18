@@ -58,9 +58,9 @@ assert all(q['cartridge_common_mm3'] <= box['thread_brep_common_tolerance_mm3'] 
 # Lead screw must be the exact closed printable CGAL mesh, with a full 7 mm
 # knob hex and true RH8x2 on both male thread sections.
 ls = box['lead_screw']
-assert ls['knob_hex_length_mm'] == 11.0, ls
+assert ls['knob_hex_length_mm'] == 8.8, ls
 assert ls['knob_thickness_mm'] == 7.0, ls
-assert ls['knob_standoff_mm'] == 4.0, ls
+assert ls['knob_standoff_mm'] == 1.8, ls
 assert ls['knob_hex_engagement_mm'] == 7.0, ls
 assert ls['mesh_topology']['boundary_edges'] == 0, ls
 assert ls['mesh_topology']['nonmanifold_edges'] == 0, ls
@@ -104,8 +104,8 @@ assert uph['target'] == 'visible green underhook on moving clamp plate', uph
 assert uph['drop_side'] == 'outboard / knob side of clamp plate', uph
 assert uph['drop_run_mm'] == 4.2, uph
 assert uph['drop_material_fraction_away_from_knobs'] >= 0.999, uph
-assert uph['knob_standoff_mm'] == 4.0, uph
-assert uph['knob_relief_y_depth_mm'] == 0.8, uph
+assert uph['knob_standoff_mm'] == 1.8, uph
+assert uph['knob_relief_y_depth_mm'] == 2.8, uph
 assert len(uph['plate_knob_clearance']) == 48, uph
 assert all(q['plate_knob_common_mm3'] <= 0.00001 for q in uph['plate_knob_clearance']), uph
 assert box['effective_total_width_mm'] <= 600.02, box

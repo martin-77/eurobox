@@ -38,7 +38,9 @@ UNDERHOOK_T = 4.0
 # the OUTBOARD / knob side of the clamp plate -- the previous support attempts
 # modified BASE/holm geometry and could never appear under this ledge.
 PLATE_UNDERHOOK_DROP_CLEARANCE = 0.40
-PLATE_KNOB_RELIEF_Y_DEPTH = 0.80
+PLATE_KNOB_RELIEF_Y_DEPTH = (
+    UNDERHOOK - KNOB_STANDOFF + PLATE_UNDERHOOK_DROP_CLEARANCE
+)
 PLATE_KNOB_RELIEF_R = KP.KNOB_R + 0.50
 SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
@@ -62,10 +64,10 @@ SHOULDER_D = 11.0
 SPINDLE_LOCAL_JOURNAL = 8.0
 SPINDLE_LOCAL_SHOULDER = 1.8
 # The grip must sit clear of the underhook/drop on the OUTBOARD face of the
-# moving clamp plate.  Keep the proven 7 mm full-depth hex engagement, but add
-# a 4 mm exposed hex stand-off before the grip starts.  4 mm is also the largest
-# stand-off that keeps the complete knob + retainer stack within 600 mm overall.
-KNOB_STANDOFF = 4.0
+# moving clamp plate.  Keep the proven 7 mm full-depth hex engagement.  A
+# 1.8 mm exposed stand-off plus a local hook-tip relief gives 0.4 mm running
+# clearance while keeping the COMPLETE knob + retainer stack inside 600 mm.
+KNOB_STANDOFF = 1.8
 HEX_LEN = KNOB_STANDOFF + KP.KNOB_H
 OUTER_STUD_LEN = 7.0
 
@@ -691,9 +693,9 @@ PLATE=PLATE.fuse(C.box(PLATE_X0,PLATE_HOOK_Y0,RIM_BOTTOM_Z-UNDERHOOK_T,PLATE_X,P
 PLATE_UNDERHOOK_DROP=make_plate_underhook_drop()
 PLATE=PLATE.fuse(PLATE_UNDERHOOK_DROP).removeSplitter()
 
-# The grip starts 4 mm in front of the plate.  The existing hook tip extends
-# only 0.20 mm into that grip plane, so remove just the outer 0.80 mm locally
-# around each grip envelope instead of weakening the full front/drop.
+# The grip starts 1.8 mm in front of the plate.  Remove only the required
+# outer 2.8 mm of hook/drop locally around each grip envelope, leaving the
+# remainder of the hook and the entire front/drop untouched elsewhere.
 for sx in SPINDLE_X:
     PLATE=PLATE.cut(cyl_y(
         PLATE_KNOB_RELIEF_R,
