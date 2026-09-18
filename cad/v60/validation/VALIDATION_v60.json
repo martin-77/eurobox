@@ -28,6 +28,15 @@
     "backstop_panel_clearance_from_tube_crown_mm": 1.79,
     "rear_support_local_x_mm": 180.0,
     "rear_support_physical_x_mm": 299.0,
+    "box_clamp_spindle_x_mm": [
+      -40.65,
+      140.65
+    ],
+    "box_clamp_plate_x_mm": [
+      -55.65,
+      155.65
+    ],
+    "box_clamp_holm_clearance_mm": 12.0,
     "pivot_yz_mm": [
       -12.0,
       -5.5
@@ -41,8 +50,8 @@
     ],
     "plate_sweep_xyz_mm": [
       [
-        -80.4,
-        80.4
+        -56.05,
+        156.05
       ],
       [
         214.315,
@@ -78,12 +87,12 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 518781.126,
-    "left_volume_mm3": 518781.126,
+    "right_volume_mm3": 512707.345,
+    "left_volume_mm3": 512707.345,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 2318.098,
+    "front_support_crosshead_common_mm3": 3486.644,
     "rear_support_backstop_common_mm3": 5251.2,
     "rear_support_crosshead_common_mm3": 3486.644,
     "holm_head_closures": [
