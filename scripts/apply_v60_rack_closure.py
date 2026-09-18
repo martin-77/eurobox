@@ -51,9 +51,9 @@ RETAINER_MALE_MAJOR_R = 5.78
 RETAINER_FEMALE_CORE_R = 5.20
 RETAINER_FEMALE_MAJOR_R = 5.98
 RETAINER_NOSE_OD = 7.60
-RETAINER_NOSE_LEN = 1.00
-# The retainer nose must stop on top of the real metal nut, not overlap it.
-# Therefore the printed thread starts exactly one nose length above the nut top.
+RETAINER_NOSE_LEN = 0.40
+# The retainer nose is a short anti-lift lip only. It terminates exactly on
+# the real metal nut top; the printed retainer is not allowed to overlap the nut.
 RETAINER_THREAD_Z0 = RACK_NUT_Z1 + RETAINER_NOSE_LEN
 RETAINER_LEN = CARRIER_TOP_PLANE_Z - RETAINER_THREAD_Z0 - 0.20
 RETAINER_THREAD_LEN = CARRIER_TOP_PLANE_Z - RETAINER_THREAD_Z0 + 1.00
