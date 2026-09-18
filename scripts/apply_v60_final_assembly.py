@@ -128,9 +128,7 @@ def add_box_clamp_hardware(prefix, rack_y, left=False):
         knob = P.KNOB.copy()
         knob.translate(App.Vector(
             sx,
-            B.PLATE_SPINDLE_Y - (
-                B.SPINDLE_LOCAL_JOURNAL + B.SPINDLE_LOCAL_SHOULDER + B.LEAD_THREAD_LEN
-            ),
+            B.PLATE_SPINDLE_Y + P.KNOB.BoundBox.YLength,
             B.SPINDLE_Z
         ))
         add_obj(prefix + '_box_clamp_knob_' + str(int(sx)), finish(knob))
@@ -138,10 +136,7 @@ def add_box_clamp_hardware(prefix, rack_y, left=False):
         cap = P.CAP_NUT.copy()
         cap.translate(App.Vector(
             sx,
-            B.PLATE_SPINDLE_Y - (
-                B.SPINDLE_LOCAL_JOURNAL + B.SPINDLE_LOCAL_SHOULDER
-                + B.LEAD_THREAD_LEN + P.KNOB.BoundBox.YLength
-            ),
+            B.PLATE_SPINDLE_Y + P.KNOB.BoundBox.YLength + P.CAP_NUT.BoundBox.YLength,
             B.SPINDLE_Z
         ))
         add_obj(prefix + '_box_clamp_knob_retainer_' + str(int(sx)), finish(cap))

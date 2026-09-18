@@ -214,16 +214,18 @@ union(){{
         f.write(txt)
 
 def write_complete_spindle_scad(path):
-    # One CGAL union creates the COMPLETE printable lead screw.  This avoids
-    # the former STL->BRep->OCC multi-fuse chain that produced hundreds of open
-    # mesh edges.  Both RH8x2 male sections use the same true radial/axial
-    # profile as their female counterparts.
+    # One CGAL union creates the COMPLETE printable lead screw around the plate
+    # datum.  z=0 is the OUTBOARD plate face:
+    #   negative z -> outboard knob hex + retainer stud
+    #   positive z -> journal through plate + shoulder + working thread
+    # This is the only arrangement that keeps the hand knob accessible while
+    # the working RH8x2 thread remains inside the fixed lead-nut cartridge.
     journal = SPINDLE_LOCAL_JOURNAL
     shoulder0 = journal
     main0 = journal + SPINDLE_LOCAL_SHOULDER
-    hex0 = main0 + LEAD_THREAD_LEN
-    stud0 = hex0 + HEX_LEN
-    endz = stud0 + OUTER_STUD_LEN
+    main1 = main0 + LEAD_THREAD_LEN
+    hex0 = -HEX_LEN
+    stud0 = -(HEX_LEN + OUTER_STUD_LEN)
     main_steps = max(64, int(math.ceil(LEAD_THREAD_LEN / THREAD_PITCH * 40.0)))
     stud_steps = max(48, int(math.ceil(OUTER_STUD_LEN / THREAD_PITCH * 40.0)))
     txt = f'''$fn=96;
@@ -234,7 +236,7 @@ root_half={RH8_MALE_ROOT_W/2.0};
 crest_half={RH8_MALE_CREST_W/2.0};
 inner_r={THREAD_CORE_R-0.12};
 
-module ridge(z0,len,steps){{
+module ridge_rh(z0,len,steps){{
   a1=360*len/pitch;
   function ang(i)=a1*i/steps;
   function zc(i)=pitch*ang(i)/360;
@@ -255,23 +257,52 @@ module ridge(z0,len,steps){{
     polyhedron(points=pts,faces=concat(side_faces,start_face,end_face),convexity=100);
 }}
 
+module ridge_lh(z0,len,steps){{
+  a1=-360*len/pitch;
+  function ang(i)=a1*i/steps;
+  function zc(i)=pitch*(-ang(i))/360;
+  function pt(r,a,z)=[r*cos(a),r*sin(a),z];
+  pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
+         each [pt(inner_r,a,z-root_half),
+               pt(major_r,a,z-crest_half),
+               pt(major_r,a,z+crest_half),
+               pt(inner_r,a,z+root_half)]];
+  side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
+    [4*(i+1)+((j+1)%4),4*(i+1)+j,4*i+j],
+    [4*i+((j+1)%4),4*(i+1)+((j+1)%4),4*i+j]
+  ]];
+  start_face=[[2,1,0],[3,2,0]];
+  e=4*steps;
+  end_face=[[e+1,e+2,e+3],[e,e+1,e+3]];
+  translate([0,0,z0])
+    polyhedron(points=pts,faces=concat(side_faces,start_face,end_face),convexity=100);
+}}
+
 module spindle_z(){{
   union(){{
+    // OUTBOARD: retainer stud then the full 7 mm knob hex.
+    translate([0,0,{stud0}]) cylinder(r=core_r,h={OUTER_STUD_LEN+0.25});
+    ridge_lh({stud0},{OUTER_STUD_LEN},{stud_steps});
+    translate([0,0,{hex0}]) cylinder(r={10.0/math.sqrt(3.0)},h={HEX_LEN},$fn=6);
+
+    // Small internal bridge only inside the Ø6.5 plate hole, never enlarging
+    // the journal or filling the C-clip groove.
+    translate([0,0,-0.20]) cylinder(r=3.0,h=0.60);
+
+    // Journal through the plate with the printable C-clip groove at the
+    // outboard face.
     cylinder(r=3.0,h=0.4);
     translate([0,0,0.4]) cylinder(r=2.5,h=1.4);
     translate([0,0,1.8]) cylinder(r=3.0,h={SPINDLE_LOCAL_JOURNAL-1.8});
+
+    // INBOARD: thrust shoulder and working lead thread.
     translate([0,0,{shoulder0}]) cylinder(r={SHOULDER_D/2.0},h={SPINDLE_LOCAL_SHOULDER});
-
-    // Continuous core makes every thread/hex transition one solid.
-    translate([0,0,{main0-0.25}]) cylinder(r=core_r,h={endz-(main0-0.25)});
-
-    ridge({main0},{LEAD_THREAD_LEN},{main_steps});
-    translate([0,0,{hex0}]) cylinder(r={10.0/math.sqrt(3.0)},h={HEX_LEN},$fn=6);
-    ridge({stud0},{OUTER_STUD_LEN},{stud_steps});
+    translate([0,0,{main0-0.25}]) cylinder(r=core_r,h={LEAD_THREAD_LEN+0.25});
+    ridge_rh({main0},{LEAD_THREAD_LEN},{main_steps});
   }}
 }}
 
-// Exact orientation used by the v60 assembly: axis points toward -Y.
+// Exact installed orientation. +z goes inboard toward -Y; -z goes outboard.
 rotate([0,0,180]) rotate([-90,0,0]) spindle_z();
 '''
     with open(path, 'w', encoding='utf-8') as fh:
@@ -789,7 +820,10 @@ knob_retainer_thread_samples=[]
 male_sample_r=(THREAD_CORE_R+THREAD_MAJOR/2.0)/2.0
 female_sample_r=(CAP_THREAD_FEMALE_CORE_R+CAP_THREAD_FEMALE_MAJOR_R)/2.0
 main_start=SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER
-stud_start=main_start+LEAD_THREAD_LEN+HEX_LEN
+# Outboard stud spans +Y = HEX_LEN .. HEX_LEN+OUTER_STUD_LEN after the final
+# rigid spindle transform.  It is generated LH in the negative master-Z region
+# so it is RH relative to the physical +Y outboard axis.
+stud_tip_y=HEX_LEN+OUTER_STUD_LEN
 
 # Sample the ACTUAL complete lead screw BRep, not a separate thread coupon.
 for turn in (2,7):
@@ -823,11 +857,13 @@ for angle_deg in (0.0,90.0,180.0,270.0):
     zc=THREAD_PITCH*(1.0+angle_deg/360.0)
 
     mx=-male_sample_r*math.cos(a)
-    my=-(stud_start+zc)
+    # ridge_lh starts at the outer tip in master Z and progresses toward the
+    # knob.  After the rigid transform this maps from +Y tip toward +Y root.
+    my=stud_tip_y-zc
     mz=-male_sample_r*math.sin(a)
     male_ridge=_inside(SPINDLE,mx,my,mz)
     male_between=_inside(
-        SPINDLE,mx,-(stud_start+zc+THREAD_PITCH/2.0),mz
+        SPINDLE,mx,stud_tip_y-(zc+THREAD_PITCH/2.0),mz
     )
 
     fx=female_sample_r*math.cos(a); fy=female_sample_r*math.sin(a)
@@ -1036,10 +1072,10 @@ for sx in SPINDLE_X:
         # Knob and its retainer are rigidly carried by the spindle.  Validate
         # their complete rotational envelope against the actual BASE over the
         # full 0..5.5 mm operating travel.
-        knob_y=PLATE_SPINDLE_Y-(
-            SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN
-        )-d
-        cap_y=knob_y-KP.KNOB_H
+        knob_y=PLATE_SPINDLE_Y+KP.KNOB_H-d
+        # CAP_NUT points toward -Y, so placing its origin 5.4 mm beyond the
+        # knob face seats its inner face exactly against the knob.
+        cap_y=PLATE_SPINDLE_Y+KP.KNOB_H+5.4-d
 
         qkn=KNOB.copy()
         qkn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
@@ -1098,15 +1134,13 @@ for sx in SPINDLE_X:
         spindle_base=RIGHT_FULL.common(asp).Volume
         spindle_nut=nut.common(asp).Volume
 
-        knob_y=PLATE_SPINDLE_Y-(
-            SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN
-        )-d
+        knob_y=PLATE_SPINDLE_Y+KP.KNOB_H-d
         akn=KNOB.copy()
         akn.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
         akn.translate(App.Vector(sx,knob_y,SPINDLE_Z))
         knob_base=RIGHT_FULL.common(akn).Volume
 
-        cap_y=knob_y-KP.KNOB_H
+        cap_y=PLATE_SPINDLE_Y+KP.KNOB_H+5.4-d
         acap=CAP_NUT.copy()
         acap.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
         acap.translate(App.Vector(sx,cap_y,SPINDLE_Z))
@@ -1152,6 +1186,9 @@ V['box_clamp']['lead_screw']={
     'knob_hex_length_mm':HEX_LEN,
     'knob_thickness_mm':KP.KNOB_H,
     'outer_stud_length_mm':OUTER_STUD_LEN,
+    'knob_side':'outboard of clamp plate',
+    'working_thread_side':'inboard toward fixed lead-nut cartridge',
+    'outer_stack_y_from_plate_mm':[0.0,HEX_LEN,HEX_LEN+OUTER_STUD_LEN],
     'mesh_topology':lead_screw_mesh,
     'main_thread_samples':main_spindle_thread_samples,
 }
