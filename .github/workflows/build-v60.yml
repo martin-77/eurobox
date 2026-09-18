@@ -11,24 +11,15 @@ on:
       - "scripts/build_v60_continuous_carrier.py"
       - "scripts/build_v60_full.py"
       - "scripts/build_v60_full_baseline.py"
-      - "scripts/apply_v60_box_clamp_prereq.py"
-      - "scripts/apply_v60_front_rebuild_v2.py"
-      - "scripts/apply_v60_front_rebuild_v5.py"
-      - "scripts/apply_v60_front_rebuild_v6.py"
-      - "scripts/apply_v60_front_rework.py"
-      - "scripts/apply_v60_front_final.py"
-      - "scripts/apply_v60_front_position_fix.py"
       - "scripts/apply_v60_final_assembly.py"
       - "scripts/apply_v60_rack_closure.py"
       - "scripts/apply_v60_retainer_thread_final.py"
-      - "scripts/check_v60_all_thread_access.py"
       - "scripts/check_v60_rack_closure_exports.py"
       - "scripts/check_v60_workflow_contract.py"
       - "scripts/run_v60_full_ci.py"
       - "scripts/run_v60_continuous_ci.py"
       - "scripts/v60_timing.py"
       - "scripts/preview_v60.scad"
-      - "docs/V60_**"
       - ".github/workflows/build-v60.yml"
 
 concurrency:
@@ -84,18 +75,10 @@ jobs:
             scripts/build_v60_continuous_carrier.py \
             scripts/build_v60_full.py \
             scripts/build_v60_full_baseline.py \
-            scripts/apply_v60_box_clamp_prereq.py \
-            scripts/apply_v60_front_rebuild_v2.py \
-            scripts/apply_v60_front_rebuild_v5.py \
-            scripts/apply_v60_front_rebuild_v6.py \
-            scripts/apply_v60_front_rework.py \
-            scripts/apply_v60_front_final.py \
-            scripts/apply_v60_front_position_fix.py \
             scripts/apply_v60_final_assembly.py \
             scripts/apply_v60_rack_closure.py \
             scripts/v60_rack_hand_knob.py \
             scripts/apply_v60_retainer_thread_final.py \
-            scripts/check_v60_all_thread_access.py \
             scripts/check_v60_rack_closure_exports.py \
             scripts/check_v60_workflow_contract.py \
             scripts/run_v60_full_ci.py \
