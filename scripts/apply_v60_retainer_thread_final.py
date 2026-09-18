@@ -24,10 +24,10 @@ C = B.C
 # final BASE, then prove both the final BASE cut and the matched thread phase.
 
 PITCH = R.RETAINER_PITCH
-MALE_CORE_R = 5.00
-MALE_MAJOR_R = 6.00
-FEMALE_CORE_R = 5.25
-FEMALE_MAJOR_R = 6.25
+MALE_CORE_R = R.RETAINER_MALE_CORE_R
+MALE_MAJOR_R = R.RETAINER_MALE_MAJOR_R
+FEMALE_CORE_R = R.RETAINER_FEMALE_CORE_R
+FEMALE_MAJOR_R = R.RETAINER_FEMALE_MAJOR_R
 
 # Coarse printable 12x3 service profile for a 0.4 mm nozzle.
 # This retainer is a rarely-cycled axial service lock, not a precision/load

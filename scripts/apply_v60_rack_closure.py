@@ -47,9 +47,9 @@ RACK_NUT_Z1 = RACK_NUT_Z0 + RACK_NUT_H
 # ends 0.20 mm below the common carrier top plane so it never stands proud.
 RETAINER_PITCH = 3.0
 RETAINER_MALE_CORE_R = 5.00
-RETAINER_MALE_MAJOR_R = 5.78
-RETAINER_FEMALE_CORE_R = 5.20
-RETAINER_FEMALE_MAJOR_R = 5.98
+RETAINER_MALE_MAJOR_R = 6.00
+RETAINER_FEMALE_CORE_R = 5.25
+RETAINER_FEMALE_MAJOR_R = 6.25
 RETAINER_NOSE_OD = 7.60
 RETAINER_NOSE_LEN = 0.40
 # The retainer nose is a short anti-lift lip only. It terminates exactly on
