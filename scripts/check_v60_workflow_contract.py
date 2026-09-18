@@ -179,12 +179,12 @@ assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
 
-inner_drops = core['geometry']['inner_bottom_drops']
-assert len(inner_drops) == 4, inner_drops
-assert all(abs(q['run_mm'] - 6.4) <= 1e-6 for q in inner_drops), inner_drops
-assert all(abs(q['rise_mm'] - 6.4) <= 1e-6 for q in inner_drops), inner_drops
-assert all(q['angle_deg'] == 45.0 for q in inner_drops), inner_drops
-assert all(q['material_fraction'] >= 0.999 for q in inner_drops), inner_drops
+inner_haunches = core['geometry']['inner_side_haunches']
+assert len(inner_haunches) == 4, inner_haunches
+assert all(q['web_side'] == 'inner/opposite existing outer DROP' for q in inner_haunches), inner_haunches
+assert all(abs(q['span_mm'] - 6.4) <= 1e-6 for q in inner_haunches), inner_haunches
+assert all(q['tip_rise_mm'] == 10.0 for q in inner_haunches), inner_haunches
+assert all(q['material_fraction'] >= 0.999 for q in inner_haunches), inner_haunches
 
 checks = full['installed_support_orientation']['checks']
 assert len(checks) == 2
