@@ -23,21 +23,21 @@ C = B.C
 # deliberately pronounced matched pair, cut the female helix into the already
 # final BASE, then prove both the final BASE cut and the matched thread phase.
 
-PITCH = 2.0
+PITCH = R.RETAINER_PITCH
 MALE_CORE_R = 5.00
 MALE_MAJOR_R = 6.00
 FEMALE_CORE_R = 5.25
 FEMALE_MAJOR_R = 6.25
 
-# Printable 12x2 service profile for a 0.4 mm nozzle.
-# The previous 1.80 mm male root forced the female groove to ~1.90 mm on a
-# 2.00 mm pitch, leaving only ~0.10 mm of female crest material between turns.
-# That is not a printable/useful internal thread.  Keep a robust 0.60 mm male
-# crest and leave 0.50 mm of female crest material at the bore wall.
-MALE_ROOT_W = 1.20
-MALE_CREST_W = 0.60
-FEMALE_ROOT_W = 1.50
-FEMALE_CREST_W = 0.90
+# Coarse printable 12x3 service profile for a 0.4 mm nozzle.
+# This retainer is a rarely-cycled axial service lock, not a precision/load
+# thread.  The 3 mm pitch gives substantially wider printable flanks and leaves
+# 0.90 mm of female crest material between turns while still providing about
+# eight full turns over the available ~24 mm engagement length.
+MALE_ROOT_W = 1.80
+MALE_CREST_W = 0.80
+FEMALE_ROOT_W = 2.10
+FEMALE_CREST_W = 1.10
 AXIAL_PROFILE_CLEARANCE = 0.30
 FEMALE_CREST_MATERIAL_W = PITCH - FEMALE_ROOT_W
 THREAD_LEN = R.RETAINER_LEN
@@ -46,7 +46,7 @@ TOP_OVERRUN = PITCH
 # The service retainer is Ø12.0 mm at the thread major diameter.  The old
 # Ø12.6 x 1.2 mm smooth entry throat made the first female thread sit visibly
 # behind the carrier top wall.  Use a slightly larger Ø13.0 mm lead-in, but only
-# for a shallow 0.45 mm print/chamfer relief so the actual 12x2 thread starts
+# for a shallow 0.45 mm print/chamfer relief so the actual 12x3 thread starts
 # essentially at the top surface.
 ENTRY_CLEAR_R = MALE_MAJOR_R + 0.50
 ENTRY_CLEAR_DEPTH = 0.45
@@ -126,10 +126,10 @@ def make_true_thread_solid(path, core_r, major_r, length, z0=0.0):
     return q
 
 
-stage('compile matched pronounced 12x2 service thread pair')
-_t = start_timer('retainer.compile_matched_12x2_thread_pair')
-male_scad = os.path.join(C.OUT, 'v60_retainer_final_male_12x2.scad')
-female_scad = os.path.join(C.OUT, 'v60_retainer_final_female_12x2.scad')
+stage('compile matched pronounced 12x3 service thread pair')
+_t = start_timer('retainer.compile_matched_12x3_thread_pair')
+male_scad = os.path.join(C.OUT, 'v60_retainer_final_male_12x3.scad')
+female_scad = os.path.join(C.OUT, 'v60_retainer_final_female_12x3.scad')
 write_true_helical_ridge(
     male_scad, MALE_CORE_R, MALE_MAJOR_R, THREAD_LEN,
     MALE_ROOT_W, MALE_CREST_W, PITCH,
@@ -155,8 +155,8 @@ FEMALE_CORE_CUTTER = Part.makeCylinder(
     App.Vector(0,0,-PITCH),
 )
 C.require_single(FEMALE_CORE_CUTTER, 'final female smooth crest-bore cutter')
-C.require_single(MALE_THREAD, 'final retainer male 12x2')
-stop_timer('retainer.compile_matched_12x2_thread_pair', _t)
+C.require_single(MALE_THREAD, 'final retainer male 12x3')
+stop_timer('retainer.compile_matched_12x3_thread_pair', _t)
 
 _t = start_timer('retainer.build_threaded_service_retainer')
 retainer_nose = Part.makeCylinder(
@@ -239,10 +239,10 @@ def fail(msg): failures.append(msg)
 
 # Static printability gates.  These dimensions are part of the actual generated
 # radial/axial profile, not metadata inferred from a twisted ribbon.
-if MALE_CREST_W < 0.50:
-    fail(f'male retainer crest too narrow for 0.4 mm FDM: {MALE_CREST_W:.3f} mm')
-if FEMALE_CREST_MATERIAL_W < 0.45:
-    fail(f'female retainer crest material too narrow for 0.4 mm FDM: {FEMALE_CREST_MATERIAL_W:.3f} mm')
+if MALE_CREST_W < 0.70:
+    fail(f'male retainer crest too narrow for coarse 0.4 mm FDM thread: {MALE_CREST_W:.3f} mm')
+if FEMALE_CREST_MATERIAL_W < 0.80:
+    fail(f'female retainer crest material too narrow for coarse 0.4 mm FDM thread: {FEMALE_CREST_MATERIAL_W:.3f} mm')
 if FEMALE_ROOT_W < MALE_ROOT_W + 0.20:
     fail('female root groove lacks axial clearance over male root')
 if FEMALE_CREST_W < MALE_CREST_W + 0.20:
@@ -263,7 +263,7 @@ def inside(shape, x, y, z):
 female_thread_point_samples = []
 female_sample_r = (FEMALE_CORE_R + FEMALE_MAJOR_R) / 2.0
 sample_angles = (0.0, 90.0, 180.0, 270.0)
-sample_turns = (3, 7)
+sample_turns = (2, 5)
 for xc in C.CLAMP_X:
     for turn in sample_turns:
         for angle_deg in sample_angles:
@@ -360,6 +360,7 @@ thread_printability = {
     'axial_root_clearance_mm':round(FEMALE_ROOT_W-MALE_ROOT_W,3),
     'axial_crest_clearance_mm':round(FEMALE_CREST_W-MALE_CREST_W,3),
     'target_nozzle_mm':0.4,
+    'approx_full_turns':round(THREAD_LEN/PITCH,3),
 }
 
 stop_timer(
@@ -394,7 +395,7 @@ validation_path = os.path.join(C.OUT,'VALIDATION_v60_full.json')
 with open(validation_path,'r',encoding='utf-8') as fh:
     validation=json.load(fh)
 validation['stage']='full_direct_mechanism_actual_front_and_explicit_retainer_threads'
-validation['rack']['m4_closure']['retainer_thread']='explicit matched printable 12x2 true radial/axial service thread; final BASE cut + compact matched-pair witness'
+validation['rack']['m4_closure']['retainer_thread']='explicit matched printable 12x3 true radial/axial service thread; final BASE cut + compact matched-pair witness'
 validation['rack']['m4_closure']['retainer_thread_profile_generator']=THREAD_PROFILE_GENERATOR
 validation['rack']['m4_closure']['retainer_pitch_mm']=PITCH
 validation['rack']['m4_closure']['retainer_male_major_d_mm']=2.0*MALE_MAJOR_R
@@ -416,6 +417,6 @@ with open(validation_path,'w',encoding='utf-8') as fh:
     json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFinal retainer: printable matched 12x2 true radial/axial pair for 0.4 mm FDM; 0.60 mm male crest, 0.50 mm female crest material between turns, Ø13.0 mm shallow service lead-in; actual final BASE/retainer helical centres and half-pitch crests are point-sampled directly.\n')
+    fh.write('\nFinal retainer: coarse printable matched 12x3 true radial/axial pair for 0.4 mm FDM; 0.80 mm male crest, 0.90 mm female crest material between turns, about eight full turns over the available engagement, Ø13.0 mm shallow service lead-in; actual final BASE/retainer helical centres and half-pitch crests are point-sampled directly.\n')
 
 stage('complete')

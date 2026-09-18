@@ -45,7 +45,7 @@ RACK_NUT_Z1 = RACK_NUT_Z0 + RACK_NUT_H
 # Coarse printed service thread for the hollow nut retainer.  This is not the
 # M4 load thread; it only traps the nut axially and is rarely cycled.  Its top
 # ends 0.20 mm below the common carrier top plane so it never stands proud.
-RETAINER_PITCH = 2.0
+RETAINER_PITCH = 3.0
 RETAINER_MALE_CORE_R = 5.00
 RETAINER_MALE_MAJOR_R = 5.78
 RETAINER_FEMALE_CORE_R = 5.20
@@ -113,7 +113,7 @@ def translated(shape, x=0.0, y=0.0, z=0.0):
     return q
 
 
-# Structural-only rack closure. The printable 12x2 retainer pair is
+# Structural-only rack closure. The printable 12x3 retainer pair is
 # generated exactly once by apply_v60_retainer_thread_final.py.
 
 stage('rebuild fixed Upper closure stations on common carrier planes')
@@ -419,7 +419,7 @@ validation['stage'] = 'full_direct_mechanism_flush_carrier_m4x30_rack_closure'
 validation['architecture'] = (
     'continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; '
     'M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow '
-    '12x2 printed service plug'
+    '12x3 printed service plug'
 )
 validation['base']['right_bbox_mm'] = [round(RIGHT.BoundBox.XLength, 3), round(RIGHT.BoundBox.YLength, 3), round(RIGHT.BoundBox.ZLength, 3)]
 validation['base']['left_bbox_mm'] = [round(LEFT.BoundBox.XLength, 3), round(LEFT.BoundBox.YLength, 3), round(LEFT.BoundBox.ZLength, 3)]
@@ -441,7 +441,7 @@ validation['rack']['m4_closure'] = {
     'upper_nut_pocket_height_mm': RACK_NUT_H,
     'upper_nut_floor_z_mm': RACK_NUT_Z0,
     'upper_nut_floor_thickness_mm': RACK_NUT_FLOOR_T,
-    'retainer_thread': 'reserved structural seat; final 12x2 pair generated once in apply_v60_retainer_thread_final',
+    'retainer_thread': 'reserved structural seat; final 12x3 pair generated once in apply_v60_retainer_thread_final',
     'retainer_pitch_mm': RETAINER_PITCH,
     'retainer_length_mm': round(RETAINER_LEN, 3),
     'retainer_top_z_mm': round(retainer_top_z, 3),
@@ -464,7 +464,7 @@ with open(readme_path, 'a', encoding='utf-8') as f:
     f.write(
         '\nRack closure revision: common carrier top/bottom planes, raised M4 nut, '
         'M4x30 hand screw, raised 7 mm Lower tongue, 6.90 mm AF nut pocket, '
-        'structural seat for the single final 12x2 service-retainer stage.\n'
+        'structural seat for the single final 12x3 service-retainer stage.\n'
     )
 
 stage('complete')
