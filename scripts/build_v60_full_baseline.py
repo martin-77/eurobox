@@ -9,7 +9,7 @@ import build_v60 as C
 
 OUT = C.OUT
 RIM_BOTTOM_Z = C.BOX_SUPPORT_Z - C.RIM_H
-PLATE_X = 140.0
+PLATE_X = 160.0
 PLATE_Y = 8.0
 PLATE_Z0 = 16.0
 PLATE_Z1 = 46.0
@@ -17,10 +17,10 @@ PLATE_OPEN = 5.5
 PLATE_HOLE_D = 6.5
 UNDERHOOK = 4.2
 UNDERHOOK_T = 4.0
-# v50 used +/-42 mm. v60 can use the available 140 mm plate more effectively:
-# +/-55 keeps 15 mm between screw axes and plate edges, leaves 4.4 mm between
-# each 22 mm boss and its outer guide, and materially improves anti-twist leverage.
-SPINDLE_X = (-55.0, 55.0)
+# Spread the two box-clamp screw stations farther apart for better anti-twist
+# fixation of the Eurobox. The plate grows with them so the edge margin remains
+# 15 mm on both sides; the outer bosses also stitch directly into the cage guides.
+SPINDLE_X = (-65.0, 65.0)
 SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
@@ -341,7 +341,7 @@ for x in (-70.4,70.4):
 if C.UPPER_PIVOT_W<16.0: fail('Upper central rack-pivot bearing is too narrow')
 if LOWER_FORK_EAR_T<4.2: fail('Replaceable Lower fork ears are too thin')
 if not (0.6<=2*LOWER_FORK_SIDE_CLEAR<=1.2): fail('Upper/Lower fork running clearance outside 0.6..1.2 mm')
-if abs(SPINDLE_X[0]+55.0)>1e-9 or abs(SPINDLE_X[1]-55.0)>1e-9: fail('v60 lead screws are not at widened +/-55 mm positions')
+if abs(SPINDLE_X[0]+65.0)>1e-9 or abs(SPINDLE_X[1]-65.0)>1e-9: fail('v60 lead screws are not at widened +/-65 mm positions')
 if abs(PRINT_BASE_PLANE_Z-C.BOX_SUPPORT_Z)>1e-9: fail('screw cage no longer terminates on box support plane')
 
 # Rack M4 closure hard gates.  The screw bears on the underside of the dedicated
@@ -509,6 +509,6 @@ with open(os.path.join(OUT,'README_BUILD_v60_full.txt'),'w',encoding='utf-8') as
     f.write('Broad fixed Upper pivot, relieved replaceable Lower fork, positive M4 closure with dedicated tightening tongue and side-loaded captive nut.\n')
     f.write('Rack closure is dimensioned for an M4x20 from below with full captive-nut engagement, blind-tip clearance and positive tightening travel.\n')
     f.write('Outboard rear-stop contact wall, closed holm heads with DROPs, stitched cage/deck seams.\n')
-    f.write('Final cage top is exactly the 39.54 mm box support plane; lead screws widened to +/-55 mm.\n')
+    f.write('Final cage top is exactly the 39.54 mm box support plane; 160 mm clamp plate with lead screws widened to +/-65 mm.\n')
     f.write('160 mm rack-clamp spacing; CORE One L INDX hard envelope 298 x 275 mm.\n')
 stage('complete'); print(json.dumps(V,indent=2),flush=True)
