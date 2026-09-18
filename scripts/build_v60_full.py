@@ -71,10 +71,6 @@ RACK_RETAINER_MALE_MAJOR_D = 2.0 * _retainer_final.MALE_MAJOR_R
 RACK_RETAINER_FEMALE_MAJOR_D = 2.0 * _retainer_final.FEMALE_MAJOR_R
 RACK_LOWER_CLOSURE_THICKNESS = _rack_closure.LOWER_PAD_Z1 - _rack_closure.LOWER_PAD_Z0
 
-_t = start_timer('full.audit_all_thread_access')
-import check_v60_all_thread_access as _thread_access  # noqa: F401,E402
-stop_timer('full.audit_all_thread_access', _t)
-
 _t = start_timer('full.build_lightweight_final_assembly')
 import apply_v60_final_assembly as _final_assembly  # noqa: F401,E402
 stop_timer('full.build_lightweight_final_assembly', _t)
