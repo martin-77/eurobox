@@ -183,24 +183,28 @@ stop_timer('retainer.build_threaded_service_retainer', _t)
 stage('cut explicit female helical grooves into final bases')
 RIGHT_PRETHREAD = R.RIGHT.copy()
 RIGHT = R.RIGHT
-female_cut_volumes = []
+
+# Apply each cutter family to both disjoint rack stations in one boolean.  The
+# previous station-by-station sequence created a valid faceted helix at X=-80,
+# then asked OCC to cut a simple cylinder at X=+80 from that already-faceted
+# result; that second unrelated cut produced an invalid BRep.  Batch the two
+# smooth bores first, then both helical grooves, then both entry mouths.  This
+# preserves the exact same geometry while avoiding cross-station topology churn.
+_t = start_timer('retainer.cut_final_base_all_female_threads')
+
+core_cutters = []
+ridge_cutters = []
+entry_cutters = []
 for xc in C.CLAMP_X:
-    label = f'retainer.cut_final_base_female_thread_x{int(xc)}'
-    _t = start_timer(label)
-    before = RIGHT.Volume
+    q = FEMALE_CORE_CUTTER.copy()
+    q.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
+    core_cutters.append(q)
 
-    core_cutter = FEMALE_CORE_CUTTER.copy()
-    core_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
-    RIGHT = RIGHT.cut(core_cutter).removeSplitter()
-    C.require_single(RIGHT, f'BASE after female crest-bore cut X={xc}')
+    q = FEMALE_RIDGE_CUTTER.copy()
+    q.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
+    ridge_cutters.append(q)
 
-    ridge_cutter = FEMALE_RIDGE_CUTTER.copy()
-    ridge_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
-    RIGHT = RIGHT.cut(ridge_cutter).removeSplitter()
-    C.require_single(RIGHT, f'BASE after true female helical groove cut X={xc}')
-    # Explicit open mouth: remove the full male-major envelope through the
-    # carrier top. A valid helix hidden behind a roof/ring wall must be impossible.
-    entry = Part.makeCylinder(
+    entry_cutters.append(Part.makeCylinder(
         ENTRY_CLEAR_R,
         ENTRY_CLEAR_DEPTH + 0.50,
         App.Vector(
@@ -208,16 +212,44 @@ for xc in C.CLAMP_X:
             R.CARRIER_TOP_PLANE_Z - ENTRY_CLEAR_DEPTH,
         ),
         App.Vector(0,0,1),
+    ))
+
+RIGHT = RIGHT.cut(Part.makeCompound(core_cutters)).removeSplitter()
+C.require_single(RIGHT, 'BASE after both female crest-bore cuts')
+
+RIGHT = RIGHT.cut(Part.makeCompound(ridge_cutters)).removeSplitter()
+C.require_single(RIGHT, 'BASE after both true female helical groove cuts')
+
+RIGHT = RIGHT.cut(Part.makeCompound(entry_cutters)).removeSplitter()
+C.require_single(RIGHT, 'BASE after both female thread entry-mouth cuts')
+
+# Record a per-station production witness from the actual before/after BASE,
+# rather than depending on boolean ordering.  The local probe fully encloses
+# each threaded service column and the two probes are disjoint.
+female_cut_volumes = []
+probe_z0 = THREAD_Z0 - PITCH
+probe_h = THREAD_LEN + TOP_OVERRUN + 2.0*PITCH
+for xc in C.CLAMP_X:
+    probe = Part.makeCylinder(
+        FEMALE_MAJOR_R + 1.0,
+        probe_h,
+        App.Vector(xc, C.RACK_CLOSURE_Y, probe_z0),
+        App.Vector(0,0,1),
     )
-    RIGHT = RIGHT.cut(entry).removeSplitter()
-    removed = before - RIGHT.Volume
-    stop_timer(label, _t, removed_mm3=round(removed,6))
+    removed = RIGHT_PRETHREAD.common(probe).Volume - RIGHT.common(probe).Volume
     female_cut_volumes.append(round(removed,6))
     if removed < 8.0:
         raise RuntimeError(
             f'Female retainer thread at X={xc} removed only {removed:.3f} mm3; '
             'helical groove did not materially reach the BASE'
         )
+
+stop_timer(
+    'retainer.cut_final_base_all_female_threads',
+    _t,
+    removed_mm3=female_cut_volumes,
+)
+
 _t = start_timer('retainer.validate_and_mirror_final_threaded_base')
 C.require_single(RIGHT, 'RIGHT base with final explicit female retainer threads')
 LEFT = C.mirror_x(RIGHT)
