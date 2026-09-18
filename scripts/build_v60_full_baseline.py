@@ -965,21 +965,24 @@ for sx in SPINDLE_X:
             fail(f'v50 lead-nut cartridge insertion blocked X={sx} lift={lift}: {cv:.6f} mm3')
     for d in (0,0.5,1.0,2.0,3.0,4.0,5.5):
         q=SPINDLE.copy()
-        q.rotate(App.Vector(0,0,0),App.Vector(0,1,0),360*d/THREAD_PITCH)
+        # The final spindle axis points toward -Y.  For this right-hand helix an
+        # inward axial shift therefore requires NEGATIVE rotation about +Y.
+        # The former + sign only happened to pass at whole/half turns and failed
+        # at the diagnostic 0.5 mm / 90 degree state.
+        rot_deg=-360*d/THREAD_PITCH
+        q.rotate(App.Vector(0,0,0),App.Vector(0,1,0),rot_deg)
         q.translate(App.Vector(sx,PLATE_SPINDLE_Y-d,SPINDLE_Z))
         bc=RIGHT_FULL.common(q).Volume
         nc=nut.common(q).Volume
         thread_motion.append({
-            'x_mm':sx,'open_mm':d,'rotation_deg':360*d/THREAD_PITCH,
+            'x_mm':sx,'open_mm':d,'rotation_deg':rot_deg,
             'base_common_mm3':round(bc,6),'cartridge_common_mm3':round(nc,6),
         })
         if bc>1e-4:
             fail(f'lead screw blocked by smooth BASE corridor X={sx} open={d}: {bc:.6f} mm3')
-        # The true radial/axial female groove is reconstructed from a faceted
-        # OpenSCAD mesh while the existing spindle remains the already-proven
-        # legacy BRep.  Their coincident contact surfaces produce ~0.92 mm3 of
-        # numerical common volume although the radial/axial clearances are real.
-        # Treat only materially larger overlap as a collision.
+        # Both parts now use the same true radial/axial RH8x2 geometry.  Keep a
+        # small BRep contact-noise allowance, but any material overlap is a hard
+        # failure well before it could represent a printable interference.
         if nc>1.20:
             fail(f'RH8x2 spindle/cartridge collision X={sx} open={d}: {nc:.6f} mm3')
 
