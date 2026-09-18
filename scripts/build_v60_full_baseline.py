@@ -2,6 +2,8 @@ import os
 import math
 import json
 import subprocess
+import shutil
+import struct
 import FreeCAD as App
 import Part
 import Mesh
@@ -47,7 +49,10 @@ NUT_THREAD_LEN = 14.0
 SHOULDER_D = 11.0
 SPINDLE_LOCAL_JOURNAL = 8.0
 SPINDLE_LOCAL_SHOULDER = 1.8
-HEX_LEN = 4.5
+# The knob is 7 mm thick.  Its complete thickness must sit on the hex before
+# the outer RH8x2 stud begins; the old 4.5 mm hex put 2.5 mm of the knob over
+# the retainer stud and left only ~4.5 mm usable thread.
+HEX_LEN = KP.KNOB_H
 OUTER_STUD_LEN = 7.0
 
 PLATE_SPINDLE_Y = C.BOX_RIM_INNER_Y
@@ -202,6 +207,120 @@ union(){{
     with open(path, 'w', encoding='utf-8') as f:
         f.write(txt)
 
+def write_complete_spindle_scad(path):
+    # One CGAL union creates the COMPLETE printable lead screw.  This avoids
+    # the former STL->BRep->OCC multi-fuse chain that produced hundreds of open
+    # mesh edges.  Both RH8x2 male sections use the same true radial/axial
+    # profile as their female counterparts.
+    journal = SPINDLE_LOCAL_JOURNAL
+    shoulder0 = journal
+    main0 = journal + SPINDLE_LOCAL_SHOULDER
+    hex0 = main0 + LEAD_THREAD_LEN
+    stud0 = hex0 + HEX_LEN
+    endz = stud0 + OUTER_STUD_LEN
+    main_steps = max(64, int(math.ceil(LEAD_THREAD_LEN / THREAD_PITCH * 40.0)))
+    stud_steps = max(48, int(math.ceil(OUTER_STUD_LEN / THREAD_PITCH * 40.0)))
+    txt = f'''$fn=96;
+pitch={THREAD_PITCH};
+core_r={THREAD_CORE_R};
+major_r={THREAD_MAJOR/2.0};
+root_half={RH8_MALE_ROOT_W/2.0};
+crest_half={RH8_MALE_CREST_W/2.0};
+inner_r={THREAD_CORE_R-0.12};
+
+module ridge(z0,len,steps){{
+  a1=360*len/pitch;
+  function ang(i)=a1*i/steps;
+  function zc(i)=pitch*ang(i)/360;
+  function pt(r,a,z)=[r*cos(a),r*sin(a),z];
+  pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
+         each [pt(inner_r,a,z-root_half),
+               pt(major_r,a,z-crest_half),
+               pt(major_r,a,z+crest_half),
+               pt(inner_r,a,z+root_half)]];
+  side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
+    [4*(i+1)+((j+1)%4),4*(i+1)+j,4*i+j],
+    [4*i+((j+1)%4),4*(i+1)+((j+1)%4),4*i+j]
+  ]];
+  start_face=[[2,1,0],[3,2,0]];
+  e=4*steps;
+  end_face=[[e+1,e+2,e+3],[e,e+1,e+3]];
+  translate([0,0,z0])
+    polyhedron(points=pts,faces=concat(side_faces,start_face,end_face),convexity=100);
+}}
+
+module spindle_z(){{
+  union(){{
+    cylinder(r=3.0,h=0.4);
+    translate([0,0,0.4]) cylinder(r=2.5,h=1.4);
+    translate([0,0,1.8]) cylinder(r=3.0,h={SPINDLE_LOCAL_JOURNAL-1.8});
+    translate([0,0,{shoulder0}]) cylinder(r={SHOULDER_D/2.0},h={SPINDLE_LOCAL_SHOULDER});
+
+    // Continuous core makes every thread/hex transition one solid.
+    translate([0,0,{main0-0.25}]) cylinder(r=core_r,h={endz-(main0-0.25)});
+
+    ridge({main0},{LEAD_THREAD_LEN},{main_steps});
+    translate([0,0,{hex0}]) cylinder(r={10.0/math.sqrt(3.0)},h={HEX_LEN},$fn=6);
+    ridge({stud0},{OUTER_STUD_LEN},{stud_steps});
+  }}
+}}
+
+// Exact orientation used by the v60 assembly: axis points toward -Y.
+rotate([0,0,180]) rotate([-90,0,0]) spindle_z();
+'''
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write(txt)
+
+
+def stl_edge_topology(path, tol=1e-5):
+    # Prusa-style mesh sanity gate using welded vertices.  A printable closed
+    # part must have every undirected edge used by exactly two triangles.
+    with open(path, 'rb') as fh:
+        data = fh.read()
+
+    tris = []
+    if len(data) >= 84:
+        n = struct.unpack_from('<I', data, 80)[0]
+        if 84 + n * 50 == len(data):
+            off = 84
+            for _ in range(n):
+                vals = struct.unpack_from('<12fH', data, off)
+                tris.append((vals[3:6], vals[6:9], vals[9:12]))
+                off += 50
+
+    if not tris:
+        verts = []
+        text = data.decode('ascii', errors='ignore')
+        for line in text.splitlines():
+            q = line.strip().split()
+            if len(q) == 4 and q[0] == 'vertex':
+                verts.append(tuple(float(v) for v in q[1:]))
+        if len(verts) % 3:
+            raise RuntimeError(f'Cannot parse STL triangles: {path}')
+        tris = [tuple(verts[i:i+3]) for i in range(0, len(verts), 3)]
+
+    def vk(p):
+        return tuple(int(round(float(c) / tol)) for c in p)
+
+    edges = {}
+    degenerate = 0
+    for tri in tris:
+        v = [vk(p) for p in tri]
+        for a, b in ((v[0],v[1]),(v[1],v[2]),(v[2],v[0])):
+            if a == b:
+                degenerate += 1
+                continue
+            e = (a,b) if a < b else (b,a)
+            edges[e] = edges.get(e,0) + 1
+
+    return {
+        'triangles': len(tris),
+        'boundary_edges': sum(1 for n in edges.values() if n == 1),
+        'nonmanifold_edges': sum(1 for n in edges.values() if n > 2),
+        'degenerate_edges': degenerate,
+    }
+
+
 def import_scad_shape(path):
     stl = os.path.splitext(path)[0] + '_compiled.stl'
     subprocess.run(['openscad','-o',stl,path], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -270,7 +389,10 @@ PIN = C.fuse_seq([
     C.cyl_x(2.0,1.7,16.5,0,0), C.cyl_x(3.75,2.4,-17.2,0,0),
 ],'rack-pin')
 PIN_CLIP=make_c_clip(4.2,1.65,1.5,3.0)
-PLATE_CLIP=make_c_clip(5.4,2.45,1.4,3.8)
+# Axial spindle retainer for the moving box-clamp plate.  The Ø5.0 shaft
+# groove gets 0.05 mm radial running clearance; the 3.8 mm C-opening still
+# snaps around the groove and cannot pass through the Ø6.5 plate hole.
+PLATE_CLIP=make_c_clip(5.4,2.55,1.4,3.8)
 
 
 def make_station_floor_gusset(sx):
@@ -395,24 +517,10 @@ for xc in C.CLAMP_X:
 C.require_single(RIGHT_FULL,'RIGHT full after rack-closure machining')
 
 stage('thread solids')
-MALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_male.scad')
 FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_female.scad')
 CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female_true.scad')
 
-# Main spindle / removable wear-cartridge pair: use the same TRUE
-# radial/axial RH8x2 construction as the already-fixed knob-retainer interface.
-# Keep the already-proven long main spindle generator unchanged in this small
-# fix.  The requested part is eurobox_v60_lead_nut.stl; rebuilding/fusing the
-# 22.2 mm male true helix is both unrelated and extremely expensive in OCC.
-write_thread_scad(
-    MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,
-    0.58,0.24,
-)
-MALE_Z=import_scad_shape(MALE_SCAD).common(
-    Part.makeCylinder(4.06,LEAD_THREAD_LEN)
-).removeSplitter()
-
-# The removable lead-nut itself gets the real radial/axial female RH8x2 cutter.
+# The removable lead-nut gets the real radial/axial female RH8x2 cutter.
 write_true_thread_scad(
     FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,
     THREAD_PITCH,NUT_THREAD_LEN,RH8_FEMALE_ROOT_W,RH8_FEMALE_CREST_W,
@@ -513,57 +621,73 @@ for sx in SPINDLE_X:
 PLATE=PLATE.removeSplitter(); C.require_single(PLATE,'box-clamp-plate')
 
 stage('lead screw and knob')
-SPINDLE_POSY=C.fuse_seq([cyl_y(3.0,0.4),cyl_y(2.5,1.4,0,0.4,0),cyl_y(3.0,SPINDLE_LOCAL_JOURNAL-1.8,0,1.8,0),cyl_y(SHOULDER_D/2,SPINDLE_LOCAL_SHOULDER,0,SPINDLE_LOCAL_JOURNAL,0),z_to_y(MALE_Z,0,SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER,0),z_to_y(hex_z(10.0,HEX_LEN),0,SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN,0)],'lead-spindle-positive-y')
-STUD_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_stud.scad')
-# Give the true helical stud a small axial overlap into the hex drive.  Exact
-# face-on-face contact is not a robust OCC fuse and produced two solids in CI.
-# The protruding threaded length remains exactly OUTER_STUD_LEN.
-STUD_FUSE_OVERLAP=0.25
-STUD_BUILD_LEN=OUTER_STUD_LEN+STUD_FUSE_OVERLAP
-write_true_thread_scad(
-    STUD_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,STUD_BUILD_LEN,
-    RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
-)
-STUD_Z=import_scad_shape(STUD_SCAD).common(
-    Part.makeCylinder(THREAD_MAJOR/2+0.06,STUD_BUILD_LEN)
-).removeSplitter()
-SPINDLE_POSY=SPINDLE_POSY.fuse(
-    z_to_y(
-        STUD_Z,0,
-        SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+LEAD_THREAD_LEN+HEX_LEN-STUD_FUSE_OVERLAP,
-        0,
+SPINDLE_SCAD=os.path.join(OUT,'v60_lead_screw_complete.scad')
+write_complete_spindle_scad(SPINDLE_SCAD)
+SPINDLE=import_scad_shape(SPINDLE_SCAD)
+C.require_single(SPINDLE,'complete manifold RH8x2 lead screw')
+SPINDLE_COMPILED_STL=os.path.splitext(SPINDLE_SCAD)[0]+'_compiled.stl'
+lead_screw_mesh=stl_edge_topology(SPINDLE_COMPILED_STL)
+if lead_screw_mesh['boundary_edges'] != 0:
+    raise RuntimeError(
+        f"lead screw STL has open edges: {lead_screw_mesh['boundary_edges']}"
     )
-).removeSplitter()
+if lead_screw_mesh['nonmanifold_edges'] != 0:
+    raise RuntimeError(
+        f"lead screw STL has non-manifold edges: {lead_screw_mesh['nonmanifold_edges']}"
+    )
 
-# Mesh-reconstructed helical solids can miss an exact coplanar fuse by a few
-# microns at the shoulder/hex/stud boundaries.  A continuous central shaft is
-# mechanically correct and guarantees one watertight spindle without changing
-# any external thread surface.
-THREAD_STACK_Y0=SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER-0.25
-THREAD_STACK_Y1=(
-    SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER+
-    LEAD_THREAD_LEN+HEX_LEN+OUTER_STUD_LEN
-)
-SPINDLE_POSY=SPINDLE_POSY.fuse(
-    cyl_y(
-        THREAD_CORE_R,
-        THREAD_STACK_Y1-THREAD_STACK_Y0,
-        0,THREAD_STACK_Y0,0,
-    )
-).removeSplitter()
-C.require_single(SPINDLE_POSY,'lead-spindle-with-stud')
-SPINDLE=rotate_z180(SPINDLE_POSY)
-# Shared external grip profile with rack_hand_knob: the established Ø30 x 7
-# scalloped box-clamp knob.  Only the central interface differs between knobs.
+# The knob now sits entirely on a 7 mm hex.  Its hex pocket is through-going;
+# the outer RH8x2 stud begins only after the knob's outer face.
 KNOB=z_to_y(KP.build_scalloped_knob_body())
 KNOB=KNOB.cut(cyl_y(4.3,KP.KNOB_H+0.4,0,-0.2,0))
-KNOB=KNOB.cut(z_to_y(hex_z(10.35,5.2))).removeSplitter()
+KNOB=KNOB.cut(
+    z_to_y(hex_z(10.35,KP.KNOB_H+0.40,-0.20))
+).removeSplitter()
 KNOB=rotate_z180(KNOB)
+C.require_single(KNOB,'box-clamp knob full-depth hex')
+
 CAP_NUT_Z=hex_z(13.0,5.4)
 CAP_NUT_Z=CAP_NUT_Z.cut(CAP_FEMALE_Z).removeSplitter()
 C.require_single(CAP_NUT_Z,'lead-knob-retainer-nut true RH8x2 Z master')
 CAP_NUT=rotate_z180(z_to_y(CAP_NUT_Z))
 C.require_single(CAP_NUT,'lead-knob-retainer-nut')
+
+# The spindle journal is captive in the moving plate: shoulder on the inboard
+# face, printable C-clip in the existing Ø12 x 2 mm outboard counterbore.
+PLATE_CLIP_INSTALLED=rotate_z180(z_to_y(PLATE_CLIP))
+PLATE_CLIP_INSTALLED.translate(App.Vector(0.0,-0.40,0.0))
+C.require_single(PLATE_CLIP_INSTALLED,'installed plate-retainer clip local')
+
+plate_retainer_checks=[]
+for sx in SPINDLE_X:
+    sp=SPINDLE.copy()
+    sp.translate(App.Vector(sx,PLATE_SPINDLE_Y,SPINDLE_Z))
+    cl=PLATE_CLIP_INSTALLED.copy()
+    cl.translate(App.Vector(sx,PLATE_SPINDLE_Y,SPINDLE_Z))
+
+    spindle_common=sp.common(cl).Volume
+    plate_common=PLATE.common(cl).Volume
+    plate_retainer_checks.append({
+        'x_mm':sx,
+        'spindle_common_mm3':round(spindle_common,6),
+        'plate_common_mm3':round(plate_common,6),
+        'counterbore_d_mm':12.0,
+        'counterbore_depth_mm':2.0,
+        'clip_outer_d_mm':10.8,
+        'clip_inner_d_mm':5.1,
+        'shaft_groove_d_mm':5.0,
+        'shaft_groove_width_mm':1.4,
+    })
+    if spindle_common > 1e-4:
+        raise RuntimeError(
+            f'plate retainer clip intersects spindle at X={sx}: '
+            f'{spindle_common:.6f} mm3'
+        )
+    if plate_common > 1e-4:
+        raise RuntimeError(
+            f'plate retainer clip intersects plate counterbore at X={sx}: '
+            f'{plate_common:.6f} mm3'
+        )
 
 stage('hard validation')
 failures=[]
@@ -615,16 +739,51 @@ for turn in (2,5):
                 f'RH8x2 lead-nut crest missing between turns turn={turn} angle={angle_deg}'
             )
 
+main_spindle_thread_samples=[]
 knob_retainer_thread_samples=[]
 male_sample_r=(THREAD_CORE_R+THREAD_MAJOR/2.0)/2.0
 female_sample_r=(CAP_THREAD_FEMALE_CORE_R+CAP_THREAD_FEMALE_MAJOR_R)/2.0
+main_start=SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER
+stud_start=main_start+LEAD_THREAD_LEN+HEX_LEN
+
+# Sample the ACTUAL complete lead screw BRep, not a separate thread coupon.
+for turn in (2,7):
+    for angle_deg in (0.0,90.0,180.0,270.0):
+        a=math.radians(angle_deg)
+        zc=THREAD_PITCH*(turn+angle_deg/360.0)
+        x=-male_sample_r*math.cos(a)
+        y=-(main_start+zc)
+        z=-male_sample_r*math.sin(a)
+        ridge=_inside(SPINDLE,x,y,z)
+        between=_inside(
+            SPINDLE,x,-(main_start+zc+THREAD_PITCH/2.0),z
+        )
+        main_spindle_thread_samples.append({
+            'turn':turn,
+            'angle_deg':angle_deg,
+            'ridge_center_solid':ridge,
+            'between_turns_solid':between,
+        })
+        if not ridge:
+            failures.append(
+                f'RH8x2 main lead-screw ridge missing turn={turn} angle={angle_deg}'
+            )
+        if between:
+            failures.append(
+                f'RH8x2 main lead-screw fills between turns turn={turn} angle={angle_deg}'
+            )
+
 for angle_deg in (0.0,90.0,180.0,270.0):
     a=math.radians(angle_deg)
     zc=THREAD_PITCH*(1.0+angle_deg/360.0)
 
-    mx=male_sample_r*math.cos(a); my=male_sample_r*math.sin(a)
-    male_ridge=_inside(STUD_Z,mx,my,zc)
-    male_between=_inside(STUD_Z,mx,my,zc+THREAD_PITCH/2.0)
+    mx=-male_sample_r*math.cos(a)
+    my=-(stud_start+zc)
+    mz=-male_sample_r*math.sin(a)
+    male_ridge=_inside(SPINDLE,mx,my,mz)
+    male_between=_inside(
+        SPINDLE,mx,-(stud_start+zc+THREAD_PITCH/2.0),mz
+    )
 
     fx=female_sample_r*math.cos(a); fy=female_sample_r*math.sin(a)
     female_groove=_inside(CAP_NUT_Z,fx,fy,zc)
@@ -845,6 +1004,25 @@ width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_C
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
 V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'thread_brep_common_tolerance_mm3':1.20,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V['box_clamp']['lead_screw']={
+    'construction':'single OpenSCAD CGAL union; exact final printable STL retained',
+    'main_thread':'true radial/axial RH8x2',
+    'outer_stud_thread':'true radial/axial RH8x2',
+    'journal_length_mm':SPINDLE_LOCAL_JOURNAL,
+    'shoulder_length_mm':SPINDLE_LOCAL_SHOULDER,
+    'main_thread_length_mm':LEAD_THREAD_LEN,
+    'knob_hex_length_mm':HEX_LEN,
+    'knob_thickness_mm':KP.KNOB_H,
+    'outer_stud_length_mm':OUTER_STUD_LEN,
+    'mesh_topology':lead_screw_mesh,
+    'main_thread_samples':main_spindle_thread_samples,
+}
+V['box_clamp']['plate_spindle_retention']={
+    'mode':'inboard Ø11 shoulder + outboard printable C-clip in Ø12x2 counterbore',
+    'clip_export':'eurobox_v60_plate_retainer_clip',
+    'clip_count_final_assembly':4,
+    'checks':plate_retainer_checks,
+}
 V['box_clamp']['lead_nut_thread']={
     'standard':'RH8x2 true radial/axial printable matched pair',
     'pitch_mm':THREAD_PITCH,
@@ -885,6 +1063,19 @@ if failures:
 stage('exports')
 parts={'eurobox_v60_base_right':RIGHT_FULL,'eurobox_v60_base_left':LEFT_FULL,'eurobox_v60_rack_lower':LOWER,'eurobox_v60_rack_pin':PIN,'eurobox_v60_rack_pin_clip':PIN_CLIP,'eurobox_v60_clamp_plate':PLATE,'eurobox_v60_lead_nut':LEAD_NUT,'eurobox_v60_lead_nut_retaining_pin':NUT_PIN,'eurobox_v60_lead_nut_pin_clip':NUT_PIN_CLIP,'eurobox_v60_lead_screw':SPINDLE,'eurobox_v60_knob':KNOB,'eurobox_v60_knob_retainer_nut':CAP_NUT,'eurobox_v60_plate_retainer_clip':PLATE_CLIP}
 for name,sh in parts.items(): C.require_single(sh,name); C.export_shape(name,sh)
+# Preserve the exact closed CGAL mesh for the lead screw.  Re-tessellating the
+# reconstructed BRep was the source of the 272/273 open edges reported by Prusa.
+shutil.copyfile(
+    SPINDLE_COMPILED_STL,
+    os.path.join(OUT,'eurobox_v60_lead_screw.stl'),
+)
+lead_screw_export_topology=stl_edge_topology(
+    os.path.join(OUT,'eurobox_v60_lead_screw.stl')
+)
+if lead_screw_export_topology['boundary_edges'] != 0:
+    raise RuntimeError('exported lead screw regained open edges')
+if lead_screw_export_topology['nonmanifold_edges'] != 0:
+    raise RuntimeError('exported lead screw regained non-manifold edges')
 
 stage('assembly')
 doc=App.newDocument('Eurobox_v60_assembly')

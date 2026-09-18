@@ -49,10 +49,27 @@ assert box['final_assembly_lead_nut_pin_count'] == 4, box
 assert box['final_assembly_lead_nut_clip_count'] == 4, box
 assert box['final_assembly_box_clamp_knob_count'] == 4, box
 assert box['final_assembly_knob_retainer_count'] == 4, box
+assert box['final_assembly_plate_retainer_clip_count'] == 4, box
 assert box['final_assembly_installed_spindle_x_mm'] == expected_spindles, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['thread_motion']), box['thread_motion']
 assert box['thread_brep_common_tolerance_mm3'] == 1.20, box
 assert all(q['cartridge_common_mm3'] <= box['thread_brep_common_tolerance_mm3'] for q in box['thread_motion']), box['thread_motion']
+
+# Lead screw must be the exact closed printable CGAL mesh, with a full 7 mm
+# knob hex and true RH8x2 on both male thread sections.
+ls = box['lead_screw']
+assert ls['knob_hex_length_mm'] == ls['knob_thickness_mm'] == 7.0, ls
+assert ls['mesh_topology']['boundary_edges'] == 0, ls
+assert ls['mesh_topology']['nonmanifold_edges'] == 0, ls
+assert len(ls['main_thread_samples']) == 8, ls
+assert all(q['ridge_center_solid'] for q in ls['main_thread_samples']), ls
+assert all(not q['between_turns_solid'] for q in ls['main_thread_samples']), ls
+
+pr = box['plate_spindle_retention']
+assert pr['clip_count_final_assembly'] == 4, pr
+assert len(pr['checks']) == 2, pr
+assert all(q['spindle_common_mm3'] <= 0.0001 for q in pr['checks']), pr
+assert all(q['plate_common_mm3'] <= 0.0001 for q in pr['checks']), pr
 
 # The removable lead-nut wear cartridge must contain a real printable RH8x2
 # female helix.  Direct final-part samples prevent a smooth cylindrical bore

@@ -39,8 +39,29 @@ def hex_z(af, height, z0=0.0):
     )
 
 
+BODY_TO_LOWER_CLEARANCE = 0.80
+THRUST_BOSS_R = 5.0
+THRUST_BOSS_H = BODY_TO_LOWER_CLEARANCE
+BODY_TOP_Z = KNOB_H - BODY_TO_LOWER_CLEARANCE
+
+
 def build_rack_hand_knob():
     q = KP.build_scalloped_knob_body()
+
+    # Only a small central thrust boss reaches the Lower.  The full Ø30 grip
+    # surface is recessed 0.8 mm, so it can rotate without rubbing on the
+    # 24x14 mm closure tongue.
+    relief = Part.makeCylinder(
+        KNOB_R + 1.0,
+        BODY_TO_LOWER_CLEARANCE + 0.20,
+        App.Vector(0, 0, BODY_TOP_Z),
+    )
+    boss_keep = Part.makeCylinder(
+        THRUST_BOSS_R,
+        BODY_TO_LOWER_CLEARANCE + 0.40,
+        App.Vector(0, 0, BODY_TOP_Z - 0.10),
+    )
+    q = q.cut(relief.cut(boss_keep)).removeSplitter()
 
     # M4 shank from underside to the captive nut seat.
     q = q.cut(
@@ -51,8 +72,7 @@ def build_rack_hand_knob():
         )
     ).removeSplitter()
 
-    # Top-open captive nut pocket.  The former rack knob had a closed roof and
-    # therefore could not actually accept the nut.
+    # Top-open captive nut pocket through the central thrust boss.
     q = q.cut(
         hex_z(
             KNOB_NUT_AF,
@@ -61,7 +81,6 @@ def build_rack_hand_knob():
         )
     ).removeSplitter()
 
-    # Short wider lead-in at the top for reliable PETG insertion.
     q = q.cut(
         hex_z(
             KNOB_NUT_ENTRY_AF,

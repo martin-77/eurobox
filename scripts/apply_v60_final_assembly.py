@@ -94,6 +94,13 @@ def add_box_clamp_hardware(prefix, rack_y, left=False):
         spindle.translate(App.Vector(sx, B.PLATE_SPINDLE_Y, B.SPINDLE_Z))
         add_obj(prefix + '_spindle_' + str(int(sx)), finish(spindle))
 
+        plate_clip = P.PLATE_CLIP_INSTALLED.copy()
+        plate_clip.translate(App.Vector(sx, B.PLATE_SPINDLE_Y, B.SPINDLE_Z))
+        add_obj(
+            prefix + '_box_clamp_plate_retainer_clip_' + str(int(sx)),
+            finish(plate_clip),
+        )
+
         nut = P.LEAD_NUT.copy()
         nut.translate(App.Vector(sx, B.NUT_Y0, B.SPINDLE_Z))
         add_obj(prefix + '_lead_nut_' + str(int(sx)), finish(nut))
@@ -208,6 +215,7 @@ required_counts = {
     'lead_nut_clip_': 4,
     'box_clamp_knob_': 4,
     'box_clamp_knob_retainer_': 4,
+    'box_clamp_plate_retainer_clip_': 4,
 }
 for token, expected in required_counts.items():
     matches = [name for name in object_names if token in name]
@@ -232,6 +240,7 @@ validation['box_clamp']['final_assembly_lead_nut_clip_count'] = 4
 validation['box_clamp']['final_assembly_replaceable_module_count'] = 0
 validation['box_clamp']['final_assembly_box_clamp_knob_count'] = 4
 validation['box_clamp']['final_assembly_knob_retainer_count'] = 4
+validation['box_clamp']['final_assembly_plate_retainer_clip_count'] = 4
 validation['box_clamp']['final_assembly_installed_spindle_x_mm'] = list(P.SPINDLE_X)
 validation['box_clamp']['final_assembly_left_hardware_transform'] = (
     'rigid 180deg turnaround about plate centre for spindle/cartridge/pin/clip/knob/retainer stack; no RH8x2 reflection'

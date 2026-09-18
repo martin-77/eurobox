@@ -95,6 +95,48 @@ if not (28.0 <= grip_x <= 30.5 and 28.0 <= grip_y <= 30.5):
 if K.GRIP_SCALLOPS != 8:
     failures.append(f'shared knob profile must have 8 scallops, got {K.GRIP_SCALLOPS}')
 
+# Mounted rotation envelope: the 24x14 mm Lower tongue starts exactly at the
+# boss top plane.  Across a complete revolution only the central thrust boss may
+# reach that plane; the scalloped grip body must remain 0.8 mm below it.
+outer_top_probe = Part.makeCylinder(
+    K.KNOB_R + 0.5,
+    K.BODY_TO_LOWER_CLEARANCE + 0.10,
+    App.Vector(0, 0, K.BODY_TOP_Z),
+).cut(
+    Part.makeCylinder(
+        K.THRUST_BOSS_R + 0.05,
+        K.BODY_TO_LOWER_CLEARANCE + 0.20,
+        App.Vector(0, 0, K.BODY_TOP_Z - 0.05),
+    )
+)
+outer_top_common = shape.common(outer_top_probe).Volume
+if outer_top_common > 1e-5:
+    failures.append(
+        f'rack knob rotating body reaches Lower contact plane: '
+        f'{outer_top_common:.6f} mm3'
+    )
+
+rotation_checks = []
+lower_proxy = Part.makeBox(
+    24.0, 14.0, 1.0,
+    App.Vector(-12.0, -7.0, K.KNOB_H),
+)
+for deg in range(0, 360, 15):
+    q = shape.copy()
+    q.rotate(App.Vector(0,0,0), App.Vector(0,0,1), float(deg))
+    common = q.common(lower_proxy).Volume
+    rotation_checks.append({'deg':deg,'lower_common_mm3':round(common,9)})
+    if common > 1e-5:
+        failures.append(
+            f'rack knob collides with Lower during rotation deg={deg}: '
+            f'{common:.6f} mm3'
+        )
+
+if K.BODY_TO_LOWER_CLEARANCE < 0.60:
+    failures.append('rack knob grip clearance to Lower is below 0.60 mm')
+if K.THRUST_BOSS_R < 4.5 or K.THRUST_BOSS_R > 5.5:
+    failures.append('rack knob thrust boss diameter left intended 9-11 mm range')
+
 if failures:
     raise RuntimeError('V60 RACK HAND KNOB CHECKS FAILED: ' + ' | '.join(failures))
 
@@ -148,6 +190,11 @@ validation = {
     'screw_bore_d_mm': K.KNOB_BORE_D,
     'screw_bore_common_mm3': round(bore_common, 9),
     'usable_m4x30_shank_above_knob_mm': round(usable_screw_above_knob, 3),
+    'body_to_lower_clearance_mm': K.BODY_TO_LOWER_CLEARANCE,
+    'thrust_boss_d_mm': round(2.0 * K.THRUST_BOSS_R, 3),
+    'thrust_boss_h_mm': K.THRUST_BOSS_H,
+    'outer_top_common_mm3': round(outer_top_common, 9),
+    'rotation_checks': rotation_checks,
 }
 with open(
     os.path.join(OUT, 'VALIDATION_v60_rack_hand_knob.json'),
