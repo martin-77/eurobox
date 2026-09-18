@@ -1,0 +1,45 @@
+{
+  "component": "eurobox_v60_rack_hand_knob",
+  "scope": "rack_hand_knob_only",
+  "design": "six_lobe_top_loaded_m4_nut",
+  "single_valid_solid": true,
+  "support_free_flat_print": true,
+  "bbox_mm": [
+    29.994,
+    27.32,
+    7.0
+  ],
+  "volume_mm3": 3803.232081,
+  "facets": 1264,
+  "lobes": 6,
+  "outer_diameter_mm": 30.0,
+  "knob_height_mm": 7.0,
+  "measured_nut_af_mm": 6.81,
+  "nut_pocket_af_mm": 7.1,
+  "nut_entry_af_mm": 7.4,
+  "nut_height_mm": 3.6,
+  "nut_pocket_z0_mm": 3.2,
+  "nut_pocket_open_to_top": true,
+  "nut_insertion": [
+    {
+      "lift_mm": 4.0,
+      "common_mm3": 0.0
+    },
+    {
+      "lift_mm": 2.0,
+      "common_mm3": 0.0
+    },
+    {
+      "lift_mm": 1.0,
+      "common_mm3": 0.0
+    },
+    {
+      "lift_mm": 0.0,
+      "common_mm3": 0.0
+    }
+  ],
+  "nut_floor_fraction": 1.0,
+  "screw_bore_d_mm": 4.6,
+  "screw_bore_common_mm3": 0.0,
+  "usable_m4x30_shank_above_knob_mm": 23.6
+}
