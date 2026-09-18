@@ -40,8 +40,11 @@ assert box['plate_x_mm'] == core['datums']['box_clamp_plate_x_mm'], box
 assert box['plate_width_mm'] > 160.0, box
 assert box['plate_travel_mm'] == 5.5, box
 assert box['effective_total_width_mm'] <= 600.02, box
-assert box['axial_slide_without_rotation_common_mm3'] >= 0.5, box
-assert box['wrong_phase_common_mm3'] >= 0.5, box
+assert len(box['main_spindle_thread_samples']) == 8, box
+assert all(q['ridge_center_solid'] for q in box['main_spindle_thread_samples']), box['main_spindle_thread_samples']
+assert all(not q['between_turns_solid'] for q in box['main_spindle_thread_samples']), box['main_spindle_thread_samples']
+assert len(box['phase_block_samples']) == 8, box
+assert all(q['blocked_by_lead_nut_material'] for q in box['phase_block_samples']), box['phase_block_samples']
 assert len(box['cartridge_insertion']) == 8, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['cartridge_insertion']), box['cartridge_insertion']
 assert box['final_assembly_replaceable_module_count'] == 0, box
