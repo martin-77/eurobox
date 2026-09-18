@@ -29,13 +29,14 @@ SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
 THREAD_CORE_R = 3.25
-THREAD_FEMALE_CORE_R = 3.50
-THREAD_FEMALE_MAJOR_R = 4.25
+# Keep the already-proven main spindle/cartridge pair unchanged in this fix.
+THREAD_FEMALE_CORE_R = 3.42
+THREAD_FEMALE_MAJOR_R = 4.22
 
-# Printable RH8x2 profile for the clamp spindle, wear cartridge and outer
-# knob-retainer stud.  The old OpenSCAD twisted XY ribbon gave only ~0.1 mm of
-# axial thread thickness in the exported STL.  These dimensions are true
-# radial/axial trapezoids and are deliberately sized for a 0.4 mm nozzle.
+# Separate true radial/axial profile for the outer-stud / knob-retainer pair.
+# This is the interface exported as eurobox_v60_knob_retainer_nut.stl.
+CAP_THREAD_FEMALE_CORE_R = 3.50
+CAP_THREAD_FEMALE_MAJOR_R = 4.25
 RH8_MALE_ROOT_W = 1.20
 RH8_MALE_CREST_W = 0.60
 RH8_FEMALE_ROOT_W = 1.50
@@ -144,13 +145,20 @@ def rotate_z180(shape):
     q = shape.copy(); q.rotate(App.Vector(0,0,0), App.Vector(0,0,1), 180.0); return q.removeSplitter()
 
 
-def write_thread_scad(path, core_r, major_r, pitch, length, root_w, crest_w, overrun=0.0):
-    # Build a TRUE radial/axial trapezoid around a helix.  The old
-    # linear_extrude() implementation put root_w/crest_w in the tangential XY
-    # direction; at RH8x2 that converted to only ~0.1 mm axial thread thickness.
+def write_thread_scad(path, core_r, major_r, pitch, length, root_w, crest_w):
+    # Legacy generator retained ONLY for the already-proven main spindle /
+    # removable-cartridge pair.  Do not use this for new printed threads.
+    txt = f'''$fn=48;\nmodule thread_solid(){{\n union(){{\n  cylinder(r={core_r},h={length});\n  linear_extrude(height={length},twist=360*{length}/{pitch},slices=ceil({length}/{pitch}*18),convexity=30)\n   polygon(points=[[{core_r}-0.08,-{root_w}/2],[{major_r},-{crest_w}/2],[{major_r},{crest_w}/2],[{core_r}-0.08,{root_w}/2]]);\n }}\n}}\nthread_solid();\n'''
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(txt)
+
+
+def write_true_thread_scad(path, core_r, major_r, pitch, length, root_w, crest_w, overrun=0.0):
+    # True radial/axial trapezoid swept around a helix.  root_w/crest_w are
+    # actual axial dimensions, unlike the old twisted-XY-ribbon generator.
     if root_w >= pitch or crest_w >= pitch:
         raise RuntimeError(
-            f'Invalid RH thread profile: root={root_w:.3f} crest={crest_w:.3f} '
+            f'Invalid true RH thread profile: root={root_w:.3f} crest={crest_w:.3f} '
             f'must both be < pitch={pitch:.3f}'
         )
     inner_r = core_r - 0.12
@@ -194,7 +202,6 @@ union(){{
 '''
     with open(path, 'w', encoding='utf-8') as f:
         f.write(txt)
-
 
 def import_scad_shape(path):
     stl = os.path.splitext(path)[0] + '_compiled.stl'
@@ -391,27 +398,20 @@ C.require_single(RIGHT_FULL,'RIGHT full after rack-closure machining')
 stage('thread solids')
 MALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_male.scad')
 FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_female.scad')
-CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female.scad')
+CAP_FEMALE_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_cap_female_true.scad')
 
-write_thread_scad(
-    MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,
-    RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
-)
-write_thread_scad(
-    FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,
-    THREAD_PITCH,NUT_THREAD_LEN,RH8_FEMALE_ROOT_W,RH8_FEMALE_CREST_W,
-    overrun=THREAD_PITCH,
-)
-write_thread_scad(
-    CAP_FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,
+# Proven main spindle / removable wear-cartridge pair: unchanged here.
+write_thread_scad(MALE_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,LEAD_THREAD_LEN,0.58,0.24)
+write_thread_scad(FEMALE_SCAD,THREAD_FEMALE_CORE_R,THREAD_FEMALE_MAJOR_R,THREAD_PITCH,NUT_THREAD_LEN,0.76,0.40)
+MALE_Z=import_scad_shape(MALE_SCAD).common(Part.makeCylinder(4.06,LEAD_THREAD_LEN)).removeSplitter()
+FEMALE_Z=import_scad_shape(FEMALE_SCAD).common(Part.makeCylinder(4.28,NUT_THREAD_LEN)).removeSplitter()
+
+# The knob-retainer gets its own real radial/axial female RH8x2 cutter.
+write_true_thread_scad(
+    CAP_FEMALE_SCAD,CAP_THREAD_FEMALE_CORE_R,CAP_THREAD_FEMALE_MAJOR_R,
     THREAD_PITCH,5.4,RH8_FEMALE_ROOT_W,RH8_FEMALE_CREST_W,
     overrun=THREAD_PITCH,
 )
-
-MALE_Z=import_scad_shape(MALE_SCAD).common(
-    Part.makeCylinder(THREAD_MAJOR/2+0.06,LEAD_THREAD_LEN)
-).removeSplitter()
-FEMALE_Z=import_scad_shape(FEMALE_SCAD)
 CAP_FEMALE_Z=import_scad_shape(CAP_FEMALE_SCAD)
 
 stage('v50 direct cartridge pockets - no integral box-clamp threads in BASE')
@@ -506,7 +506,7 @@ STUD_SCAD=os.path.join(OUT,'v60_thread_RH_8x2_stud.scad')
 # The protruding threaded length remains exactly OUTER_STUD_LEN.
 STUD_FUSE_OVERLAP=0.25
 STUD_BUILD_LEN=OUTER_STUD_LEN+STUD_FUSE_OVERLAP
-write_thread_scad(
+write_true_thread_scad(
     STUD_SCAD,THREAD_CORE_R,THREAD_MAJOR/2,THREAD_PITCH,STUD_BUILD_LEN,
     RH8_MALE_ROOT_W,RH8_MALE_CREST_W,
 )
@@ -561,7 +561,7 @@ def _inside(shape,x,y,z):
 
 knob_retainer_thread_samples=[]
 male_sample_r=(THREAD_CORE_R+THREAD_MAJOR/2.0)/2.0
-female_sample_r=(THREAD_FEMALE_CORE_R+THREAD_FEMALE_MAJOR_R)/2.0
+female_sample_r=(CAP_THREAD_FEMALE_CORE_R+CAP_THREAD_FEMALE_MAJOR_R)/2.0
 for angle_deg in (0.0,90.0,180.0,270.0):
     a=math.radians(angle_deg)
     zc=THREAD_PITCH*(1.0+angle_deg/360.0)
@@ -784,15 +784,15 @@ V['box_clamp']['knob_retainer_thread']={
     'pitch_mm':THREAD_PITCH,
     'male_core_d_mm':round(2.0*THREAD_CORE_R,3),
     'male_major_d_mm':round(THREAD_MAJOR,3),
-    'female_crest_bore_d_mm':round(2.0*THREAD_FEMALE_CORE_R,3),
-    'female_groove_root_d_mm':round(2.0*THREAD_FEMALE_MAJOR_R,3),
+    'female_crest_bore_d_mm':round(2.0*CAP_THREAD_FEMALE_CORE_R,3),
+    'female_groove_root_d_mm':round(2.0*CAP_THREAD_FEMALE_MAJOR_R,3),
     'male_root_width_mm':RH8_MALE_ROOT_W,
     'male_crest_width_mm':RH8_MALE_CREST_W,
     'female_groove_root_width_mm':RH8_FEMALE_ROOT_W,
     'female_groove_crest_width_mm':RH8_FEMALE_CREST_W,
     'female_crest_material_between_turns_mm':round(RH8_FEMALE_CREST_MATERIAL_W,3),
-    'radial_core_clearance_mm':round(THREAD_FEMALE_CORE_R-THREAD_CORE_R,3),
-    'radial_major_clearance_mm':round(THREAD_FEMALE_MAJOR_R-THREAD_MAJOR/2.0,3),
+    'radial_core_clearance_mm':round(CAP_THREAD_FEMALE_CORE_R-THREAD_CORE_R,3),
+    'radial_major_clearance_mm':round(CAP_THREAD_FEMALE_MAJOR_R-THREAD_MAJOR/2.0,3),
     'samples':knob_retainer_thread_samples,
     'validated_export_part':'eurobox_v60_knob_retainer_nut',
 }
