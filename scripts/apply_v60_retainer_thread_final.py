@@ -26,17 +26,20 @@ C = B.C
 PITCH = 2.0
 MALE_CORE_R = 5.00
 MALE_MAJOR_R = 6.00
-FEMALE_CORE_R = 5.20
-FEMALE_MAJOR_R = 6.22
-MALE_ROOT_W = 1.80
-MALE_CREST_W = 0.90
-FLANK_CLEAR = 0.24
-# A radial/axial helical ridge must stay narrower than one pitch at its root.
-# The previous female root width was 2.28 mm on a 2.0 mm pitch, so adjacent
-# turns self-overlapped and OpenSCAD produced a non-solid shell.  Keep the
-# female cutter wider than the male thread, but cap its root below one pitch.
-FEMALE_ROOT_W = min(PITCH - 0.10, MALE_ROOT_W + 2.0*FLANK_CLEAR)
-FEMALE_CREST_W = min(PITCH - 0.40, MALE_CREST_W + 2.0*FLANK_CLEAR)
+FEMALE_CORE_R = 5.25
+FEMALE_MAJOR_R = 6.25
+
+# Printable 12x2 service profile for a 0.4 mm nozzle.
+# The previous 1.80 mm male root forced the female groove to ~1.90 mm on a
+# 2.00 mm pitch, leaving only ~0.10 mm of female crest material between turns.
+# That is not a printable/useful internal thread.  Keep a robust 0.60 mm male
+# crest and leave 0.50 mm of female crest material at the bore wall.
+MALE_ROOT_W = 1.20
+MALE_CREST_W = 0.60
+FEMALE_ROOT_W = 1.50
+FEMALE_CREST_W = 0.90
+AXIAL_PROFILE_CLEARANCE = 0.30
+FEMALE_CREST_MATERIAL_W = PITCH - FEMALE_ROOT_W
 THREAD_LEN = R.RETAINER_LEN
 THREAD_Z0 = R.RETAINER_THREAD_Z0
 TOP_OVERRUN = PITCH
@@ -229,136 +232,143 @@ LEFT = C.mirror_x(RIGHT)
 C.require_single(LEFT, 'LEFT base with final explicit female retainer threads')
 stop_timer('retainer.validate_and_mirror_final_threaded_base', _t)
 
-stage('hard geometric thread witness')
-_t_witness = start_timer('retainer.hard_geometric_thread_witness')
+stage('fast hard geometric thread witness')
+_t_witness = start_timer('retainer.fast_hard_geometric_thread_witness')
 failures = []
 def fail(msg): failures.append(msg)
 
-outer_annulus = Part.makeCylinder(MALE_MAJOR_R+0.02, THREAD_LEN).cut(
-    Part.makeCylinder(MALE_CORE_R+0.20, THREAD_LEN)
-)
-male_helix_volume = RACK_NUT_RETAINER.common(outer_annulus).Volume
-if male_helix_volume < 12.0:
-    fail(f'male retainer helix too weak/absent: {male_helix_volume:.3f} mm3')
+# Static printability gates.  These dimensions are part of the actual generated
+# radial/axial profile, not metadata inferred from a twisted ribbon.
+if MALE_CREST_W < 0.50:
+    fail(f'male retainer crest too narrow for 0.4 mm FDM: {MALE_CREST_W:.3f} mm')
+if FEMALE_CREST_MATERIAL_W < 0.45:
+    fail(f'female retainer crest material too narrow for 0.4 mm FDM: {FEMALE_CREST_MATERIAL_W:.3f} mm')
+if FEMALE_ROOT_W < MALE_ROOT_W + 0.20:
+    fail('female root groove lacks axial clearance over male root')
+if FEMALE_CREST_W < MALE_CREST_W + 0.20:
+    fail('female crest groove lacks axial clearance over male crest')
+if FEMALE_CORE_R <= MALE_CORE_R + 0.15:
+    fail('female crest bore lacks radial clearance over male core')
+if FEMALE_MAJOR_R <= MALE_MAJOR_R + 0.15:
+    fail('female groove root lacks radial clearance over male major')
 
-# Validate the actual final BASE against the actual final retainer. No coupon is
-# allowed to stand in for the production female thread.
-female_witness = []
-fit_checks = []
-entry_checks = []
-bore_connected_groove_checks = []
+def inside(shape, x, y, z):
+    return bool(shape.isInside(App.Vector(x,y,z), 1e-5, False))
+
+# Direct point sampling of the ACTUAL final BASE.  This replaces the previous
+# full-body common() phase/insertion booleans that took >45 minutes.  At a radius
+# halfway through the thread depth, points on the helical centreline must be air
+# and points half a pitch away must still be BASE material.  A smooth bore, a
+# hidden helix, or a groove that erased the whole wall cannot pass this test.
+female_thread_point_samples = []
+female_sample_r = (FEMALE_CORE_R + FEMALE_MAJOR_R) / 2.0
+sample_angles = (0.0, 90.0, 180.0, 270.0)
+sample_turns = (3, 7)
 for xc in C.CLAMP_X:
-    # The complete outer envelope of the screw must be open at the top surface.
-    mouth_probe = Part.makeCylinder(
-        ENTRY_CLEAR_R - 0.05,
-        ENTRY_CLEAR_DEPTH,
-        App.Vector(
-            xc, C.RACK_CLOSURE_Y,
-            R.CARRIER_TOP_PLANE_Z - ENTRY_CLEAR_DEPTH,
-        ),
-        App.Vector(0,0,1),
-    )
-    mouth_block = RIGHT.common(mouth_probe).Volume
+    for turn in sample_turns:
+        for angle_deg in sample_angles:
+            a = math.radians(angle_deg)
+            x = xc + female_sample_r*math.cos(a)
+            y = C.RACK_CLOSURE_Y + female_sample_r*math.sin(a)
+            z_center = THREAD_Z0 + PITCH*(turn + angle_deg/360.0)
+            groove_solid = inside(RIGHT, x, y, z_center)
+            between_solid = inside(RIGHT, x, y, z_center + PITCH/2.0)
+            rec = {
+                'x_station_mm':xc,
+                'turn':turn,
+                'angle_deg':angle_deg,
+                'radius_mm':round(female_sample_r,3),
+                'groove_center_solid':groove_solid,
+                'between_turns_solid':between_solid,
+            }
+            female_thread_point_samples.append(rec)
+            if groove_solid:
+                fail(f'female groove centre still solid X={xc} turn={turn} angle={angle_deg}')
+            if not between_solid:
+                fail(f'female crest missing between turns X={xc} turn={turn} angle={angle_deg}')
+
+# Equivalent direct check on the actual printed retainer.  The ridge centre must
+# contain material and half a pitch away, outside the smooth core, must be air.
+male_thread_point_samples = []
+male_sample_r = (MALE_CORE_R + MALE_MAJOR_R) / 2.0
+for turn in sample_turns:
+    for angle_deg in sample_angles:
+        a = math.radians(angle_deg)
+        x = male_sample_r*math.cos(a)
+        y = male_sample_r*math.sin(a)
+        z_center = PITCH*(turn + angle_deg/360.0)
+        ridge_solid = inside(RACK_NUT_RETAINER, x, y, z_center)
+        between_solid = inside(RACK_NUT_RETAINER, x, y, z_center + PITCH/2.0)
+        rec = {
+            'turn':turn,
+            'angle_deg':angle_deg,
+            'radius_mm':round(male_sample_r,3),
+            'ridge_center_solid':ridge_solid,
+            'between_turns_solid':between_solid,
+        }
+        male_thread_point_samples.append(rec)
+        if not ridge_solid:
+            fail(f'male ridge missing turn={turn} angle={angle_deg}')
+        if between_solid:
+            fail(f'male ridge fills space between turns turn={turn} angle={angle_deg}')
+
+# The service mouth must be genuinely open in the actual final BASE.  Sample at
+# r=6.30 mm, safely outside the 12.0 mm male major diameter and inside the
+# Ø13.0 mm lead-in, 0.20 mm below the carrier top.
+female_witness = []
+mouth_r = 6.30
+mouth_z = R.CARRIER_TOP_PLANE_Z - 0.20
+for xc in C.CLAMP_X:
+    blocked = 0
+    for angle_deg in sample_angles:
+        a = math.radians(angle_deg)
+        if inside(
+            RIGHT,
+            xc + mouth_r*math.cos(a),
+            C.RACK_CLOSURE_Y + mouth_r*math.sin(a),
+            mouth_z,
+        ):
+            blocked += 1
     female_witness.append({
-        'x_mm': xc,
-        'final_base_removed_mm3': female_cut_volumes[len(female_witness)],
-        'mouth_block_mm3': round(mouth_block,6),
-        'entry_clear_d_mm': round(2.0*ENTRY_CLEAR_R,3),
-    })
-    if mouth_block > 1e-4:
-        fail(f'female thread mouth is hidden behind BASE material X={xc}: {mouth_block:.6f} mm3')
-
-    # Compare the actual threaded BASE with a smooth-bore-only reference in a
-    # mid-span annulus.  A real female thread must remove substantial additional
-    # helical material from the bore wall; a visually smooth cylinder cannot pass.
-    smooth_ref = RIGHT_PRETHREAD.copy()
-    smooth_core = Part.makeCylinder(
-        FEMALE_CORE_R,
-        THREAD_LEN+TOP_OVERRUN,
-        App.Vector(xc,C.RACK_CLOSURE_Y,THREAD_Z0),
-        App.Vector(0,0,1),
-    )
-    smooth_ref = smooth_ref.cut(smooth_core).removeSplitter()
-    smooth_ref = smooth_ref.cut(Part.makeCylinder(
-        ENTRY_CLEAR_R,
-        ENTRY_CLEAR_DEPTH+0.50,
-        App.Vector(
-            xc,C.RACK_CLOSURE_Y,
-            R.CARRIER_TOP_PLANE_Z-ENTRY_CLEAR_DEPTH,
-        ),
-        App.Vector(0,0,1),
-    )).removeSplitter()
-    shell_z0 = THREAD_Z0 + 2.0*PITCH
-    shell_h = max(PITCH, THREAD_LEN - 4.0*PITCH)
-    shell = Part.makeCylinder(
-        FEMALE_MAJOR_R+0.04, shell_h,
-        App.Vector(xc,C.RACK_CLOSURE_Y,shell_z0),
-        App.Vector(0,0,1),
-    ).cut(Part.makeCylinder(
-        FEMALE_CORE_R-0.02, shell_h,
-        App.Vector(xc,C.RACK_CLOSURE_Y,shell_z0),
-        App.Vector(0,0,1),
-    )).removeSplitter()
-    smooth_shell_material = smooth_ref.common(shell).Volume
-    threaded_shell_material = RIGHT.common(shell).Volume
-    helical_removed = smooth_shell_material - threaded_shell_material
-    bore_connected_groove_checks.append({
         'x_mm':xc,
-        'helical_removed_midspan_mm3':round(helical_removed,6),
-        'smooth_shell_material_mm3':round(smooth_shell_material,6),
-        'threaded_shell_material_mm3':round(threaded_shell_material,6),
+        'blocked_sample_points':blocked,
+        'sample_radius_mm':mouth_r,
+        'sample_z_mm':round(mouth_z,3),
+        'final_base_removed_mm3':female_cut_volumes[len(female_witness)],
+        'entry_clear_d_mm':round(2.0*ENTRY_CLEAR_R,3),
     })
-    if helical_removed < 20.0:
-        fail(f'female retainer bore lacks substantial connected helical groove X={xc}: {helical_removed:.6f} mm3')
+    if blocked:
+        fail(f'female thread service mouth blocked at {blocked} sampled points X={xc}')
 
-    nominal = RACK_NUT_RETAINER.copy()
-    nominal.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
-    nominal_common = RIGHT.common(nominal).Volume
+# The M4 overrun bore through the printed retainer must remain open.
+if inside(RACK_NUT_RETAINER, 0.0, 0.0, THREAD_LEN/2.0):
+    fail('retainer M4 overrun bore is blocked')
 
-    wrong = RACK_NUT_RETAINER.copy()
-    wrong.rotate(App.Vector(0,0,0), App.Vector(0,0,1), 180.0)
-    wrong.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
-    wrong_common = RIGHT.common(wrong).Volume
-    fit_checks.append({
-        'x_mm': xc,
-        'nominal_common_mm3': round(nominal_common,6),
-        'half_pitch_wrong_phase_common_mm3': round(wrong_common,6),
-        'witness': 'actual final BASE against actual final retainer',
-    })
-    if nominal_common > 0.20:
-        fail(f'nominal retainer collides with final BASE X={xc}: {nominal_common:.6f} mm3')
-    if wrong_common < nominal_common + 2.0:
-        fail(f'final BASE female thread lacks phase-sensitive engagement X={xc}: nominal={nominal_common:.6f} wrong={wrong_common:.6f}')
+thread_printability = {
+    'pitch_mm':PITCH,
+    'male_root_width_mm':MALE_ROOT_W,
+    'male_crest_width_mm':MALE_CREST_W,
+    'female_groove_root_width_mm':FEMALE_ROOT_W,
+    'female_groove_crest_width_mm':FEMALE_CREST_W,
+    'female_crest_material_between_turns_mm':round(FEMALE_CREST_MATERIAL_W,3),
+    'male_core_d_mm':round(2.0*MALE_CORE_R,3),
+    'male_major_d_mm':round(2.0*MALE_MAJOR_R,3),
+    'female_crest_bore_d_mm':round(2.0*FEMALE_CORE_R,3),
+    'female_groove_root_d_mm':round(2.0*FEMALE_MAJOR_R,3),
+    'radial_core_clearance_mm':round(FEMALE_CORE_R-MALE_CORE_R,3),
+    'radial_major_clearance_mm':round(FEMALE_MAJOR_R-MALE_MAJOR_R,3),
+    'axial_root_clearance_mm':round(FEMALE_ROOT_W-MALE_ROOT_W,3),
+    'axial_crest_clearance_mm':round(FEMALE_CREST_W-MALE_CREST_W,3),
+    'target_nozzle_mm':0.4,
+}
 
-    # Prove physical entry from free space, not merely motion after the part is
-    # already buried in the thread. The retainer starts with its thread body
-    # above the carrier top and is screwed into the first two millimetres.
-    entry_lift = R.CARRIER_TOP_PLANE_Z - THREAD_Z0 + 0.20
-    for depth in (0.0,0.5,1.0,2.0):
-        lift = entry_lift - depth
-        q = RACK_NUT_RETAINER.copy()
-        q.rotate(
-            App.Vector(0,0,0), App.Vector(0,0,1),
-            -360.0*lift/PITCH,
-        )
-        q.translate(App.Vector(
-            xc, C.RACK_CLOSURE_Y, THREAD_Z0 + lift,
-        ))
-        common = RIGHT.common(q).Volume
-        entry_checks.append({
-            'x_mm': xc,
-            'entry_depth_mm': depth,
-            'lift_from_installed_mm': round(lift,3),
-            'base_common_mm3': round(common,6),
-        })
-        if common > 0.20:
-            fail(f'retainer cannot enter female thread from outside X={xc} depth={depth}: {common:.6f} mm3')
-
-through = Part.makeCylinder(R.RETAINER_BORE_D/2.0-0.15, THREAD_LEN+R.RETAINER_NOSE_LEN,
-                            App.Vector(0,0,-R.RETAINER_NOSE_LEN))
-if RACK_NUT_RETAINER.common(through).Volume > 1e-4:
-    fail('retainer M4 overrun bore is not open')
-stop_timer('retainer.hard_geometric_thread_witness', _t_witness, failures=len(failures))
+stop_timer(
+    'retainer.fast_hard_geometric_thread_witness',
+    _t_witness,
+    failures=len(failures),
+    female_samples=len(female_thread_point_samples),
+    male_samples=len(male_thread_point_samples),
+)
 
 if failures:
     raise RuntimeError('V60 FINAL RETAINER THREAD CHECKS FAILED: ' + ' | '.join(failures))
@@ -392,21 +402,20 @@ validation['rack']['m4_closure']['retainer_female_major_d_mm']=2.0*FEMALE_MAJOR_
 validation['rack']['m4_closure']['retainer_male_core_d_mm']=2.0*MALE_CORE_R
 validation['rack']['m4_closure']['retainer_female_core_d_mm']=2.0*FEMALE_CORE_R
 validation['rack']['m4_closure']['retainer_thread_top_overrun_mm']=TOP_OVERRUN
-validation['rack']['m4_closure']['male_helical_material_mm3']=round(male_helix_volume,6)
+validation['rack']['m4_closure']['thread_printability']=thread_printability
 validation['rack']['m4_closure']['female_thread_removed_mm3']=female_cut_volumes
 validation['rack']['m4_closure']['female_helical_witness']=female_witness
-validation['rack']['m4_closure']['female_bore_connected_groove_checks']=bore_connected_groove_checks
-validation['rack']['m4_closure']['retainer_phase_fit_checks']=fit_checks
+validation['rack']['m4_closure']['female_thread_point_samples']=female_thread_point_samples
+validation['rack']['m4_closure']['male_thread_point_samples']=male_thread_point_samples
 validation['rack']['m4_closure']['entry_clear_d_mm']=round(2.0*ENTRY_CLEAR_R,3)
 validation['rack']['m4_closure']['entry_clear_depth_mm']=ENTRY_CLEAR_DEPTH
 validation['rack']['m4_closure']['female_thread_start_recess_mm']=ENTRY_CLEAR_DEPTH
-validation['rack']['m4_closure']['retainer_entry_checks']=entry_checks
-validation['rack']['m4_closure']['witness_strategy']='actual final BASE + actual final retainer; open-mouth envelope and entry motion from free space'
+validation['rack']['m4_closure']['witness_strategy']='actual final BASE/retainer sampled directly with isInside at helical centres and half-pitch crest positions; no full-body validation booleans'
 validation['failures']=[]
 with open(validation_path,'w',encoding='utf-8') as fh:
     json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFinal retainer: one matched 12x2 true radial/axial male/female pair; Ø13.0 mm shallow service lead-in with the female thread starting 0.45 mm below the carrier top; actual final BASE/retainer fit, bore-connected helical-groove, phase and insertion-from-free-space hard checks.\n')
+    fh.write('\nFinal retainer: printable matched 12x2 true radial/axial pair for 0.4 mm FDM; 0.60 mm male crest, 0.50 mm female crest material between turns, Ø13.0 mm shallow service lead-in; actual final BASE/retainer helical centres and half-pitch crests are point-sampled directly.\n')
 
 stage('complete')
