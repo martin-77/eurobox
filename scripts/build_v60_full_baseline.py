@@ -251,17 +251,17 @@ NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
 LEAD_NUT = C.box(-8.0,-NUT_THREAD_LEN,-7.0,16.0,NUT_THREAD_LEN,14.0)
 LEAD_NUT = LEAD_NUT.fuse(C.box(-6.0,-11.0,7.0,12.0,8.0,6.0)).removeSplitter()
 LEAD_NUT = LEAD_NUT.cut(FEMALE_NEGY).removeSplitter()
-LEAD_NUT = LEAD_NUT.cut(cyl_x(
+LEAD_NUT = LEAD_NUT.cut(C.cyl_x(
     LEAD_NUT_PIN_HOLE_D/2.0,20.0,-10.0,
     LEAD_NUT_PIN_LOCAL_Y,LEAD_NUT_PIN_LOCAL_Z,
 )).removeSplitter()
 C.require_single(LEAD_NUT,'v50-style removable RH8x2 lead-nut cartridge')
 
 NUT_PIN = C.fuse_seq([
-    cyl_x(NUT_PIN_SHAFT_D/2.0,23.4,-12.0,0,0),
-    cyl_x(NUT_PIN_GROOVE_D/2.0,NUT_PIN_GROOVE_W,NUT_PIN_GROOVE_X0,0,0),
-    cyl_x(NUT_PIN_SHAFT_D/2.0,1.7,NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,0,0),
-    cyl_x(3.0,2.0,-14.0,0,0),
+    C.cyl_x(NUT_PIN_SHAFT_D/2.0,23.4,-12.0,0,0),
+    C.cyl_x(NUT_PIN_GROOVE_D/2.0,NUT_PIN_GROOVE_W,NUT_PIN_GROOVE_X0,0,0),
+    C.cyl_x(NUT_PIN_SHAFT_D/2.0,1.7,NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,0,0),
+    C.cyl_x(3.0,2.0,-14.0,0,0),
 ],'lead-nut-retaining-pin')
 NUT_PIN_CLIP = make_c_clip(3.2,1.25,NUT_PIN_CLIP_T,2.4)
 
@@ -283,13 +283,13 @@ for sx in SPINDLE_X:
     pin_y = NUT_Y0 + LEAD_NUT_PIN_LOCAL_Y
     pin_z = SPINDLE_Z + LEAD_NUT_PIN_LOCAL_Z
     RIGHT_FULL = RIGHT_FULL.cut(
-        cyl_x(LEAD_NUT_PIN_HOLE_D/2.0,24.0,sx-12.0,pin_y,pin_z)
+        C.cyl_x(LEAD_NUT_PIN_HOLE_D/2.0,24.0,sx-12.0,pin_y,pin_z)
     ).removeSplitter()
     RIGHT_FULL = RIGHT_FULL.cut(
-        cyl_x(3.55,3.0,sx-14.0,pin_y,pin_z)
+        C.cyl_x(3.55,3.0,sx-14.0,pin_y,pin_z)
     ).removeSplitter()
     RIGHT_FULL = RIGHT_FULL.cut(
-        cyl_x(4.10,4.0,sx+11.0,pin_y,pin_z)
+        C.cyl_x(4.10,4.0,sx+11.0,pin_y,pin_z)
     ).removeSplitter()
 
 C.require_single(RIGHT_FULL,'RIGHT full with v50 cartridge pockets and smooth spindle corridors')
