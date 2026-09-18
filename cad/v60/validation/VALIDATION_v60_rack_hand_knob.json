@@ -1,17 +1,17 @@
 {
   "component": "eurobox_v60_rack_hand_knob",
   "scope": "rack_hand_knob_only",
-  "design": "six_lobe_top_loaded_m4_nut",
+  "design": "shared_box_knob_scalloped_profile_top_loaded_m4_nut",
   "single_valid_solid": true,
   "support_free_flat_print": true,
   "bbox_mm": [
-    29.994,
-    27.32,
+    29.375,
+    29.375,
     7.0
   ],
-  "volume_mm3": 3803.232081,
-  "facets": 1264,
-  "lobes": 6,
+  "volume_mm3": 4194.938054,
+  "facets": 1168,
+  "scallops": 8,
   "outer_diameter_mm": 30.0,
   "knob_height_mm": 7.0,
   "measured_nut_af_mm": 6.81,
