@@ -742,98 +742,98 @@
         "open_mm": 0,
         "rotation_deg": 0.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917434
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": -40.65,
         "open_mm": 0.5,
-        "rotation_deg": 90.0,
+        "rotation_deg": -90.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.916408
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": -40.65,
         "open_mm": 1.0,
-        "rotation_deg": 180.0,
+        "rotation_deg": -180.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917438
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": -40.65,
         "open_mm": 2.0,
-        "rotation_deg": 360.0,
+        "rotation_deg": -360.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917454
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": -40.65,
         "open_mm": 3.0,
-        "rotation_deg": 540.0,
+        "rotation_deg": -540.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.91748
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": -40.65,
         "open_mm": 4.0,
-        "rotation_deg": 720.0,
+        "rotation_deg": -720.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917488
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": -40.65,
         "open_mm": 5.5,
-        "rotation_deg": 990.0,
+        "rotation_deg": -990.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.916387
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": 140.65,
         "open_mm": 0,
         "rotation_deg": 0.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917434
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": 140.65,
         "open_mm": 0.5,
-        "rotation_deg": 90.0,
+        "rotation_deg": -90.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.916408
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": 140.65,
         "open_mm": 1.0,
-        "rotation_deg": 180.0,
+        "rotation_deg": -180.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917438
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": 140.65,
         "open_mm": 2.0,
-        "rotation_deg": 360.0,
+        "rotation_deg": -360.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917454
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": 140.65,
         "open_mm": 3.0,
-        "rotation_deg": 540.0,
+        "rotation_deg": -540.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.91748
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": 140.65,
         "open_mm": 4.0,
-        "rotation_deg": 720.0,
+        "rotation_deg": -720.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.917488
+        "cartridge_common_mm3": 0.0
       },
       {
         "x_mm": 140.65,
         "open_mm": 5.5,
-        "rotation_deg": 990.0,
+        "rotation_deg": -990.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.916387
+        "cartridge_common_mm3": 0.0
       }
     ],
     "thread_brep_common_tolerance_mm3": 1.2,
@@ -842,6 +842,102 @@
       "5.5": 228.015
     },
     "effective_total_width_mm": 600.0,
+    "lead_screw": {
+      "construction": "single OpenSCAD CGAL union; exact final printable STL retained",
+      "main_thread": "true radial/axial RH8x2",
+      "outer_stud_thread": "true radial/axial RH8x2",
+      "journal_length_mm": 8.0,
+      "shoulder_length_mm": 1.8,
+      "main_thread_length_mm": 22.2,
+      "knob_hex_length_mm": 7.0,
+      "knob_thickness_mm": 7.0,
+      "outer_stud_length_mm": 7.0,
+      "mesh_topology": {
+        "triangles": 14022,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_edges": 0
+      },
+      "main_thread_samples": [
+        {
+          "turn": 2,
+          "angle_deg": 0.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 2,
+          "angle_deg": 90.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 2,
+          "angle_deg": 180.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 2,
+          "angle_deg": 270.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 0.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 90.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 180.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        },
+        {
+          "turn": 7,
+          "angle_deg": 270.0,
+          "ridge_center_solid": true,
+          "between_turns_solid": false
+        }
+      ]
+    },
+    "plate_spindle_retention": {
+      "mode": "inboard \u00d811 shoulder + outboard printable C-clip in \u00d812x2 counterbore",
+      "clip_export": "eurobox_v60_plate_retainer_clip",
+      "clip_count_final_assembly": 4,
+      "checks": [
+        {
+          "x_mm": -40.65,
+          "spindle_common_mm3": 0.0,
+          "plate_common_mm3": 0.0,
+          "counterbore_d_mm": 12.0,
+          "counterbore_depth_mm": 2.0,
+          "clip_outer_d_mm": 10.8,
+          "clip_inner_d_mm": 5.1,
+          "shaft_groove_d_mm": 5.0,
+          "shaft_groove_width_mm": 1.4
+        },
+        {
+          "x_mm": 140.65,
+          "spindle_common_mm3": 0.0,
+          "plate_common_mm3": 0.0,
+          "counterbore_d_mm": 12.0,
+          "counterbore_depth_mm": 2.0,
+          "clip_outer_d_mm": 10.8,
+          "clip_inner_d_mm": 5.1,
+          "shaft_groove_d_mm": 5.0,
+          "shaft_groove_width_mm": 1.4
+        }
+      ]
+    },
     "lead_nut_thread": {
       "standard": "RH8x2 true radial/axial printable matched pair",
       "pitch_mm": 2.0,
@@ -968,6 +1064,7 @@
     "final_assembly_replaceable_module_count": 0,
     "final_assembly_box_clamp_knob_count": 4,
     "final_assembly_knob_retainer_count": 4,
+    "final_assembly_plate_retainer_clip_count": 4,
     "final_assembly_installed_spindle_x_mm": [
       -40.65,
       140.65
@@ -980,11 +1077,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 4370246
+    "file_bytes": 3144078
   },
   "handed_stl_export": {
-    "right_sha256": "fe73fb64856bedc3ca70fff2b1584fbb0539f50040c7f33e20fbe0adf84c622e",
-    "left_sha256": "5181a1ab397349d65984b5a6343c2e3bc0228f5fb71d72b6a3256cccf45f63a6",
+    "right_sha256": "3271f18f9c39f3cfffa8fdf0d3373f88ed2b9c97468a8191f34c41c9653c5447",
+    "left_sha256": "5dac15346dd1279cdb8764f6ee4f224deeb583f286107c28cb2f3f7b4a1cd44e",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
