@@ -125,8 +125,17 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
-          rm -rf cad/v60 preview-stl/v60
           mkdir -p cad/v60/FCStd cad/v60/STEP cad/v60/STL cad/v60/assembly cad/v60/validation preview-stl/v60
+
+          # Component-owned outputs are deliberately preserved. In particular
+          # rack_hand_knob is built/published by its fast component workflow, so
+          # a long structural run from an older source commit must never roll it
+          # back when it eventually reaches this publish step.
+          find cad/v60/FCStd -maxdepth 1 -type f -name 'eurobox_v60_*.FCStd' ! -name 'eurobox_v60_rack_hand_knob.FCStd' -delete
+          find cad/v60/STEP -maxdepth 1 -type f -name 'eurobox_v60_*.step' ! -name 'eurobox_v60_rack_hand_knob.step' -delete
+          find cad/v60/STL -maxdepth 1 -type f -name 'eurobox_v60_*.stl' ! -name 'eurobox_v60_rack_hand_knob.stl' -delete
+          find preview-stl/v60 -maxdepth 1 -type f -name 'eurobox_v60_*.stl' ! -name 'eurobox_v60_rack_hand_knob.stl' -delete
+          rm -f cad/v60/validation/VALIDATION_v60.json cad/v60/validation/VALIDATION_v60_full.json cad/v60/validation/TIMING_v60.json
 
           for f in build_v60/eurobox_v60_*.FCStd; do
             base=$(basename "$f")
@@ -136,11 +145,23 @@ jobs:
               echo "::notice title=Assembly kept in workflow artifact::$base is ${mib} MiB (${bytes} bytes); not committing it to normal Git"
               continue
             fi
+            if [ "$base" = "eurobox_v60_rack_hand_knob.FCStd" ]; then
+              echo "Preserving component-owned $base"
+              continue
+            fi
             cp "$f" "cad/v60/FCStd/$base"
           done
-          cp build_v60/eurobox_v60_*.step cad/v60/STEP/
-          cp build_v60/eurobox_v60_*.stl cad/v60/STL/
-          cp build_v60/eurobox_v60_*.stl preview-stl/v60/
+          for f in build_v60/eurobox_v60_*.step; do
+            base=$(basename "$f")
+            [ "$base" = "eurobox_v60_rack_hand_knob.step" ] && continue
+            cp "$f" "cad/v60/STEP/$base"
+          done
+          for f in build_v60/eurobox_v60_*.stl; do
+            base=$(basename "$f")
+            [ "$base" = "eurobox_v60_rack_hand_knob.stl" ] && continue
+            cp "$f" "cad/v60/STL/$base"
+            cp "$f" "preview-stl/v60/$base"
+          done
           cp build_v60/eurobox_v60_preview.png cad/v60/assembly/eurobox_v60_preview.png
           cp build_v60/eurobox_v60_preview.png preview-stl/v60/eurobox_v60_preview.png
           cp build_v60/VALIDATION_v60.json build_v60/VALIDATION_v60_full.json build_v60/TIMING_v60.json cad/v60/validation/
@@ -154,12 +175,12 @@ jobs:
 
           - `FCStd/` — individual editable FreeCAD parts
           - `STEP/` — neutral CAD exports
-          - `STL/` — printable handed meshes and removable clamp hardware
+          - `STL/` — printable handed meshes and removable clamp hardware (the rack hand knob is component-owned and published by its fast workflow)
           - `assembly/` — installed-orientation PNG
           - `validation/` — machine-readable hard-check and timing reports
           - workflow artifact `eurobox-v60-complete` — complete generated FreeCAD assembly and all proof outputs
 
-          The box clamp uses the v50 direct architecture: the BASE is a smooth housing and the only working RH8x2 female thread is a removable lead-nut cartridge retained by cross-pin and clip. There is no intermediate clamp cassette or later front rebuild. The rack closure uses one final matched 12x2 service-retainer pair. Its complete screw-major envelope must be open at the real BASE surface, and CI inserts the actual retainer from free space before accepting the build.
+          The box clamp uses the v50 direct architecture: the BASE is a smooth housing and the only working RH8x2 female thread is a removable lead-nut cartridge retained by cross-pin and clip. There is no intermediate clamp cassette or later front rebuild. The rack closure uses one final matched 12x3 service-retainer pair. Its complete screw-major envelope must be open at the real BASE surface, and CI inserts the actual retainer from free space before accepting the build.
 
           `validation/TIMING_v60.json` records measured stage/operation durations from the GitHub runner so expensive OCC operations can be optimized from data rather than guesswork.
           EOF
