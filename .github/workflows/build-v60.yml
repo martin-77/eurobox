@@ -93,6 +93,7 @@ jobs:
             scripts/apply_v60_front_position_fix.py \
             scripts/apply_v60_final_assembly.py \
             scripts/apply_v60_rack_closure.py \
+            scripts/v60_rack_hand_knob.py \
             scripts/apply_v60_retainer_thread_final.py \
             scripts/check_v60_all_thread_access.py \
             scripts/check_v60_rack_closure_exports.py \

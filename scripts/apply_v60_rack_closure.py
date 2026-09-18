@@ -7,6 +7,7 @@ import Part
 
 import build_v60 as C
 import build_v60_full as F
+import v60_rack_hand_knob as K
 
 # ---------------------------------------------------------------------------
 # v60 rack closure: M4x30 hand screw + captive metal M4 nut in the fixed Upper.
@@ -80,15 +81,14 @@ LOWER_PAD_Z0 = -8.50
 LOWER_PAD_Z1 = -1.50
 LOWER_CLEAR_D = 5.0
 
-# Hand knob.  The M4 nut is inserted from the Upper-facing side and can be
-# glued together with the screw.  Glue is only anti-loosening: axial load is
-# screw head -> knob material -> metal nut -> M4 screw.
-KNOB_R = 13.0
-KNOB_H = 8.0
-KNOB_NUT_AF = 6.90
-KNOB_NUT_H = 3.60
-KNOB_NUT_Z0 = 3.20
-KNOB_BORE_D = 4.60
+# Hand-knob geometry lives in its own component module so knob-only work no
+# longer forces the BASE, rack-retainer and final assembly through the full CI.
+KNOB_R = K.KNOB_R
+KNOB_H = K.KNOB_H
+KNOB_NUT_AF = K.KNOB_NUT_AF
+KNOB_NUT_H = K.KNOB_NUT_H
+KNOB_NUT_Z0 = K.KNOB_NUT_Z0
+KNOB_BORE_D = K.KNOB_BORE_D
 
 
 def stage(msg):
@@ -207,12 +207,7 @@ LOWER = LOWER.cut(
 C.require_single(LOWER, 'raised 7mm Lower rack closure tongue')
 
 stage('build rack hand knob')
-RACK_HAND_KNOB = ngon_z(12, KNOB_R, KNOB_H)
-RACK_HAND_KNOB = RACK_HAND_KNOB.cut(
-    Part.makeCylinder(KNOB_BORE_D / 2.0, KNOB_NUT_Z0 + 0.2, App.Vector(0, 0, -0.1))
-).removeSplitter()
-knob_nut = F.hex_z(KNOB_NUT_AF, KNOB_NUT_H + 0.20, KNOB_NUT_Z0)
-RACK_HAND_KNOB = RACK_HAND_KNOB.cut(knob_nut).removeSplitter()
+RACK_HAND_KNOB = K.build_rack_hand_knob()
 C.require_single(RACK_HAND_KNOB, 'rack-hand-knob')
 
 stage('hard validation')
