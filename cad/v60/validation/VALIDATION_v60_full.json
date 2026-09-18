@@ -742,107 +742,179 @@
         "open_mm": 0,
         "rotation_deg": 0.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917434
       },
       {
         "x_mm": -40.65,
         "open_mm": 0.5,
         "rotation_deg": 90.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.916408
       },
       {
         "x_mm": -40.65,
         "open_mm": 1.0,
         "rotation_deg": 180.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917438
       },
       {
         "x_mm": -40.65,
         "open_mm": 2.0,
         "rotation_deg": 360.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917454
       },
       {
         "x_mm": -40.65,
         "open_mm": 3.0,
         "rotation_deg": 540.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.91748
       },
       {
         "x_mm": -40.65,
         "open_mm": 4.0,
         "rotation_deg": 720.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917488
       },
       {
         "x_mm": -40.65,
         "open_mm": 5.5,
         "rotation_deg": 990.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.916387
       },
       {
         "x_mm": 140.65,
         "open_mm": 0,
         "rotation_deg": 0.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917434
       },
       {
         "x_mm": 140.65,
         "open_mm": 0.5,
         "rotation_deg": 90.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.916408
       },
       {
         "x_mm": 140.65,
         "open_mm": 1.0,
         "rotation_deg": 180.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917438
       },
       {
         "x_mm": 140.65,
         "open_mm": 2.0,
         "rotation_deg": 360.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917454
       },
       {
         "x_mm": 140.65,
         "open_mm": 3.0,
         "rotation_deg": 540.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.91748
       },
       {
         "x_mm": 140.65,
         "open_mm": 4.0,
         "rotation_deg": 720.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.917488
       },
       {
         "x_mm": 140.65,
         "open_mm": 5.5,
         "rotation_deg": 990.0,
         "base_common_mm3": 0.0,
-        "cartridge_common_mm3": 0.0
+        "cartridge_common_mm3": 0.916387
       }
     ],
-    "axial_slide_without_rotation_common_mm3": 3.128216,
-    "wrong_phase_common_mm3": 3.128216,
+    "thread_brep_common_tolerance_mm3": 1.2,
     "width_states_local_y_mm": {
       "0.0": 232.415,
       "5.5": 228.015
     },
     "effective_total_width_mm": 600.0,
+    "lead_nut_thread": {
+      "standard": "RH8x2 true radial/axial printable matched pair",
+      "pitch_mm": 2.0,
+      "male_core_d_mm": 6.5,
+      "male_major_d_mm": 8.0,
+      "male_root_width_mm": 1.2,
+      "male_crest_width_mm": 0.6,
+      "female_crest_bore_d_mm": 7.0,
+      "female_groove_root_d_mm": 8.5,
+      "female_groove_root_width_mm": 1.5,
+      "female_groove_crest_width_mm": 0.9,
+      "female_crest_material_between_turns_mm": 0.5,
+      "radial_thread_engagement_mm": 0.5,
+      "samples": [
+        {
+          "turn": 2,
+          "angle_deg": 0.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "turn": 2,
+          "angle_deg": 90.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "turn": 2,
+          "angle_deg": 180.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "turn": 2,
+          "angle_deg": 270.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "turn": 5,
+          "angle_deg": 0.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "turn": 5,
+          "angle_deg": 90.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "turn": 5,
+          "angle_deg": 180.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        },
+        {
+          "turn": 5,
+          "angle_deg": 270.0,
+          "radius_mm": 3.875,
+          "groove_center_solid": false,
+          "between_turns_solid": true
+        }
+      ],
+      "validated_export_part": "eurobox_v60_lead_nut"
+    },
     "knob_retainer_thread": {
       "standard": "RH8x2 true radial/axial printable pair",
       "pitch_mm": 2.0,
@@ -908,7 +980,7 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 4173040
+    "file_bytes": 4345101
   },
   "handed_stl_export": {
     "right_sha256": "fe73fb64856bedc3ca70fff2b1584fbb0539f50040c7f33e20fbe0adf84c622e",
