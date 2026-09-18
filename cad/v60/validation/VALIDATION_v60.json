@@ -41,8 +41,8 @@
     ],
     "plate_sweep_xyz_mm": [
       [
-        -70.4,
-        70.4
+        -80.4,
+        80.4
       ],
       [
         214.315,
@@ -78,12 +78,12 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 522535.234,
-    "left_volume_mm3": 522535.234,
+    "right_volume_mm3": 518781.126,
+    "left_volume_mm3": 518781.126,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 2910.898,
+    "front_support_crosshead_common_mm3": 2318.098,
     "rear_support_backstop_common_mm3": 5251.2,
     "rear_support_crosshead_common_mm3": 3486.644,
     "holm_head_closures": [
