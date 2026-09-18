@@ -49,7 +49,6 @@ stop_timer('full.apply_rack_closure', _t)
 RIGHT_FULL = _rack_closure.RIGHT
 LEFT_FULL = _rack_closure.LEFT
 LOWER = _rack_closure.LOWER
-RACK_NUT_RETAINER = _rack_closure.RACK_NUT_RETAINER
 RACK_HAND_KNOB = _rack_closure.RACK_HAND_KNOB
 
 _t = start_timer('full.apply_final_retainer_thread')
