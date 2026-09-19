@@ -71,12 +71,12 @@
   "geometry": {
     "right_bbox_mm": [
       295.0,
-      247.215,
+      247.015,
       81.54
     ],
     "left_bbox_mm": [
       295.0,
-      247.215,
+      247.015,
       81.54
     ],
     "right_bounds_x_mm": [
@@ -87,14 +87,14 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 559538.345,
-    "left_volume_mm3": 559538.345,
+    "right_volume_mm3": 600138.743,
+    "left_volume_mm3": 600138.743,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 4148.228,
+    "front_support_crosshead_common_mm3": 5789.478,
     "rear_support_backstop_common_mm3": 5904.0,
-    "rear_support_crosshead_common_mm3": 4148.228,
+    "rear_support_crosshead_common_mm3": 5789.478,
     "inner_green_shelf_support": {
       "target": "central lower long-holm flange between twin webs",
       "print_orientation": "BASE upside-down; installed high-Z prints first",
@@ -172,23 +172,96 @@
       ]
     },
     "crosshead_print_support": {
-      "strategy": "remove central lower flange under moving plate; smooth DROP on both retained outer sections",
-      "central_lower_flange_common_mm3": 0.0,
+      "strategy": "continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP",
+      "crosshead_y_mm": [
+        202.1,
+        214.115
+      ],
+      "full_drop_material_fraction": 1.0,
       "checks": [
         {
-          "side": "left",
-          "drop_material_fraction": 1.0,
-          "x_mm": [
-            -96.0,
-            -44.05
+          "x_mm": -88.0,
+          "samples": [
+            {
+              "sample": "bottom",
+              "solid": true
+            },
+            {
+              "sample": "web",
+              "solid": true
+            },
+            {
+              "sample": "top",
+              "solid": true
+            }
           ]
         },
         {
-          "side": "right",
-          "drop_material_fraction": 1.0,
-          "x_mm": [
-            144.05,
-            196.0
+          "x_mm": -36.05,
+          "samples": [
+            {
+              "sample": "bottom",
+              "solid": true
+            },
+            {
+              "sample": "web",
+              "solid": true
+            },
+            {
+              "sample": "top",
+              "solid": true
+            }
+          ]
+        },
+        {
+          "x_mm": 50.0,
+          "samples": [
+            {
+              "sample": "bottom",
+              "solid": true
+            },
+            {
+              "sample": "web",
+              "solid": true
+            },
+            {
+              "sample": "top",
+              "solid": true
+            }
+          ]
+        },
+        {
+          "x_mm": 136.05,
+          "samples": [
+            {
+              "sample": "bottom",
+              "solid": true
+            },
+            {
+              "sample": "web",
+              "solid": true
+            },
+            {
+              "sample": "top",
+              "solid": true
+            }
+          ]
+        },
+        {
+          "x_mm": 188.0,
+          "samples": [
+            {
+              "sample": "bottom",
+              "solid": true
+            },
+            {
+              "sample": "web",
+              "solid": true
+            },
+            {
+              "sample": "top",
+              "solid": true
+            }
           ]
         }
       ]

@@ -5,12 +5,12 @@
   "base": {
     "right_bbox_mm": [
       295.0,
-      247.213,
+      247.013,
       81.54
     ],
     "left_bbox_mm": [
       295.0,
-      247.215,
+      247.015,
       81.54
     ],
     "mirror_delta_mm3": 0.0,
@@ -111,7 +111,7 @@
     "carrier_wall_material_checks": [
       {
         "spindle_x_mm": -28.65,
-        "probe_y_mm": 197.915,
+        "probe_y_mm": 213.615,
         "corridor_centre_void": true,
         "samples": [
           {
@@ -138,7 +138,7 @@
       },
       {
         "spindle_x_mm": 128.65,
-        "probe_y_mm": 197.915,
+        "probe_y_mm": 213.615,
         "corridor_centre_void": true,
         "samples": [
           {
@@ -1856,11 +1856,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3190908
+    "file_bytes": 3218335
   },
   "handed_stl_export": {
-    "right_sha256": "1f0eb46bee0d94ecea6089158d4cfc76869dc00112efd5a2a9af9a26067bf6f4",
-    "left_sha256": "7891b71a7c4e7cc8e8332bcb460e01ec7c566c243e37fda21ff9237b67d3bf09",
+    "right_sha256": "0b199f361ebb83c03df8912098b91943e81a520f25d241e0c6f175fb17ca05bc",
+    "left_sha256": "8603b57537be2e5e03ad5fdbaf58ecd152b39caab29028b2a7c19f6dca7b9fad",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -1871,7 +1871,7 @@
       -99.0,
       196.0,
       -18.998,
-      228.215,
+      228.015,
       -42.0,
       39.54
     ],
@@ -1879,17 +1879,17 @@
       -196.0,
       99.0,
       -18.998,
-      228.215,
+      228.015,
       -42.0,
       39.54
     ],
-    "right_facets": 37832,
-    "left_facets": 37832,
-    "right_volume_mm3": 667483.814279,
-    "left_volume_mm3": 667483.814279,
+    "right_facets": 38968,
+    "left_facets": 38968,
+    "right_volume_mm3": 668716.618846,
+    "left_volume_mm3": 668716.618846,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 193276.687351,
-    "left_area_mm2": 193276.687351,
+    "right_area_mm2": 195194.573336,
+    "left_area_mm2": 195194.573336,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
@@ -1904,15 +1904,15 @@
         "installed_x_mm": -80.0,
         "right_y_range_mm": [
           47.335,
-          283.55
+          283.35
         ],
         "left_y_range_mm": [
-          -283.55,
+          -283.35,
           -47.335
         ],
-        "right_outward_extent_mm": 228.215,
+        "right_outward_extent_mm": 228.015,
         "right_inward_extent_mm": 8.0,
-        "left_outward_extent_mm": 228.215,
+        "left_outward_extent_mm": 228.015,
         "left_inward_extent_mm": 8.0
       },
       {
@@ -1920,15 +1920,15 @@
         "installed_x_mm": 180.0,
         "right_y_range_mm": [
           47.335,
-          283.55
+          283.35
         ],
         "left_y_range_mm": [
-          -283.55,
+          -283.35,
           -47.335
         ],
-        "right_outward_extent_mm": 228.215,
+        "right_outward_extent_mm": 228.015,
         "right_inward_extent_mm": 8.0,
-        "left_outward_extent_mm": 228.215,
+        "left_outward_extent_mm": 228.015,
         "left_inward_extent_mm": 8.0
       }
     ]
