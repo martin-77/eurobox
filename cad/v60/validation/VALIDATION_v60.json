@@ -87,14 +87,90 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 538889.773,
-    "left_volume_mm3": 538889.773,
+    "right_volume_mm3": 538029.457,
+    "left_volume_mm3": 538029.457,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 3486.644,
-    "rear_support_backstop_common_mm3": 5251.2,
-    "rear_support_crosshead_common_mm3": 3486.644,
+    "front_support_crosshead_common_mm3": 3747.764,
+    "rear_support_backstop_common_mm3": 5904.0,
+    "rear_support_crosshead_common_mm3": 3747.764,
+    "inner_green_shelf_support": {
+      "target": "central lower long-holm flange between twin webs",
+      "print_orientation": "BASE upside-down; installed high-Z prints first",
+      "checks": [
+        {
+          "holm_x_mm": -80.0,
+          "sample_y_mm": 100.5,
+          "sample_z_mm": 14.14,
+          "inner_haunch_material_fractions": [
+            1.0,
+            1.0
+          ],
+          "above_flange_point_states": [
+            {
+              "x_offset_mm": -6.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": -3.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": 0.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": 3.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": 6.0,
+              "solid": true
+            }
+          ],
+          "web_overlap_mm": 0.2,
+          "flange_overlap_mm": 0.2,
+          "centre_overlap_each_side_mm": 0.2,
+          "rise_mm": 10.0
+        },
+        {
+          "holm_x_mm": 180.0,
+          "sample_y_mm": 100.5,
+          "sample_z_mm": 14.14,
+          "inner_haunch_material_fractions": [
+            1.0,
+            1.0
+          ],
+          "above_flange_point_states": [
+            {
+              "x_offset_mm": -6.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": -3.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": 0.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": 3.0,
+              "solid": true
+            },
+            {
+              "x_offset_mm": 6.0,
+              "solid": true
+            }
+          ],
+          "web_overlap_mm": 0.2,
+          "flange_overlap_mm": 0.2,
+          "centre_overlap_each_side_mm": 0.2,
+          "rise_mm": 10.0
+        }
+      ]
+    },
     "holm_head_closures": [
       {
         "x_mm": -80.0,
@@ -140,38 +216,22 @@
         "y0": 1.0,
         "y1": 1.0
       },
-      "green_shelf_drop": {
-        "target": "green lower carrier shelf between saddle web +Y face and outer +Y wall",
-        "print_orientation": "BASE upside-down; high installed Z prints first",
-        "root_side": "internal saddle web at Y=7",
-        "tip_side": "outer +Y side wall inner face at Y=22.8",
-        "y_mm": [
-          7.0,
-          22.8
-        ],
-        "shelf_z_mm": 14.04,
-        "root_z_mm": 29.84,
-        "span_mm": 15.8,
-        "centre_witness_material_fraction": 1.0,
-        "rack_closure_y_mm": 11.0,
-        "rack_closure_strategy": "later closure machining re-opens only the local screw/nut/retainer service volume"
-      },
       "saddle_radius_mm": 6.31,
-      "material_fraction": 0.999812,
+      "material_fraction": 0.999781,
       "rack_tube_common_mm3": 0.0,
-      "front_holm_common_mm3": 1100.8,
-      "rear_holm_common_mm3": 11852.742,
+      "front_holm_common_mm3": 1231.36,
+      "rear_holm_common_mm3": 10830.336,
       "clamp_overlaps": [
         {
           "station": "front",
-          "carrier_common_mm3": 10159.469
+          "carrier_common_mm3": 8634.869
         },
         {
           "station": "rear",
-          "carrier_common_mm3": 11032.4
+          "carrier_common_mm3": 9377.12
         }
       ],
-      "backstop_common_mm3": 29540.0
+      "backstop_common_mm3": 23299.0
     }
   },
   "failures": []
