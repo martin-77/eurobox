@@ -285,7 +285,7 @@ for q in gh['checks']:
     assert q['rise_mm'] == 10.0, q
 
 ch = core['geometry']['crosshead_print_support']
-assert ch['strategy'] == 'continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP', ch
+assert ch['strategy'] == 'continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP and closed X ends', ch
 assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
