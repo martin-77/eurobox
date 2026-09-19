@@ -87,8 +87,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 538029.457,
-    "left_volume_mm3": 538029.457,
+    "right_volume_mm3": 563758.115,
+    "left_volume_mm3": 563758.115,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -216,22 +216,38 @@
         "y0": 1.0,
         "y1": 1.0
       },
+      "green_shelf_drop": {
+        "target": "green lower carrier shelf between saddle web +Y face and outer +Y wall",
+        "print_orientation": "BASE upside-down; high installed Z prints first",
+        "root_side": "internal saddle web at Y=7",
+        "tip_side": "outer +Y side wall inner face at Y=22.8",
+        "y_mm": [
+          7.0,
+          22.8
+        ],
+        "shelf_z_mm": 14.04,
+        "root_z_mm": 29.84,
+        "span_mm": 15.8,
+        "centre_witness_material_fraction": 1.0,
+        "rack_closure_y_mm": 11.0,
+        "rack_closure_strategy": "later closure machining re-opens only the local screw/nut/retainer service volume"
+      },
       "saddle_radius_mm": 6.31,
-      "material_fraction": 0.999781,
+      "material_fraction": 0.999812,
       "rack_tube_common_mm3": 0.0,
       "front_holm_common_mm3": 1231.36,
-      "rear_holm_common_mm3": 10830.336,
+      "rear_holm_common_mm3": 13426.138,
       "clamp_overlaps": [
         {
           "station": "front",
-          "carrier_common_mm3": 8634.869
+          "carrier_common_mm3": 10159.469
         },
         {
           "station": "rear",
-          "carrier_common_mm3": 9377.12
+          "carrier_common_mm3": 11032.4
         }
       ],
-      "backstop_common_mm3": 23299.0
+      "backstop_common_mm3": 29540.0
     }
   },
   "failures": []
