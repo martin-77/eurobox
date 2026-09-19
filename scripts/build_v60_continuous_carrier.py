@@ -250,8 +250,11 @@ def make_backstop_base_drop():
     for i in range(n + 1):
         t = i / float(n)
         a = 0.5 * math.pi * t
+        # True quarter ellipse: horizontal radius follows cos(), vertical
+        # descent follows sin(). The previous cos/cos formulation collapsed
+        # every sample onto one straight line and produced a degenerate face.
         y = y_tip_outer + (y_root - y_tip_outer) * math.cos(a)
-        z = z_tip + (z_root - z_tip) * math.cos(a)
+        z = z_root - (z_root - z_tip) * math.sin(a)
         arc.append(App.Vector(0.0, y, z))
 
     # Closed filled profile: panel-side inner edge, broad rectangular root, then
