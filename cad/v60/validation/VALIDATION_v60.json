@@ -87,8 +87,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 602118.473,
-    "left_volume_mm3": 602118.473,
+    "right_volume_mm3": 604161.674,
+    "left_volume_mm3": 604161.674,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -351,7 +351,27 @@
           "carrier_common_mm3": 11032.4
         }
       ],
-      "backstop_common_mm3": 29540.0
+      "backstop_common_mm3": 29540.0,
+      "backstop_base_drop": {
+        "x_mm": [
+          133.0,
+          177.0
+        ],
+        "y_root_tip_mm": [
+          25.8,
+          11.8
+        ],
+        "z_root_tip_mm": [
+          18.0,
+          -18.0
+        ],
+        "x_edge_inset_mm": 3.0,
+        "material_fraction": 1.0,
+        "panel_common_mm3": 6.099,
+        "carrier_common_mm3": 575.473,
+        "rack_tube_common_mm3": 0.0,
+        "print_strategy": "smooth high-Z carrier root growing down/out toward lower stop panel; support-free upside-down"
+      }
     }
   },
   "failures": []
