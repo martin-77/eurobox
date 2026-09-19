@@ -74,12 +74,31 @@ for q in top_closure:
     assert len(q['samples']) == 9, q
     assert all(p['assembled_solid'] for p in q['samples']), q
     assert all(p['carrier_solid'] for p in q['samples']), q
+    assert q['pin_recess_open'] is True, q
+    assert 3.6 <= q['allowed_pin_recess_width_mm'] <= 4.0, q
 
 guide_clear = full['base']['obsolete_guide_clearance_checks']
 assert len(guide_clear) == 2, guide_clear
 for q in guide_clear:
     assert len(q['samples']) == 2, q
     assert all(not p['solid'] for p in q['samples']), q
+
+pin_cradles = full['base']['lead_nut_pin_wall_checks']
+assert len(pin_cradles) == 2, pin_cradles
+for q in pin_cradles:
+    assert q['mode'] == 'top-open U-cradle', q
+    assert len(q['samples']) == 10, q
+    for p in q['samples']:
+        assert p['solid'] == p['expected_solid'], p
+
+pin_drop = full['base']['lead_nut_pin_top_insertion']
+assert len(pin_drop) == 2, pin_drop
+assert all(abs(q['pin_axis_z_mm'] - 34.54) <= 1e-9 for q in pin_drop), pin_drop
+for q in pin_drop:
+    assert len(q['path']) == 5, q
+    assert all(p['base_common_mm3'] <= 0.0001 for p in q['path']), q
+    assert all(p['lead_nut_common_mm3'] <= 0.0001 for p in q['path']), q
+
 assert box['final_assembly_replaceable_module_count'] == 0, box
 assert box['final_assembly_contains_separate_lead_nut_hardware'] is True, box
 assert box['final_assembly_lead_nut_cartridge_count'] == 4, box
@@ -126,6 +145,11 @@ assert ms['order'] == [
 ], ms
 assert len(ms['lead_nut_top_insertion']) == 10, ms
 assert all(q['base_common_mm3'] <= 0.0001 for q in ms['lead_nut_top_insertion']), ms
+assert len(ms['lead_nut_pin_top_insertion']) == 2, ms
+for q in ms['lead_nut_pin_top_insertion']:
+    assert len(q['path']) == 5, q
+    assert all(p['base_common_mm3'] <= 0.0001 for p in q['path']), q
+    assert all(p['lead_nut_common_mm3'] <= 0.0001 for p in q['path']), q
 assert len(ms['threaded_plate_approach']) == 10, ms
 assert all(q['plate_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
 assert all(q['spindle_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
