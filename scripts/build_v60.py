@@ -115,24 +115,22 @@ INDX_X_MAX = 298.0
 INDX_Y_MAX = 275.0
 V60_X_TARGET_MAX = 296.0
 
-# Preserve the original crosshead depth, but move the whole beam rearward until
-# its front face is exactly on the -Y boundary of the plate clearance envelope.
-# Physical plate-to-crosshead clearance at full 5.5 mm opening is therefore
-# 0.4 mm.  The beam can remain continuous over its full X span.
-CROSSHEAD_DEPTH_Y = ARM_HEAD_FACE_Y - 216.0
-# _crosshead_outer_front_drop() deliberately extends its printable tip by
-# CROSSHEAD_DROP_TIP_OVERLAP. Keep the beam itself that amount behind the
-# clearance boundary so even the support geometry stays outside plate travel.
-CROSSHEAD_Y1 = PLATE_SWEEP_Y0 - CROSSHEAD_DROP_TIP_OVERLAP
-CROSSHEAD_Y0 = CROSSHEAD_Y1 - CROSSHEAD_DEPTH_Y
-CROSSHEAD_WEB_Y = 4.5
-
 # In inverted print orientation the installed-high top flange prints first.
 # A continuous smooth DROP from the rear web supports the full lower flange;
 # there is no longer any reason to delete the middle of the beam.
 CROSSHEAD_DROP_WEB_OVERLAP = 0.20
 CROSSHEAD_DROP_FLANGE_OVERLAP = 0.20
 CROSSHEAD_DROP_TIP_OVERLAP = 0.20
+
+# Preserve the original crosshead depth, but move the whole beam rearward from
+# the plate clearance envelope. _crosshead_outer_front_drop() deliberately
+# extends its printable tip by 0.20 mm, so the beam face sits that amount
+# farther back. Physical plate-to-DROP clearance at full opening remains the
+# intended 0.40 mm, while the beam flange itself has 0.60 mm.
+CROSSHEAD_DEPTH_Y = ARM_HEAD_FACE_Y - 216.0
+CROSSHEAD_Y1 = PLATE_SWEEP_Y0 - CROSSHEAD_DROP_TIP_OVERLAP
+CROSSHEAD_Y0 = CROSSHEAD_Y1 - CROSSHEAD_DEPTH_Y
+CROSSHEAD_WEB_Y = 4.5
 
 
 def box(x0, y0, z0, dx, dy, dz):
