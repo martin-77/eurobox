@@ -53,9 +53,10 @@ REAR_SUPPORT_X = 180.0
 # printable BASE envelope.
 BOX_CLAMP_BOSS_HALF_X = 11.35
 # This clearance must account for the actual Ø30 hand knob, not only the
-# 22.7 mm fixed station boss. 16 mm boss-to-holm clearance leaves 12.35 mm
-# radial knob-to-holm clearance at the installed stations.
-BOX_CLAMP_HOLM_CLEAR_X = 16.0
+# 22.7 mm fixed station boss. Move each screw station 8 mm farther from its
+# nearest load-bearing holm: 24 mm boss-to-holm leaves 20.35 mm real
+# knob-to-holm clearance.
+BOX_CLAMP_HOLM_CLEAR_X = 24.0
 BOX_CLAMP_EDGE_MARGIN_X = 15.0
 FRONT_HOLM_INNER_X = FRONT_CLAMP_X + ARM_W/2.0
 REAR_HOLM_INNER_X = REAR_SUPPORT_X - ARM_W/2.0
@@ -108,8 +109,8 @@ PLATE_SWEEP_X0 = BOX_CLAMP_PLATE_X0 - 0.4
 PLATE_SWEEP_X1 = BOX_CLAMP_PLATE_X1 + 0.4
 PLATE_SWEEP_Y0 = (BOX_RIM_INNER_Y - 8.0) - 5.5 - 0.4
 PLATE_SWEEP_Y1 = (BOX_RIM_INNER_Y - 8.0) + 8.0 + 0.4
-PLATE_SWEEP_Z0 = 16.0 - 0.4
-PLATE_SWEEP_Z1 = 46.0 + 0.4
+PLATE_SWEEP_Z0 = ARM_BOTTOM_Z - 0.4
+PLATE_SWEEP_Z1 = BOX_SUPPORT_Z + 0.4
 
 INDX_X_MAX = 298.0
 INDX_Y_MAX = 275.0
