@@ -68,7 +68,6 @@ BACKSTOP_DROP_X0 = C.BACKSTOP_X0 + BACKSTOP_DROP_X_INSET
 BACKSTOP_DROP_X1 = C.BACKSTOP_X0 + C.BACKSTOP_W - BACKSTOP_DROP_X_INSET
 BACKSTOP_DROP_CARRIER_Y = CARRIER_Y1 - 0.20
 BACKSTOP_DROP_ROOT_Z = 18.0
-BACKSTOP_DROP_ROOT_LOW_Z = 14.0
 
 # The inner edge deliberately penetrates 0.60 mm into the 4 mm stop panel
 # (panel Y=8..12). The outer elliptic edge tapers to 1.20 mm total width at the
@@ -231,7 +230,6 @@ def make_backstop_base_drop():
     # lower installed Z, so every new layer is supported by the layer above it.
     y_root = BACKSTOP_DROP_CARRIER_Y
     z_root = BACKSTOP_DROP_ROOT_Z
-    z_root_low = BACKSTOP_DROP_ROOT_LOW_Z
     y_inner = BACKSTOP_DROP_INNER_Y
     y_tip_outer = BACKSTOP_DROP_TIP_OUTER_Y
     z_tip = BACKSTOP_DROP_TIP_Z
@@ -257,12 +255,16 @@ def make_backstop_base_drop():
         z = z_root - (z_root - z_tip) * math.sin(a)
         arc.append(App.Vector(0.0, y, z))
 
-    # Closed filled profile: panel-side inner edge, broad rectangular root, then
-    # the elliptic outer edge back to the tapered toe.
+    # Closed filled profile with no self-intersection:
+    #   1. straight inner edge up the stop,
+    #   2. broad horizontal root into the carrier,
+    #   3. true quarter-ellipse back down to the tapered toe.
+    #
+    # Do NOT add a second lower root shelf: it would cross the ellipse as soon
+    # as the outer curve descends below that shelf.
     yz = [
         App.Vector(0.0, y_inner, z_tip),
-        App.Vector(0.0, y_inner, z_root_low),
-        App.Vector(0.0, y_root, z_root_low),
+        App.Vector(0.0, y_inner, z_root),
         App.Vector(0.0, y_root, z_root),
     ] + arc[1:] + [
         App.Vector(0.0, y_inner, z_tip),
@@ -535,7 +537,6 @@ report['geometry']['continuous_carrier'] = {
         'profile': 'filled_quarter_ellipse_tapered_to_stop_bottom',
         'y_root_tip_mm': [round(BACKSTOP_DROP_CARRIER_Y,3), round(BACKSTOP_DROP_TIP_OUTER_Y,3)],
         'z_root_tip_mm': [round(BACKSTOP_DROP_ROOT_Z,3), round(BACKSTOP_DROP_TIP_Z,3)],
-        'root_low_z_mm': round(BACKSTOP_DROP_ROOT_LOW_Z,3),
         'inner_panel_y_mm': round(BACKSTOP_DROP_INNER_Y,3),
         'tip_width_mm': round(BACKSTOP_DROP_TIP_WIDTH,3),
         'x_edge_inset_mm': BACKSTOP_DROP_X_INSET,
