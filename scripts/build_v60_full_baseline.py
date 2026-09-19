@@ -537,16 +537,19 @@ def make_cage_reinforcement():
     cross_web_z0 = FINAL_DECK_Z0 + C.FLANGE_T
     cross_web_z1 = PRINT_BASE_PLANE_Z - C.FLANGE_T
     # The top-open pin recesses necessarily nibble the station-side ends of the
-    # upper transverse flange. Add a real 5 mm rearward top backstrap, outside
-    # the pin service Y-zone, and fuse it into the top flange. This restores
-    # section area instead of relaxing the structural validation threshold.
+    # upper transverse flange. Add a real 12 mm rearward top backstrap, fully
+    # behind the pin service Y-zone, and fuse it into the top flange. The first
+    # 5 mm version still left only 98.894 % of the declared cross-top load path;
+    # 12 mm restores real section area with >99 % reserve without relaxing the
+    # structural validation threshold.
+    CROSS_TOP_BACKSTRAP_DEPTH = 12.0
     cross_top_main = C.box(
         cross_x0,cross_y0,PRINT_BASE_PLANE_Z-C.FLANGE_T,
         cross_x1-cross_x0,cross_y1-cross_y0,C.FLANGE_T,
     )
     cross_top_backstrap = C.box(
-        cross_x0,cross_y0-5.0,PRINT_BASE_PLANE_Z-C.FLANGE_T,
-        cross_x1-cross_x0,5.35,C.FLANGE_T,
+        cross_x0,cross_y0-CROSS_TOP_BACKSTRAP_DEPTH,PRINT_BASE_PLANE_Z-C.FLANGE_T,
+        cross_x1-cross_x0,CROSS_TOP_BACKSTRAP_DEPTH+0.35,C.FLANGE_T,
     )
     cross_top = C.fuse_seq(
         [cross_top_main,cross_top_backstrap],
