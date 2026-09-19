@@ -326,6 +326,24 @@ def _crosshead_outer_front_drop(xa, xb, y0, y1):
     return q
 
 
+def make_core_rear_connectivity_bridge():
+    # build_v60.py is an intermediate structural stage that predates the
+    # canonical continuous-carrier fusion.  Once the unsupported central
+    # crosshead flange is removed, the rear long support would otherwise be a
+    # second solid until build_v60_continuous_carrier.py runs.
+    #
+    # Keep the intermediate core single without changing the final envelope:
+    # this bridge lies EXACTLY inside the future continuous-carrier TOP flange
+    # (Y=-8..26, Z=35.04..39.54).  It overlaps the existing clamp-frame bridge
+    # at X=60..63.3 and the rear long support at X=164..196.
+    x0 = 60.0
+    x1 = REAR_SUPPORT_X + ARM_W/2.0
+    return box(
+        x0, -8.0, ARM_TOP_Z-FLANGE_T,
+        x1-x0, 34.0, FLANGE_T,
+    )
+
+
 def make_crosshead():
     x0 = FRONT_CLAMP_X - ARM_W/2.0
     x1 = REAR_SUPPORT_X + ARM_W/2.0
@@ -376,6 +394,7 @@ def make_right_core():
     core = fuse_seq([
         make_upper_station(FRONT_CLAMP_X), make_clamp_frame_bridge(), make_upper_station(REAR_CLAMP_X),
         front_support, make_crosshead(), rear_support, make_backstop(),
+        make_core_rear_connectivity_bridge(),
     ], 'RIGHT structural core before plate clearance')
     # Exact final v50 strategy: retain the full lower crosshead flange and outer
     # guide structures, but remove only the real moving plate envelope.  This
