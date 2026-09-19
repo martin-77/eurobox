@@ -2244,11 +2244,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3206030
+    "file_bytes": 3207907
   },
   "handed_stl_export": {
-    "right_sha256": "6adb2667762846b6a56bb1ee4d5d30306c21efad1e5f6507114f6382ef24af43",
-    "left_sha256": "15e22ec0c444fa41a8a2a00356d326c2452491bf2305ff6f271160bb90f6d855",
+    "right_sha256": "500a730b486b2e0f5493e285a71f3818a5b792bac063905cbfbe16d11635c90d",
+    "left_sha256": "d0c3159d5018af502ed032f070195a6b4cfb14cf03b57e48789f0d74a029b1a5",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -2271,13 +2271,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 38410,
-    "left_facets": 38410,
-    "right_volume_mm3": 673354.407774,
-    "left_volume_mm3": 673354.407774,
+    "right_facets": 38494,
+    "left_facets": 38494,
+    "right_volume_mm3": 693512.599492,
+    "left_volume_mm3": 693512.599492,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 199298.064593,
-    "left_area_mm2": 199298.064593,
+    "right_area_mm2": 197628.665655,
+    "left_area_mm2": 197628.665655,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {

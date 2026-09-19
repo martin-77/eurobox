@@ -87,8 +87,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 604161.674,
-    "left_volume_mm3": 604161.674,
+    "right_volume_mm3": 624319.866,
+    "left_volume_mm3": 624319.866,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -357,20 +357,24 @@
           133.0,
           177.0
         ],
+        "profile": "filled_quarter_ellipse_tapered_to_stop_bottom",
         "y_root_tip_mm": [
           25.8,
-          11.8
+          12.6
         ],
         "z_root_tip_mm": [
           18.0,
-          -18.0
+          -41.8
         ],
+        "inner_panel_y_mm": 11.4,
+        "tip_width_mm": 1.2,
         "x_edge_inset_mm": 3.0,
+        "closed_solid": true,
         "material_fraction": 1.0,
-        "panel_common_mm3": 6.099,
-        "carrier_common_mm3": 575.473,
+        "panel_common_mm3": 1314.72,
+        "carrier_common_mm3": 5188.076,
         "rack_tube_common_mm3": 0.0,
-        "print_strategy": "smooth high-Z carrier root growing down/out toward lower stop panel; support-free upside-down"
+        "print_strategy": "filled elliptic crescent; broad high-Z carrier root tapering continuously to 1.2 mm toe at stop bottom; closed X sides; support-free upside-down"
       }
     }
   },
