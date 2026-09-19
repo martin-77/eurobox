@@ -1,5 +1,6 @@
 import json
 import os
+import math
 
 import FreeCAD as App
 import Part
