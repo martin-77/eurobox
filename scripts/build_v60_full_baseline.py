@@ -92,6 +92,12 @@ PRINT_FRAME_BOSS_Z1 = PRINT_BASE_PLANE_Z
 # 5.10 mm below it. Deriving the datum from the boss faces gives equal
 # 3.87 mm ligaments with the current 20.00..39.54 mm boss.
 SPINDLE_Z = (PRINT_FRAME_BOSS_Z0 + PRINT_FRAME_BOSS_Z1) / 2.0
+# Lead-nut lower lug is part of the structural Z layout because the station
+# floor must route BELOW its removable pocket. Keep the local cartridge datum
+# here rather than duplicating a magic -13 mm later in the hardware block.
+LEAD_NUT_LOWER_LUG_Z0 = -13.0
+LEAD_NUT_LOWER_LUG_Z1 = -7.0
+LEAD_NUT_POCKET_FLOOR_Z = SPINDLE_Z + LEAD_NUT_LOWER_LUG_Z0
 PRINT_FRAME_TIE_T = 6.0
 FINAL_DECK_Z0 = C.ARM_BOTTOM_Z
 FINAL_DECK_Z1 = PRINT_GUIDE_Z0
@@ -105,6 +111,7 @@ CAGE_STRUCT_Y1 = min(CAGE_Y1, C.PLATE_SWEEP_Y0 - 0.20)
 CAGE_CROSS_OVERLAP_X = 0.35
 STATION_FLOOR_Y1 = min(PRINT_GUIDE_Y0, C.PLATE_SWEEP_Y0 - 0.10)
 STATION_FLOOR_BOSS_OVERLAP_Z = 0.35
+STATION_FLOOR_POCKET_CLEAR_Z = 0.20
 
 LOWER_SADDLE_R = 6.15
 
@@ -441,14 +448,18 @@ PLATE_CLIP=make_c_clip(5.4,2.55,1.4,3.8)
 
 def make_station_floor_gusset(sx):
     # A broad local wedge takes spindle/cartridge load down into the low deck in
-    # front of each cage.  Its top remains below the cartridge pocket, and its
-    # nose remains below the moving clamp plate.
+    # front of each cage. The screw axis is now centred in the fixed boss, so the
+    # removable lead-nut pocket sits 1.23 mm lower than before. Route the REAL
+    # gusset top below that pocket instead of letting pocket machining carve a
+    # notch out of an obsolete higher wedge.
     x0 = sx - C.BOX_CLAMP_BOSS_HALF_X - CAGE_CROSS_OVERLAP_X
     x1 = sx + C.BOX_CLAMP_BOSS_HALF_X + CAGE_CROSS_OVERLAP_X
+    pocket_under_z = LEAD_NUT_POCKET_FLOOR_Z - STATION_FLOOR_POCKET_CLEAR_Z
     yz = [
         App.Vector(0.0,CAGE_Y0,FINAL_DECK_Z0),
         App.Vector(0.0,STATION_FLOOR_Y1,FINAL_DECK_Z0),
         App.Vector(0.0,STATION_FLOOR_Y1,FINAL_DECK_Z1),
+        App.Vector(0.0,NUT_THREAD_Y0,pocket_under_z),
         App.Vector(0.0,CAGE_Y0,PRINT_FRAME_BOSS_Z0+STATION_FLOOR_BOSS_OVERLAP_Z),
     ]
     face = Part.Face(Part.makePolygon(yz+[yz[0]]))
@@ -653,8 +664,6 @@ NUT_PIN_CLIP_POCKET_X0 = NUT_PIN_CLIP_X - NUT_PIN_SERVICE_CLEAR
 NUT_PIN_CLIP_POCKET_LEN = NUT_PIN_CLIP_T + 2.0*NUT_PIN_SERVICE_CLEAR
 LEAD_NUT_POCKET_X_CLEAR = 0.20
 LEAD_NUT_POCKET_FREE_Y = 0.35
-LEAD_NUT_LOWER_LUG_Z0 = -13.0
-LEAD_NUT_LOWER_LUG_Z1 = -7.0
 
 LEAD_NUT = C.box(-8.0,-NUT_THREAD_LEN,-7.0,16.0,NUT_THREAD_LEN,14.0)
 LEAD_NUT = LEAD_NUT.fuse(C.box(
