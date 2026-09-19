@@ -73,21 +73,13 @@ NUT_THREAD_Y0 = NUT_Y0 - NUT_THREAD_LEN
 CAGE_Y0 = PLATE_SPINDLE_Y - 37.535
 CAGE_Y1 = PLATE_SPINDLE_Y - 13.600
 WIDTH_RIM_CLEAR = 0.20
-PRINT_GUIDE_Y0 = CAGE_Y1 - 0.40
-PRINT_GUIDE_Y1 = C.BOX_RIM_INNER_Y - WIDTH_RIM_CLEAR
-PRINT_GUIDE_Z0 = 14.0
-GUIDE_RUNNING_CLEAR_X = 0.40
-GUIDE_T = 7.60
-GUIDE_LEFT_INNER_X = PLATE_X0 - GUIDE_RUNNING_CLEAR_X
-GUIDE_LEFT_OUTER_X = GUIDE_LEFT_INNER_X - GUIDE_T
-GUIDE_RIGHT_INNER_X = PLATE_X1 + GUIDE_RUNNING_CLEAR_X
-GUIDE_RIGHT_OUTER_X = GUIDE_RIGHT_INNER_X + GUIDE_T
+# The old v50-style side guides projected toward the clamp plate and are no
+# longer needed: the plate is constrained by its two captive lead screws.
+# Keep only the structural cage/front-deck datums.
+CAGE_FRONT_Y_DATUM = CAGE_Y1 - 0.40
+LOW_DECK_Z1 = 14.0
 STATION_TIE_OVERLAP_X = 0.35
-# Final v50 datum: the complete cage terminates on the box support plane.  The
-# first v60 rebuild incorrectly grew the guides/tie to Z=49.8 and changed the
-# front architecture substantially.
 PRINT_BASE_PLANE_Z = C.BOX_SUPPORT_Z
-PRINT_GUIDE_Z1 = PRINT_BASE_PLANE_Z
 PRINT_FRAME_BOSS_Z0 = 20.0
 PRINT_FRAME_BOSS_Z1 = PRINT_BASE_PLANE_Z
 # The visible/load-bearing carrier is 30 mm high: ARM_BOTTOM_Z=9.54 to
@@ -100,11 +92,13 @@ LEAD_NUT_BODY_Z0 = -7.0
 LEAD_NUT_BODY_Z1 = 7.0
 LEAD_NUT_UPPER_LUG_Z0 = 5.0
 LEAD_NUT_UPPER_LUG_Z1 = 11.0
-LEAD_NUT_POCKET_FLOOR_Z = SPINDLE_Z + LEAD_NUT_BODY_Z0
-PRINT_FRAME_TIE_T = 6.0
+LEAD_NUT_SEATED_FLOOR_Z = SPINDLE_Z + LEAD_NUT_BODY_Z0
+# Bottom-loaded cartridge: its upper lug seats against this closed roof.  The
+# roof is exactly the lug top, leaving a continuous 4.00 mm top skin.
+LEAD_NUT_POCKET_ROOF_Z = SPINDLE_Z + LEAD_NUT_UPPER_LUG_Z1
+LEAD_NUT_SERVICE_BOTTOM_Z = C.ARM_BOTTOM_Z - 0.50
 FINAL_DECK_Z0 = C.ARM_BOTTOM_Z
-FINAL_DECK_Z1 = PRINT_GUIDE_Z0
-GUIDE_STITCH_OVERLAP = 0.20
+FINAL_DECK_Z1 = LOW_DECK_Z1
 
 # Structural cage reinforcement.  The removable lead-nut cartridge remains the
 # wear part; these members reinforce only its fixed housing.  All reinforcement
@@ -112,7 +106,7 @@ GUIDE_STITCH_OVERLAP = 0.20
 # spindle travel and plate opening remain serviceable.
 CAGE_STRUCT_Y1 = min(CAGE_Y1, C.PLATE_SWEEP_Y0 - 0.20)
 CAGE_CROSS_OVERLAP_X = 0.35
-STATION_FLOOR_Y1 = min(PRINT_GUIDE_Y0, C.PLATE_SWEEP_Y0 - 0.10)
+STATION_FLOOR_Y1 = min(CAGE_FRONT_Y_DATUM, C.PLATE_SWEEP_Y0 - 0.10)
 STATION_FLOOR_BOSS_OVERLAP_Z = 0.35
 STATION_FLOOR_POCKET_CLEAR_Z = 0.20
 
@@ -449,20 +443,28 @@ PIN_CLIP=make_c_clip(4.2,1.65,1.5,3.0)
 PLATE_CLIP=make_c_clip(5.4,2.55,1.4,3.8)
 
 
-def make_station_floor_gusset(sx):
-    # A broad local wedge takes spindle/cartridge load down into the low deck in
-    # front of each cage. The screw axis is now centred in the fixed boss, so the
-    # removable lead-nut pocket sits 1.23 mm lower than before. Route the REAL
-    # gusset top below that pocket instead of letting pocket machining carve a
-    # notch out of an obsolete higher wedge.
-    x0 = sx - C.BOX_CLAMP_BOSS_HALF_X - CAGE_CROSS_OVERLAP_X
-    x1 = sx + C.BOX_CLAMP_BOSS_HALF_X + CAGE_CROSS_OVERLAP_X
-    pocket_under_z = LEAD_NUT_POCKET_FLOOR_Z - STATION_FLOOR_POCKET_CLEAR_Z
+def make_station_floor_side_gusset(sx, side):
+    # The lead-nut cartridge now enters from BELOW, so the centre of the old
+    # floor wedge must stay open. Preserve the load path as two real side
+    # gussets flanking the 16.4 mm service opening instead of letting pocket
+    # machining randomly carve the former full-width wedge.
+    outer_x0 = sx - C.BOX_CLAMP_BOSS_HALF_X - CAGE_CROSS_OVERLAP_X
+    outer_x1 = sx + C.BOX_CLAMP_BOSS_HALF_X + CAGE_CROSS_OVERLAP_X
+    pocket_x0 = sx - 8.0 - LEAD_NUT_POCKET_X_CLEAR
+    pocket_x1 = sx + 8.0 + LEAD_NUT_POCKET_X_CLEAR
+    if side < 0:
+        x0, x1 = outer_x0, pocket_x0
+    else:
+        x0, x1 = pocket_x1, outer_x1
+    if x1-x0 < 2.5:
+        raise RuntimeError(f'station side gusset too narrow at X={sx}, side={side}')
+
+    side_top_z = LEAD_NUT_SEATED_FLOOR_Z - STATION_FLOOR_POCKET_CLEAR_Z
     yz = [
         App.Vector(0.0,CAGE_Y0,FINAL_DECK_Z0),
         App.Vector(0.0,STATION_FLOOR_Y1,FINAL_DECK_Z0),
         App.Vector(0.0,STATION_FLOOR_Y1,FINAL_DECK_Z1),
-        App.Vector(0.0,NUT_THREAD_Y0,pocket_under_z),
+        App.Vector(0.0,NUT_THREAD_Y0,side_top_z),
         App.Vector(0.0,CAGE_Y0,PRINT_FRAME_BOSS_Z0+STATION_FLOOR_BOSS_OVERLAP_Z),
     ]
     face = Part.Face(Part.makePolygon(yz+[yz[0]]))
@@ -561,23 +563,18 @@ def make_cage_reinforcement():
         'cross_drop_front': cross[3],
         'cross_bottom_inner_drop_rear': cross[4],
         'cross_bottom_inner_drop_front': cross[5],
-        'station_floor_left': make_station_floor_gusset(left_sx),
-        'station_floor_right': make_station_floor_gusset(right_sx),
+        'station_floor_left_xneg': make_station_floor_side_gusset(left_sx,-1),
+        'station_floor_left_xpos': make_station_floor_side_gusset(left_sx,1),
+        'station_floor_right_xneg': make_station_floor_side_gusset(right_sx,-1),
+        'station_floor_right_xpos': make_station_floor_side_gusset(right_sx,1),
     }
     return probes
 
 
 def make_cage_structure():
-    parts=[
-        C.box(GUIDE_LEFT_OUTER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,
-              GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(GUIDE_RIGHT_INNER_X,PRINT_GUIDE_Y0,PRINT_GUIDE_Z0,
-              GUIDE_T,PRINT_GUIDE_Y1-PRINT_GUIDE_Y0,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(GUIDE_LEFT_OUTER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,
-              GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-        C.box(GUIDE_RIGHT_INNER_X,CAGE_Y0-0.10,PRINT_GUIDE_Z0,
-              GUIDE_T,PRINT_GUIDE_Y0-(CAGE_Y0-0.10)+0.35,PRINT_BASE_PLANE_Z-PRINT_GUIDE_Z0),
-    ]
+    # No projecting side-guide blocks. The two captive spindles locate the
+    # moving plate; the fixed cage contains only load-bearing station structure.
+    parts=[]
 
     for sx in SPINDLE_X:
         boss_x0 = sx - C.BOX_CLAMP_BOSS_HALF_X
@@ -690,22 +687,19 @@ NUT_PIN = C.fuse_seq([
 NUT_PIN_CLIP = make_c_clip(NUT_PIN_CLIP_OUTER_R,1.25,NUT_PIN_CLIP_T,2.4)
 
 for sx in SPINDLE_X:
-    # The cartridge must have deterministic datums BEFORE its retaining pin is
-    # inserted. Keep the inboard (-Y) face as the axial load stop and the lower
-    # face of the MAIN threaded body as the gravity Z seat. The upper lug is only
-    # for retention; the service mouth remains open through the carrier top.
-    # X keeps 0.20 mm per side so the RH8x2 axes cannot wander farther than
-    # their 0.25 mm radial thread clearance.
+    # The cartridge is inserted vertically from BELOW.  Its rear (-Y) face
+    # still bears on the same axial load stop, while the upper retaining lug
+    # seats against a CLOSED roof at Z=35.54.  This removes the two visible top
+    # holes without moving the RH8x2 axis or weakening the real front wall.
     pocket_x0 = sx - 8.0 - LEAD_NUT_POCKET_X_CLEAR
     pocket_y0 = NUT_THREAD_Y0
-    pocket_z0 = LEAD_NUT_POCKET_FLOOR_Z
     pocket = C.box(
         pocket_x0,
         pocket_y0,
-        pocket_z0,
+        LEAD_NUT_SERVICE_BOTTOM_Z,
         16.0 + 2.0*LEAD_NUT_POCKET_X_CLEAR,
         NUT_THREAD_LEN + LEAD_NUT_POCKET_FREE_Y,
-        (PRINT_BASE_PLANE_Z + 0.50) - pocket_z0,
+        LEAD_NUT_POCKET_ROOF_Z - LEAD_NUT_SERVICE_BOTTOM_Z,
     )
     RIGHT_FULL = RIGHT_FULL.cut(pocket).removeSplitter()
 
@@ -1111,8 +1105,11 @@ if min(plate_counterbore_ligaments['lower_ligament_mm'],plate_counterbore_ligame
 
 lead_nut_seat_checks=[]
 lead_nut_pin_wall_checks=[]
+lead_nut_top_skin_checks=[]
+obsolete_guide_clearance_checks=[]
 for sx in SPINDLE_X:
     nut_floor_z = SPINDLE_Z + LEAD_NUT.BoundBox.ZMin
+    nut_top_z = SPINDLE_Z + LEAD_NUT.BoundBox.ZMax
     nut_inboard_y = NUT_Y0 + LEAD_NUT.BoundBox.YMin
     pin_y = NUT_Y0 + LEAD_NUT_PIN_LOCAL_Y
     pin_z = SPINDLE_Z + LEAD_NUT_PIN_LOCAL_Z
@@ -1127,7 +1124,10 @@ for sx in SPINDLE_X:
         'spindle_x_mm':round(sx,3),
         'thread_axis_z_mm':round(SPINDLE_Z,3),
         'nut_floor_z_mm':round(nut_floor_z,3),
-        'pocket_floor_z_mm':round(LEAD_NUT_POCKET_FLOOR_Z,3),
+        'nut_top_z_mm':round(nut_top_z,3),
+        'pocket_roof_z_mm':round(LEAD_NUT_POCKET_ROOF_Z,3),
+        'top_skin_thickness_mm':round(PRINT_BASE_PLANE_Z-LEAD_NUT_POCKET_ROOF_Z,3),
+        'bottom_service_open_z_mm':round(LEAD_NUT_SERVICE_BOTTOM_Z,3),
         'nut_inboard_y_mm':round(nut_inboard_y,3),
         'pocket_inboard_stop_y_mm':round(NUT_THREAD_Y0,3),
         'pin_axis_y_mm':round(pin_y,3),
@@ -1136,8 +1136,10 @@ for sx in SPINDLE_X:
         'side_wall_thickness_mm':round(wall_thickness,3),
     })
 
-    if abs(nut_floor_z-LEAD_NUT_POCKET_FLOOR_Z)>1e-6:
-        fail(f'lead-nut Z seat does not match pocket floor at X={sx}')
+    if abs(nut_top_z-LEAD_NUT_POCKET_ROOF_Z)>1e-6:
+        fail(f'lead-nut upper lug does not seat on closed pocket roof at X={sx}')
+    if PRINT_BASE_PLANE_Z-LEAD_NUT_POCKET_ROOF_Z < 3.8:
+        fail(f'lead-nut closed top skin too thin at X={sx}')
     if abs(nut_inboard_y-NUT_THREAD_Y0)>1e-6:
         fail(f'lead-nut inboard Y datum does not match pocket stop at X={sx}')
     if pin_top_clearance < 2.0:
@@ -1164,6 +1166,42 @@ for sx in SPINDLE_X:
             if not solid:
                 fail(f'lead-nut pin lacks cage-wall material X={sx} wall={xoff:.3f} sample={label}')
     lead_nut_pin_wall_checks.append({'spindle_x_mm':round(sx,3),'samples':states})
+
+    # The former top-drop pocket was visibly open. Probe a 3x3 grid directly
+    # over each complete cartridge footprint in the FINAL BRep; every point
+    # 0.40 mm below the carrier top must now be solid.
+    top_states=[]
+    for xoff in (-6.0,0.0,6.0):
+        for yy in (NUT_THREAD_Y0+1.0,(NUT_THREAD_Y0+NUT_Y0)/2.0,NUT_Y0-0.5):
+            solid=bool(RIGHT_FULL.isInside(
+                App.Vector(sx+xoff,yy,PRINT_BASE_PLANE_Z-0.40),1e-5,False
+            ))
+            top_states.append({
+                'x_offset_mm':xoff,'y_mm':round(yy,3),'solid':solid
+            })
+            if not solid:
+                fail(f'lead-nut top skin still open X={sx+xoff:.3f} Y={yy:.3f}')
+    lead_nut_top_skin_checks.append({
+        'spindle_x_mm':round(sx,3),
+        'skin_thickness_mm':round(PRINT_BASE_PLANE_Z-LEAD_NUT_POCKET_ROOF_Z,3),
+        'samples':top_states,
+    })
+
+# The old plate guides are exactly the protruding blocks visible beside the
+# clamp stations. Their former forward volumes must now be empty.
+old_guide_t=7.60
+old_left_x=PLATE_X0-0.40-old_guide_t/2.0
+old_right_x=PLATE_X1+0.40+old_guide_t/2.0
+for label,xx in (('left',old_left_x),('right',old_right_x)):
+    states=[]
+    for yy in (CAGE_Y1+1.0,C.BOX_RIM_INNER_Y-1.0):
+        solid=bool(RIGHT_FULL.isInside(App.Vector(xx,yy,SPINDLE_Z),1e-5,False))
+        states.append({'y_mm':round(yy,3),'solid':solid})
+        if solid:
+            fail(f'obsolete {label} plate-guide protrusion still present at Y={yy:.3f}')
+    obsolete_guide_clearance_checks.append({
+        'side':label,'x_mm':round(xx,3),'samples':states
+    })
 
 if C.UPPER_PIVOT_W<16.0: fail('Upper central rack-pivot bearing is too narrow')
 if LOWER_FORK_EAR_T<4.2: fail('Replaceable Lower fork ears are too thin')
@@ -1272,16 +1310,17 @@ for sx in SPINDLE_X:
     if RIGHT_FULL.common(nut).Volume>1e-4:
         fail(f'v50 lead-nut cartridge collides with BASE pocket at X={sx}')
 
-    # Prove the real cartridge can be dropped into the real BASE from above.
-    for lift in (10.0,5.0,2.0,0.0):
+    # Prove the real cartridge can be inserted from the open underside and
+    # pushed straight up to its closed-roof datum before the cross-pin is fitted.
+    for dz in (-27.0,-20.0,-14.0,-8.0,-4.0,0.0):
         qnut=LEAD_NUT.copy()
-        qnut.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z+lift))
+        qnut.translate(App.Vector(sx,NUT_Y0,SPINDLE_Z+dz))
         cv=RIGHT_FULL.common(qnut).Volume
         cartridge_insertion.append({
-            'x_mm':sx,'lift_mm':lift,'base_common_mm3':round(cv,6),
+            'x_mm':sx,'z_offset_mm':dz,'base_common_mm3':round(cv,6),
         })
         if cv>1e-4:
-            fail(f'v50 lead-nut cartridge insertion blocked X={sx} lift={lift}: {cv:.6f} mm3')
+            fail(f'lead-nut bottom insertion blocked X={sx} dz={dz}: {cv:.6f} mm3')
     for d in (0,0.5,1.0,2.0,3.0,4.0,5.5):
         q=SPINDLE.copy()
         # The final spindle axis points toward -Y.  For this right-hand helix an
@@ -1411,7 +1450,7 @@ def local_y_extent(d):
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
-V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z,'carrier_spindle_ligaments':carrier_spindle_ligaments,'carrier_wall_material_checks':carrier_wall_material_checks,'plate_counterbore_ligaments':plate_counterbore_ligaments,'lead_nut_seat_checks':lead_nut_seat_checks,'lead_nut_pin_wall_checks':lead_nut_pin_wall_checks},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'knob_motion':knob_motion,'assembly_approach':assembly_approach,'thread_brep_common_tolerance_mm3':1.20,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z,'carrier_spindle_ligaments':carrier_spindle_ligaments,'carrier_wall_material_checks':carrier_wall_material_checks,'plate_counterbore_ligaments':plate_counterbore_ligaments,'lead_nut_seat_checks':lead_nut_seat_checks,'lead_nut_pin_wall_checks':lead_nut_pin_wall_checks,'lead_nut_top_skin_checks':lead_nut_top_skin_checks,'obsolete_guide_clearance_checks':obsolete_guide_clearance_checks},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'knob_motion':knob_motion,'assembly_approach':assembly_approach,'thread_brep_common_tolerance_mm3':1.20,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
 V['box_clamp']['lead_screw']={
     'construction':'single OpenSCAD CGAL union; exact final printable STL retained',
     'main_thread':'true radial/axial RH8x2',
@@ -1439,7 +1478,7 @@ V['box_clamp']['plate_spindle_retention']={
 }
 V['box_clamp']['mounting_sequence']={
     'order':[
-        'lead_nut_into_base',
+        'lead_nut_insert_from_bottom',
         'lead_nut_cross_pin',
         'lead_nut_pin_clip',
         'lead_screw_through_plate',
@@ -1448,7 +1487,7 @@ V['box_clamp']['mounting_sequence']={
         'knob_on_full_7mm_hex',
         'knob_retainer_nut_on_outer_RH8x2_stud',
     ],
-    'lead_nut_drop_in':cartridge_insertion,
+    'lead_nut_bottom_insertion':cartridge_insertion,
     'plate_clip_service_path':plate_retainer_clip_insertion,
     'threaded_plate_approach':assembly_approach,
     'operating_knob_clearance':knob_motion,

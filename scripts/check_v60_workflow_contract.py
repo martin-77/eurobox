@@ -63,8 +63,22 @@ assert all(q['knob_to_holm_clearance_mm'] >= 20.0 for q in station), station
 plate_lig = full['base']['plate_counterbore_ligaments']
 assert abs(plate_lig['lower_ligament_mm'] - plate_lig['upper_ligament_mm']) <= 1e-9, plate_lig
 assert plate_lig['lower_ligament_mm'] >= 9.0, plate_lig
-assert len(box['cartridge_insertion']) == 8, box
+assert len(box['cartridge_insertion']) == 12, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['cartridge_insertion']), box['cartridge_insertion']
+assert set(q['z_offset_mm'] for q in box['cartridge_insertion']) == {-27.0,-20.0,-14.0,-8.0,-4.0,0.0}, box['cartridge_insertion']
+
+top_skin = full['base']['lead_nut_top_skin_checks']
+assert len(top_skin) == 2, top_skin
+for q in top_skin:
+    assert q['skin_thickness_mm'] >= 3.8, q
+    assert len(q['samples']) == 9, q
+    assert all(p['solid'] for p in q['samples']), q
+
+guide_clear = full['base']['obsolete_guide_clearance_checks']
+assert len(guide_clear) == 2, guide_clear
+for q in guide_clear:
+    assert len(q['samples']) == 2, q
+    assert all(not p['solid'] for p in q['samples']), q
 assert box['final_assembly_replaceable_module_count'] == 0, box
 assert box['final_assembly_contains_separate_lead_nut_hardware'] is True, box
 assert box['final_assembly_lead_nut_cartridge_count'] == 4, box
@@ -100,7 +114,7 @@ assert all(q['plate_common_mm3'] <= 0.00001 for q in pr['clip_insertion_path']),
 
 ms = box['mounting_sequence']
 assert ms['order'] == [
-    'lead_nut_into_base',
+    'lead_nut_insert_from_bottom',
     'lead_nut_cross_pin',
     'lead_nut_pin_clip',
     'lead_screw_through_plate',
@@ -109,6 +123,8 @@ assert ms['order'] == [
     'knob_on_full_7mm_hex',
     'knob_retainer_nut_on_outer_RH8x2_stud',
 ], ms
+assert len(ms['lead_nut_bottom_insertion']) == 12, ms
+assert all(q['base_common_mm3'] <= 0.0001 for q in ms['lead_nut_bottom_insertion']), ms
 assert len(ms['threaded_plate_approach']) == 10, ms
 assert all(q['plate_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
 assert all(q['spindle_base_common_mm3'] <= 0.0001 for q in ms['threaded_plate_approach']), ms
