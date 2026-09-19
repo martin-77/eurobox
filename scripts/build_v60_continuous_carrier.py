@@ -214,35 +214,37 @@ def make_hanging_upper_station(xc):
 
 
 def make_backstop_base_drop():
-    # Smooth Y/Z haunch from the lower stop panel back into the carrier/base.
-    # In the prescribed upside-down print orientation, high installed Z prints
-    # first, so the section grows gradually toward the lower panel tip and stays
-    # self-supporting.
+    # Robust convex Y/Z haunch from the lower stop panel back into the carrier.
+    # Keep it deliberately simple: in upside-down print orientation the high-Z
+    # carrier root prints first and the diagonal expands gradually down/outward
+    # toward the stop panel without support.
     y_root = BACKSTOP_DROP_CARRIER_Y
     y_tip = BACKSTOP_DROP_PANEL_Y
     z_root = BACKSTOP_DROP_ROOT_Z
     z_tip = BACKSTOP_DROP_PANEL_Z
-    span_y = y_root - y_tip
-    if span_y <= 0:
+    if y_root <= y_tip:
         raise RuntimeError('backstop DROP has non-positive Y span')
 
-    curve = []
-    for i in range(19):
-        t = i / 18.0
-        # t=0 at carrier/root, t=1 at panel/tip.
-        y = y_root - span_y * C._smoothstep(t)
-        z = z_root + (z_tip - z_root) * t
-        curve.append(App.Vector(0.0, y, z))
+    # Give both ends real overlap area instead of relying on a tangent/point
+    # contact. The 4-point convex section is OCC-stable and forms one valid
+    # printable solid.
+    root_y1 = y_root + BACKSTOP_DROP_CARRIER_OVERLAP_Y
+    root_y0 = y_root - 3.20
+    tip_y0 = y_tip - BACKSTOP_DROP_PANEL_OVERLAP_Y
+    tip_y1 = y_tip + 3.20
+    root_z0 = z_root - 4.00
+    tip_z1 = z_tip + 4.00
 
     yz = [
-        App.Vector(0.0, y_tip - BACKSTOP_DROP_PANEL_OVERLAP_Y, z_tip),
-        App.Vector(0.0, y_root + BACKSTOP_DROP_CARRIER_OVERLAP_Y, z_root),
-    ] + curve[1:-1] + [
-        App.Vector(0.0, y_tip - BACKSTOP_DROP_PANEL_OVERLAP_Y, z_tip),
+        App.Vector(0.0, root_y0, root_z0),
+        App.Vector(0.0, root_y1, z_root),
+        App.Vector(0.0, tip_y1, tip_z1),
+        App.Vector(0.0, tip_y0, z_tip),
     ]
-    face = Part.Face(Part.makePolygon(yz))
+    face = Part.Face(Part.makePolygon(yz + [yz[0]]))
     q = face.extrude(App.Vector(BACKSTOP_DROP_X1-BACKSTOP_DROP_X0,0,0))
     q.translate(App.Vector(BACKSTOP_DROP_X0,0,0))
+    q = q.removeSplitter()
     C.require_single(q, 'backstop-base-drop')
     return q
 
