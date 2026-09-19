@@ -40,6 +40,29 @@ assert box['plate_x_mm'] == core['datums']['box_clamp_plate_x_mm'], box
 assert box['plate_width_mm'] > 160.0, box
 assert box['plate_travel_mm'] == 5.5, box
 assert box['effective_total_width_mm'] <= 600.02, box
+assert abs(box['spindle_z_mm'] - 24.54) <= 1e-9, box
+
+lig = full['base']['carrier_spindle_ligaments']
+assert lig['carrier_z0_mm'] == 9.54, lig
+assert lig['carrier_z1_mm'] == 39.54, lig
+assert abs(lig['lower_ligament_mm'] - lig['upper_ligament_mm']) <= 1e-9, lig
+assert lig['lower_ligament_mm'] >= 9.0, lig
+
+wall = full['base']['carrier_wall_material_checks']
+assert len(wall) == 2, wall
+for q in wall:
+    assert q['corridor_centre_void'] is True, q
+    assert [p['sample'] for p in q['samples']] == ['lower_outer','lower_inner','upper_inner','upper_outer'], q
+    assert all(p['solid'] for p in q['samples']), q
+
+station = full['base']['holm_station_checks']
+assert len(station) == 2, station
+assert all(abs(q['boss_to_holm_gap_mm'] - 24.0) <= 1e-9 for q in station), station
+assert all(q['knob_to_holm_clearance_mm'] >= 20.0 for q in station), station
+
+plate_lig = full['base']['plate_counterbore_ligaments']
+assert abs(plate_lig['lower_ligament_mm'] - plate_lig['upper_ligament_mm']) <= 1e-9, plate_lig
+assert plate_lig['lower_ligament_mm'] >= 9.0, plate_lig
 assert len(box['cartridge_insertion']) == 8, box
 assert all(q['base_common_mm3'] <= 0.0001 for q in box['cartridge_insertion']), box['cartridge_insertion']
 assert box['final_assembly_replaceable_module_count'] == 0, box
@@ -205,10 +228,15 @@ for q in gh['checks']:
     assert q['rise_mm'] == 10.0, q
 
 ch = core['geometry']['crosshead_print_support']
-assert ch['strategy'] == 'remove central lower flange under moving plate; smooth DROP on both retained outer sections', ch
-assert ch['central_lower_flange_common_mm3'] <= 0.0001, ch
-assert len(ch['checks']) == 2, ch
-assert all(q['drop_material_fraction'] >= 0.995 for q in ch['checks']), ch
+assert ch['strategy'] == 'continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP', ch
+assert len(ch['crosshead_y_mm']) == 2, ch
+plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
+assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
+assert ch['full_drop_material_fraction'] >= 0.995, ch
+assert len(ch['checks']) == 5, ch
+for q in ch['checks']:
+    assert [p['sample'] for p in q['samples']] == ['bottom', 'web', 'top'], q
+    assert all(p['solid'] for p in q['samples']), q
 
 cage_checks = {q['name']: q for q in full['base']['cage_reinforcement_checks']}
 for name in ('cross_bottom_inner_drop_rear','cross_bottom_inner_drop_front'):
