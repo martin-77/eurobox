@@ -1064,10 +1064,11 @@ if abs(carrier_spindle_ligaments['lower_ligament_mm']-carrier_spindle_ligaments[
 if min(carrier_spindle_ligaments['lower_ligament_mm'],carrier_spindle_ligaments['upper_ligament_mm'])<9.0:
     fail('box-clamp spindle corridor leaves less than 9 mm real carrier ligament')
 
-# Confirm against the final BRep at a station wall immediately behind the
-# cartridge pocket: the corridor centre must be void while real material must
-# exist both near the outer carrier faces and immediately beyond the bore.
-carrier_wall_probe_y = NUT_THREAD_Y0 - 0.50
+# Confirm against the final BRep in the ACTUAL continuous crosshead front wall.
+# The lead-nut pocket ends behind this wall; only the local spindle corridor is
+# allowed through it.  This directly proves the visible crosshead has equal real
+# material above and below the screw bore.
+carrier_wall_probe_y = C.CROSSHEAD_Y1 - 0.50
 carrier_wall_material_checks=[]
 for sx in SPINDLE_X:
     lower_edge = SPINDLE_Z-SPINDLE_TUNNEL_R
