@@ -120,7 +120,10 @@ V60_X_TARGET_MAX = 296.0
 # Physical plate-to-crosshead clearance at full 5.5 mm opening is therefore
 # 0.4 mm.  The beam can remain continuous over its full X span.
 CROSSHEAD_DEPTH_Y = ARM_HEAD_FACE_Y - 216.0
-CROSSHEAD_Y1 = PLATE_SWEEP_Y0
+# _crosshead_outer_front_drop() deliberately extends its printable tip by
+# CROSSHEAD_DROP_TIP_OVERLAP. Keep the beam itself that amount behind the
+# clearance boundary so even the support geometry stays outside plate travel.
+CROSSHEAD_Y1 = PLATE_SWEEP_Y0 - CROSSHEAD_DROP_TIP_OVERLAP
 CROSSHEAD_Y0 = CROSSHEAD_Y1 - CROSSHEAD_DEPTH_Y
 CROSSHEAD_WEB_Y = 4.5
 
