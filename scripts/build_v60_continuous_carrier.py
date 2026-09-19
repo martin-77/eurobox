@@ -36,49 +36,6 @@ CARRIER_SIDE_T = C.WEB_T
 CARRIER_SIDE_Z0 = CARRIER_BOTTOM_Z1
 CARRIER_SIDE_Z1 = CARRIER_TOP_Z0
 
-# Support the ACTUAL green shelf in the closed carrier.
-#
-# In Y/Z cross-section the visible unsupported shelf is the lower flange from
-# the internal saddle web (+Y face at Y=7) to the outer +Y side wall inner face
-# at Y=22.8.  The BASE is printed upside-down, so installed high-Z material is
-# printed first.  The DROP must therefore start HIGH on the saddle web and grow
-# outward/down toward the green shelf/outer wall.  The previous experiment had
-# this ramp reversed and therefore put the useful mass on the wrong side.
-CARRIER_GREEN_SHELF_Y0 = CARRIER_WEB_Y1
-CARRIER_GREEN_SHELF_Y1 = CARRIER_Y1 - CARRIER_SIDE_T
-CARRIER_GREEN_SHELF_SPAN = CARRIER_GREEN_SHELF_Y1 - CARRIER_GREEN_SHELF_Y0
-CARRIER_GREEN_SHELF_Z = CARRIER_BOTTOM_Z1
-CARRIER_GREEN_DROP_ROOT_Z = CARRIER_GREEN_SHELF_Z + CARRIER_GREEN_SHELF_SPAN
-
-
-def make_green_shelf_drop():
-    # Same smooth self-supporting principle as the proven long-holm haunches,
-    # but rotated into the carrier cavity.  Root = internal saddle web;
-    # free/tip side = outer +Y wall.  The complete 15.8 mm shelf is supported.
-    y_root = CARRIER_GREEN_SHELF_Y0
-    y_tip = CARRIER_GREEN_SHELF_Y1
-    z_floor = CARRIER_GREEN_SHELF_Z
-    z_root = CARRIER_GREEN_DROP_ROOT_Z
-    span = y_tip - y_root
-
-    curve = []
-    for i in range(19):
-        t = i / 18.0
-        y = y_root + span * C._smoothstep(t)
-        z = z_root + (z_floor - z_root) * t
-        curve.append(App.Vector(0.0, y, z))
-
-    yz = [
-        App.Vector(0.0, y_root, z_floor),
-        App.Vector(0.0, y_root, z_root),
-    ] + curve[1:] + [App.Vector(0.0, y_root, z_floor)]
-
-    face = Part.Face(Part.makePolygon(yz))
-    q = face.extrude(App.Vector(CARRIER_X1 - CARRIER_X0, 0, 0))
-    q.translate(App.Vector(CARRIER_X0, 0, 0))
-    C.require_single(q, 'green-shelf-drop')
-    return q
-
 
 def make_continuous_carrier():
     dx = CARRIER_X1 - CARRIER_X0
@@ -115,10 +72,9 @@ def make_continuous_carrier():
         CARRIER_X0, CARRIER_Y1 - CARRIER_SIDE_T, CARRIER_SIDE_Z0,
         dx, CARRIER_SIDE_T, CARRIER_SIDE_Z1 - CARRIER_SIDE_Z0,
     )
-    green_drop = make_green_shelf_drop()
     q = C.fuse_seq(
-        [top, bottom, web, side_y0, side_y1, green_drop],
-        'continuous-rack-carrier-closed-box-with-green-shelf-drop',
+        [top, bottom, web, side_y0, side_y1],
+        'continuous-rack-carrier-closed-box',
     )
     C.require_single(q, 'continuous-rack-carrier-closed-box')
     return q
@@ -250,7 +206,6 @@ def build_clean_right():
 
 
 RIGHT, CARRIER, FRONT_LONG, REAR_LONG, FRONT_CLAMP, REAR_CLAMP, BACKSTOP = build_clean_right()
-GREEN_SHELF_DROP = make_green_shelf_drop()
 LEFT = C.mirror_x(RIGHT)
 
 # Make the clean architecture canonical for the full builder and all downstream
@@ -261,36 +216,6 @@ C.make_upper_station = make_hanging_upper_station
 C.make_backstop = make_hanging_backstop
 
 failures = []
-
-# Hard-check the exact requested geometry, not a similarly named flange.
-# Away from the two rack-closure stations the entire DROP must survive in the
-# final continuous-carrier core.  A centre witness is used because the later
-# rack-closure service machining is intentionally local at X=-80/+80.
-green_drop_center_probe = C.box(
-    40.0,
-    CARRIER_GREEN_SHELF_Y0,
-    CARRIER_GREEN_SHELF_Z,
-    20.0,
-    CARRIER_GREEN_SHELF_SPAN,
-    CARRIER_GREEN_SHELF_SPAN + 0.10,
-).common(GREEN_SHELF_DROP)
-green_drop_center_volume = green_drop_center_probe.Volume
-green_drop_center_common = RIGHT.common(green_drop_center_probe).Volume
-green_drop_center_fraction = (
-    green_drop_center_common / green_drop_center_volume
-    if green_drop_center_volume > 1e-9 else 0.0
-)
-if green_drop_center_fraction < 0.999:
-    failures.append(
-        f'green carrier shelf DROP missing at centre witness: '
-        f'{green_drop_center_fraction:.6f}'
-    )
-
-# At the actual rack hand-screw Y=11 the DROP is intentionally allowed to be
-# locally re-machined later by the closure/nut-retainer stack; it must not move
-# the rack screw axis or any hole datum.
-if abs(C.RACK_CLOSURE_Y - 11.0) > 1e-9:
-    failures.append('rack closure Y datum moved while adding green shelf DROP')
 
 # Main carrier must be fully incorporated and continuously tie all three hanging
 # functions plus both long box-support holms.
@@ -370,19 +295,6 @@ report['geometry']['continuous_carrier'] = {
     'side_wall_thickness_mm': CARRIER_SIDE_T,
     'side_wall_z_mm': [CARRIER_SIDE_Z0, CARRIER_SIDE_Z1],
     'side_wall_material_fractions': side_wall_fractions,
-    'green_shelf_drop': {
-        'target': 'green lower carrier shelf between saddle web +Y face and outer +Y wall',
-        'print_orientation': 'BASE upside-down; high installed Z prints first',
-        'root_side': 'internal saddle web at Y=7',
-        'tip_side': 'outer +Y side wall inner face at Y=22.8',
-        'y_mm': [round(CARRIER_GREEN_SHELF_Y0,3), round(CARRIER_GREEN_SHELF_Y1,3)],
-        'shelf_z_mm': round(CARRIER_GREEN_SHELF_Z,3),
-        'root_z_mm': round(CARRIER_GREEN_DROP_ROOT_Z,3),
-        'span_mm': round(CARRIER_GREEN_SHELF_SPAN,3),
-        'centre_witness_material_fraction': round(green_drop_center_fraction,6),
-        'rack_closure_y_mm': C.RACK_CLOSURE_Y,
-        'rack_closure_strategy': 'later closure machining re-opens only the local screw/nut/retainer service volume',
-    },
     'saddle_radius_mm': CARRIER_SADDLE_R,
     'material_fraction': round(carrier_fraction,6),
     'rack_tube_common_mm3': round(tube_common,9),

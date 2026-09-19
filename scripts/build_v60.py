@@ -148,6 +148,55 @@ def _smoothstep(t):
     return 3.0*t*t - 2.0*t*t*t
 
 
+INNER_HAUNCH_WEB_OVERLAP = 0.20
+INNER_HAUNCH_FLANGE_OVERLAP = 0.20
+INNER_HAUNCH_CENTER_OVERLAP = 0.20
+INNER_HAUNCH_RISE = 10.0
+
+
+def _inner_bottom_haunch(xc, y0, length, side):
+    # ACTUAL TARGET FROM THE SLICER VIEW:
+    # the green unsupported shelf is the central part of the LOWER long-holm
+    # flange between the two vertical webs.  The existing lower haunch is on
+    # the OUTER side of each web.  Mirror that same smooth DROP to the INNER
+    # side instead of modifying the carrier/crosshead/box-clamp plate.
+    #
+    # The BASE is printed essentially upside-down, so installed high-Z prints
+    # first.  This inner haunch therefore starts high on the inner web face and
+    # grows inward/down to the lower flange.  Small deliberate overlaps into the
+    # web, flange and centreline remove the face-only/tangent contact that could
+    # otherwise appear as a slicer gap.
+    web_center = xc + side*8.0
+    web_inner = web_center - side*(WEB_T/2.0)
+    root_x = web_inner + side*INNER_HAUNCH_WEB_OVERLAP
+    tip_x = xc - side*INNER_HAUNCH_CENTER_OVERLAP
+
+    flange_top = ARM_BOTTOM_Z + FLANGE_T
+    base_z = flange_top - INNER_HAUNCH_FLANGE_OVERLAP
+    tip_z = flange_top + INNER_HAUNCH_FLANGE_OVERLAP
+    root_z = flange_top + INNER_HAUNCH_RISE
+
+    curve = []
+    for i in range(19):
+        t = i/18.0
+        x = root_x + (tip_x-root_x)*_smoothstep(t)
+        z = root_z + (tip_z-root_z)*t
+        curve.append(App.Vector(x,y0,z))
+
+    pts = [
+        App.Vector(root_x,y0,base_z),
+        App.Vector(root_x,y0,root_z),
+    ] + curve[1:] + [
+        App.Vector(tip_x,y0,base_z),
+        App.Vector(root_x,y0,base_z),
+    ]
+    q = Part.Face(Part.makePolygon(pts)).extrude(
+        App.Vector(0,length,0)
+    ).removeSplitter()
+    require_single(q, f'inner-bottom-haunch@{xc}/{side}')
+    return q
+
+
 def _side_haunch(xc, y0, length, side, top):
     web_center = xc + side*8.0
     web_outer = web_center + side*(WEB_T/2.0)
@@ -176,7 +225,13 @@ def make_i_beam_y(xc, y0, y1):
         box(xc+8.0-WEB_T/2.0,y0,web_z,WEB_T,length,web_h),
     ]
     parts += [_side_haunch(xc,y0,length,side,top) for side in (-1,1) for top in (False,True)]
-    return fuse_seq(parts, f'i-beam@{xc}')
+    # The two missing inner lower DROPs meet with a 0.4 mm centre overlap and
+    # fuse 0.2 mm into both web and flange.  This is the green shelf shown in
+    # the slicer screenshots; do not substitute a carrier/crosshead reinforcement.
+    parts += [_inner_bottom_haunch(xc,y0,length,side) for side in (-1,1)]
+    q = fuse_seq(parts, f'i-beam@{xc}')
+    require_single(q, f'i-beam@{xc}-with-inner-bottom-haunches')
+    return q
 
 
 def make_holm_head_closure(xc):
@@ -313,6 +368,52 @@ front_support=make_long_support(FRONT_CLAMP_X,ARM_Y0); rear_support=make_long_su
 if rear_support.common(backstop).Volume<500.0: failures.append('Moved rear support lacks substantial backstop overlap')
 if rear_support.common(crosshead).Volume<300.0: failures.append('Moved rear support lacks substantial crosshead overlap')
 if front_support.common(crosshead).Volume<300.0: failures.append('Front support is not continuously tied into crosshead')
+
+# Hard-check the exact green shelf from the user's slicer view.  At Y=100 the
+# two long holms are clear of carrier/crosshead end effects.  Probe the added
+# haunch solids themselves and five points 0.10 mm ABOVE the old lower-flange
+# top; those points can only be solid if the new inner DROP actually bridges the
+# former unsupported shelf with no geometric/slicer gap.
+inner_green_shelf_checks=[]
+sample_y=100.0
+sample_z=ARM_BOTTOM_Z+FLANGE_T+0.10
+sample_offsets=(-6.0,-3.0,0.0,3.0,6.0)
+for xc,support in ((FRONT_CLAMP_X,front_support),(REAR_SUPPORT_X,rear_support)):
+    haunch_fracs=[]
+    for side in (-1,1):
+        h=_inner_bottom_haunch(xc,sample_y,1.0,side)
+        # compare against a one-mm longitudinal slice of the real support
+        ss=box(xc-ARM_W/2.0,sample_y,ARM_BOTTOM_Z,
+               ARM_W,1.0,ARM_H)
+        real_slice=support.common(ss)
+        hv=real_slice.common(h).Volume
+        frac=hv/h.Volume
+        haunch_fracs.append(round(frac,6))
+        if frac<0.995:
+            failures.append(
+                f'Long holm {xc} inner green-shelf DROP side={side} missing: {frac:.6f}'
+            )
+    point_states=[]
+    for off in sample_offsets:
+        solid=bool(support.isInside(
+            App.Vector(xc+off,sample_y+0.5,sample_z),1e-5,False
+        ))
+        point_states.append({'x_offset_mm':off,'solid':solid})
+        if not solid:
+            failures.append(
+                f'Long holm {xc} green shelf still unsupported/gapped at x-offset {off}'
+            )
+    inner_green_shelf_checks.append({
+        'holm_x_mm':xc,
+        'sample_y_mm':sample_y+0.5,
+        'sample_z_mm':round(sample_z,3),
+        'inner_haunch_material_fractions':haunch_fracs,
+        'above_flange_point_states':point_states,
+        'web_overlap_mm':INNER_HAUNCH_WEB_OVERLAP,
+        'flange_overlap_mm':INNER_HAUNCH_FLANGE_OVERLAP,
+        'centre_overlap_each_side_mm':INNER_HAUNCH_CENTER_OVERLAP,
+        'rise_mm':INNER_HAUNCH_RISE,
+    })
 panel_clearance=8.0-RACK_R
 if panel_clearance<1.5: failures.append('Rear stop contact wall is not safely outboard of rack tube')
 # The uncut support primitives must contain their cap and DROPs; the final core
@@ -327,7 +428,7 @@ for xc,support in ((FRONT_CLAMP_X,front_support),(REAR_SUPPORT_X,rear_support)):
 # The real final core must have the complete motion corridor free.
 plate_sweep_common = RIGHT.common(make_plate_sweep_clearance()).Volume
 if plate_sweep_common > 1e-4: failures.append(f'Final plate sweep corridor is blocked by {plate_sweep_common:.6f} mm3')
-V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'box_clamp_spindle_x_mm':[round(x,3) for x in BOX_CLAMP_SPINDLE_X],'box_clamp_plate_x_mm':[round(BOX_CLAMP_PLATE_X0,3),round(BOX_CLAMP_PLATE_X1,3)],'box_clamp_holm_clearance_mm':BOX_CLAMP_HOLM_CLEAR_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'holm_head_closures':drop_fractions},'failures':failures}
+V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'box_clamp_spindle_x_mm':[round(x,3) for x in BOX_CLAMP_SPINDLE_X],'box_clamp_plate_x_mm':[round(BOX_CLAMP_PLATE_X0,3),round(BOX_CLAMP_PLATE_X1,3)],'box_clamp_holm_clearance_mm':BOX_CLAMP_HOLM_CLEAR_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'inner_green_shelf_support':{'target':'central lower long-holm flange between twin webs','print_orientation':'BASE upside-down; installed high-Z prints first','checks':inner_green_shelf_checks},'holm_head_closures':drop_fractions},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 HARD CHECKS FAILED: '+' | '.join(failures))
