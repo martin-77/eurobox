@@ -210,6 +210,16 @@ assert 0.35 <= closure['entry_clear_depth_mm'] <= 0.60, closure
 assert closure['female_thread_start_recess_mm'] <= 0.60, closure
 assert len(closure['female_thread_removed_mm3']) == 2, closure
 assert all(v >= 8.0 for v in closure['female_thread_removed_mm3']), closure
+assert closure['lower_transition_shape'] == '45deg_conical_frustum', closure
+assert closure['lower_transition_z_mm'] == [11.04, 12.84], closure
+assert closure['lower_transition_d_mm'] == [6.9, 10.5], closure
+
+ltw = closure['lower_transition_witness']
+assert len(ltw) == 2, ltw
+for q in ltw:
+    assert len(q['samples']) == 3, q
+    assert all(not s['inner_probe_solid'] for s in q['samples']), q
+    assert all(s['outer_probe_solid'] for s in q['samples']), q
 
 p = closure['thread_printability']
 assert p['pitch_mm'] == 3.0, p
@@ -221,6 +231,13 @@ assert p['radial_major_clearance_mm'] >= 0.20, p
 assert p['axial_root_clearance_mm'] >= 0.25, p
 assert p['axial_crest_clearance_mm'] >= 0.25, p
 assert p['target_nozzle_mm'] == 0.4, p
+lt = p['lower_transition']
+assert lt['shape'] == '45deg_conical_frustum', lt
+assert lt['z_mm'] == [11.04, 12.84], lt
+assert lt['diameter_mm'] == [6.9, 10.5], lt
+assert abs(lt['height_mm'] - 1.8) <= 1e-9, lt
+assert abs(lt['radial_per_vertical_slope'] - 1.0) <= 1e-9, lt
+assert abs(lt['female_cylindrical_bore_starts_z_mm'] - 12.84) <= 1e-9, lt
 
 mouth = closure['female_helical_witness']
 assert len(mouth) == 2, mouth

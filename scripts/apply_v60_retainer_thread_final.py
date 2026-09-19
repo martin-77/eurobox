@@ -50,6 +50,21 @@ TOP_OVERRUN = PITCH
 # essentially at the top surface.
 ENTRY_CLEAR_R = MALE_MAJOR_R + 0.50
 ENTRY_CLEAR_DEPTH = 0.45
+
+# Print-friendly lower transition into the rack-retainer bore.
+# Instead of beginning the Ø10.5 mm female crest bore with a horizontal annular
+# shoulder, grow it outward at 45 degrees from the metal-nut pocket.  The lower
+# radius is exactly the 6.90 mm AF hex inradius, so the cone does not steal any
+# additional nut-floor/support geometry at its start.
+LOWER_TRANSITION_R0 = R.RACK_NUT_AF / 2.0
+LOWER_TRANSITION_R1 = FEMALE_CORE_R
+LOWER_TRANSITION_H = LOWER_TRANSITION_R1 - LOWER_TRANSITION_R0
+LOWER_TRANSITION_Z0 = R.RACK_NUT_Z0
+LOWER_TRANSITION_Z1 = LOWER_TRANSITION_Z0 + LOWER_TRANSITION_H
+LOWER_TRANSITION_SLOPE = (
+    (LOWER_TRANSITION_R1 - LOWER_TRANSITION_R0) / LOWER_TRANSITION_H
+)
+FEMALE_CORE_LOCAL_Z0 = LOWER_TRANSITION_Z1 - THREAD_Z0
 FN = 96
 SLICES_PER_PITCH = 48
 THREAD_PROFILE_GENERATOR = 'true_radial_axial_OCC_fused'
@@ -151,10 +166,19 @@ FEMALE_RIDGE_CUTTER = B.import_scad_shape(female_scad)
 C.require_single(FEMALE_RIDGE_CUTTER, 'final female true helical ridge')
 FEMALE_CORE_CUTTER = Part.makeCylinder(
     FEMALE_CORE_R,
-    THREAD_LEN + TOP_OVERRUN + 2.0*PITCH,
-    App.Vector(0,0,-PITCH),
+    THREAD_LEN + TOP_OVERRUN - FEMALE_CORE_LOCAL_Z0 + PITCH,
+    App.Vector(0,0,FEMALE_CORE_LOCAL_Z0),
 )
 C.require_single(FEMALE_CORE_CUTTER, 'final female smooth crest-bore cutter')
+
+LOWER_TRANSITION_CUTTER = Part.makeCone(
+    LOWER_TRANSITION_R0,
+    LOWER_TRANSITION_R1,
+    LOWER_TRANSITION_H,
+    App.Vector(0,0,LOWER_TRANSITION_Z0),
+    App.Vector(0,0,1),
+)
+C.require_single(LOWER_TRANSITION_CUTTER, 'rack-retainer lower 45deg transition cutter')
 C.require_single(MALE_THREAD, 'final retainer male 12x3')
 stop_timer('retainer.compile_matched_12x3_thread_pair', _t)
 
@@ -192,6 +216,13 @@ RIGHT = R.RIGHT
 # subtraction made OCC return an invalid BRep even though the geometry was
 # conceptually sound.
 for xc in C.CLAMP_X:
+    # First remove the 45-degree lower transition.  It starts at the metal nut
+    # pocket inradius and reaches the full female crest-bore radius without a
+    # printable horizontal ring shoulder.
+    transition_cutter = LOWER_TRANSITION_CUTTER.copy()
+    transition_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, 0.0))
+    RIGHT = RIGHT.cut(transition_cutter).removeSplitter()
+
     core_cutter = FEMALE_CORE_CUTTER.copy()
     core_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
     RIGHT = RIGHT.cut(core_cutter).removeSplitter()
@@ -340,6 +371,39 @@ for xc in C.CLAMP_X:
     if blocked:
         fail(f'female thread service mouth blocked at {blocked} sampled points X={xc}')
 
+# Prove the lower taper exists in the ACTUAL final BASE, not only as metadata.
+# Sample along +X, which is normal to one flat of the 6.90 mm AF nut hex.  At
+# mid-height the hex alone reaches only 3.45 mm, so an air point at the expected
+# conical radius can only come from the new transition.
+lower_transition_witness=[]
+for xc in C.CLAMP_X:
+    samples=[]
+    for frac in (0.25,0.50,0.75):
+        z = LOWER_TRANSITION_Z0 + frac*LOWER_TRANSITION_H
+        expected_r = LOWER_TRANSITION_R0 + frac*(LOWER_TRANSITION_R1-LOWER_TRANSITION_R0)
+        inner_r = expected_r - 0.18
+        outer_r = expected_r + 0.18
+        inner_solid = inside(RIGHT, xc+inner_r, C.RACK_CLOSURE_Y, z)
+        outer_solid = inside(RIGHT, xc+outer_r, C.RACK_CLOSURE_Y, z)
+        rec={
+            'fraction':frac,
+            'z_mm':round(z,3),
+            'expected_radius_mm':round(expected_r,3),
+            'inner_probe_radius_mm':round(inner_r,3),
+            'outer_probe_radius_mm':round(outer_r,3),
+            'inner_probe_solid':inner_solid,
+            'outer_probe_solid':outer_solid,
+        }
+        samples.append(rec)
+        if inner_solid:
+            fail(f'lower retainer transition missing inside cone X={xc} frac={frac}')
+        if not outer_solid:
+            fail(f'lower retainer transition overcuts outside cone X={xc} frac={frac}')
+    lower_transition_witness.append({
+        'x_mm':xc,
+        'samples':samples,
+    })
+
 # The M4 overrun bore through the printed retainer must remain open.
 if inside(RACK_NUT_RETAINER, 0.0, 0.0, THREAD_LEN/2.0):
     fail('retainer M4 overrun bore is blocked')
@@ -361,6 +425,15 @@ thread_printability = {
     'axial_crest_clearance_mm':round(FEMALE_CREST_W-MALE_CREST_W,3),
     'target_nozzle_mm':0.4,
     'approx_full_turns':round(THREAD_LEN/PITCH,3),
+    'lower_transition':{
+        'shape':'45deg_conical_frustum',
+        'z_mm':[round(LOWER_TRANSITION_Z0,3),round(LOWER_TRANSITION_Z1,3)],
+        'diameter_mm':[round(2.0*LOWER_TRANSITION_R0,3),round(2.0*LOWER_TRANSITION_R1,3)],
+        'height_mm':round(LOWER_TRANSITION_H,3),
+        'radial_per_vertical_slope':round(LOWER_TRANSITION_SLOPE,6),
+        'female_cylindrical_bore_starts_z_mm':round(LOWER_TRANSITION_Z1,3),
+        'purpose':'replace abrupt lower annular shoulder with support-friendly taper',
+    },
 }
 
 stop_timer(
@@ -408,6 +481,14 @@ validation['rack']['m4_closure']['female_thread_removed_mm3']=female_cut_volumes
 validation['rack']['m4_closure']['female_helical_witness']=female_witness
 validation['rack']['m4_closure']['female_thread_point_samples']=female_thread_point_samples
 validation['rack']['m4_closure']['male_thread_point_samples']=male_thread_point_samples
+validation['rack']['m4_closure']['lower_transition_witness']=lower_transition_witness
+validation['rack']['m4_closure']['lower_transition_shape']='45deg_conical_frustum'
+validation['rack']['m4_closure']['lower_transition_z_mm']=[
+    round(LOWER_TRANSITION_Z0,3),round(LOWER_TRANSITION_Z1,3)
+]
+validation['rack']['m4_closure']['lower_transition_d_mm']=[
+    round(2.0*LOWER_TRANSITION_R0,3),round(2.0*LOWER_TRANSITION_R1,3)
+]
 validation['rack']['m4_closure']['entry_clear_d_mm']=round(2.0*ENTRY_CLEAR_R,3)
 validation['rack']['m4_closure']['entry_clear_depth_mm']=ENTRY_CLEAR_DEPTH
 validation['rack']['m4_closure']['female_thread_start_recess_mm']=ENTRY_CLEAR_DEPTH
@@ -417,6 +498,6 @@ with open(validation_path,'w',encoding='utf-8') as fh:
     json.dump(validation,fh,indent=2)
 
 with open(os.path.join(C.OUT,'README_BUILD_v60_full.txt'),'a',encoding='utf-8') as fh:
-    fh.write('\nFinal retainer: coarse printable matched 12x3 true radial/axial pair for 0.4 mm FDM; 0.80 mm male crest, 0.90 mm female crest material between turns, about eight full turns over the available engagement, Ø13.0 mm shallow service lead-in; actual final BASE/retainer helical centres and half-pitch crests are point-sampled directly.\n')
+    fh.write('\nFinal retainer: coarse printable matched 12x3 true radial/axial pair for 0.4 mm FDM; 0.80 mm male crest, 0.90 mm female crest material between turns, about eight full turns over the available engagement, Ø13.0 mm shallow service lead-in; lower Ø6.9→Ø10.5 mm 45° conical transition removes the former horizontal print shoulder; actual final BASE/retainer helical centres, lower taper and half-pitch crests are point-sampled directly.\n')
 
 stage('complete')
