@@ -536,11 +536,27 @@ def make_cage_reinforcement():
     cross_y1 = CAGE_STRUCT_Y1
     cross_web_z0 = FINAL_DECK_Z0 + C.FLANGE_T
     cross_web_z1 = PRINT_BASE_PLANE_Z - C.FLANGE_T
+    # The top-open pin recesses necessarily nibble the station-side ends of the
+    # upper transverse flange. Add a real 5 mm rearward top backstrap, outside
+    # the pin service Y-zone, and fuse it into the top flange. This restores
+    # section area instead of relaxing the structural validation threshold.
+    cross_top_main = C.box(
+        cross_x0,cross_y0,PRINT_BASE_PLANE_Z-C.FLANGE_T,
+        cross_x1-cross_x0,cross_y1-cross_y0,C.FLANGE_T,
+    )
+    cross_top_backstrap = C.box(
+        cross_x0,cross_y0-5.0,PRINT_BASE_PLANE_Z-C.FLANGE_T,
+        cross_x1-cross_x0,5.35,C.FLANGE_T,
+    )
+    cross_top = C.fuse_seq(
+        [cross_top_main,cross_top_backstrap],
+        'cage-cross-top-with-rear-backstrap',
+    )
+
     cross = [
         C.box(cross_x0,cross_y0,FINAL_DECK_Z0,
               cross_x1-cross_x0,cross_y1-cross_y0,C.FLANGE_T),
-        C.box(cross_x0,cross_y0,PRINT_BASE_PLANE_Z-C.FLANGE_T,
-              cross_x1-cross_x0,cross_y1-cross_y0,C.FLANGE_T),
+        cross_top,
         C.box(cross_x0,cross_y0,cross_web_z0,
               cross_x1-cross_x0,C.WEB_T,cross_web_z1-cross_web_z0),
         C.box(cross_x0,cross_y1-C.WEB_T,cross_web_z0,
@@ -697,6 +713,9 @@ NUT_PIN = C.fuse_seq([
     C.cyl_x(NUT_PIN_SHAFT_D/2.0,1.7,NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,0,0),
     C.cyl_x(NUT_PIN_HEAD_R,NUT_PIN_HEAD_T,-14.0,0,0),
 ],'lead-nut-retaining-pin')
+NUT_PIN_SERVICE_X0 = NUT_PIN.BoundBox.XMin - 0.35
+NUT_PIN_SERVICE_X1 = NUT_PIN.BoundBox.XMax + 0.35
+NUT_PIN_SERVICE_XLEN = NUT_PIN_SERVICE_X1 - NUT_PIN_SERVICE_X0
 NUT_PIN_CLIP = make_c_clip(NUT_PIN_CLIP_OUTER_R,1.25,NUT_PIN_CLIP_T,2.4)
 
 for sx in SPINDLE_X:
@@ -735,13 +754,16 @@ for sx in SPINDLE_X:
     # position and a straight vertical throat opens that cradle to the top.
     # Head and clip ends receive matching top-open service recesses.
     shaft_cradle = C.cyl_x(
-        LEAD_NUT_PIN_HOLE_D/2.0,24.0,sx-12.0,pin_y,pin_z
+        LEAD_NUT_PIN_HOLE_D/2.0,
+        NUT_PIN_SERVICE_XLEN,
+        sx+NUT_PIN_SERVICE_X0,
+        pin_y,pin_z,
     )
     shaft_drop = C.box(
-        sx-12.0,
+        sx+NUT_PIN_SERVICE_X0,
         pin_y-LEAD_NUT_PIN_DROP_SLOT_W/2.0,
         pin_z,
-        24.0,
+        NUT_PIN_SERVICE_XLEN,
         LEAD_NUT_PIN_DROP_SLOT_W,
         PRINT_BASE_PLANE_Z-pin_z+0.50,
     )
@@ -1241,6 +1263,9 @@ for sx in SPINDLE_X:
     lead_nut_pin_top_insertion.append({
         'spindle_x_mm':round(sx,3),
         'pin_axis_z_mm':round(pin_z,3),
+        'service_x_local_mm':[
+            round(NUT_PIN_SERVICE_X0,3),round(NUT_PIN_SERVICE_X1,3)
+        ],
         'path':pin_path,
     })
 
