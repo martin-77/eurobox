@@ -286,13 +286,12 @@ def make_upper_station(xc):
     q = q.cut(cyl_x(UPPER_SADDLE_R,40.0,xc-20.0,0.0,0.0)).removeSplitter()
     q = q.cut(cyl_x(PIN_HOLE_D/2.0,40.0,xc-20.0,PIN_Y,PIN_Z)).removeSplitter()
     q = q.cut(Part.makeCylinder(RACK_M4_BASE_CLEAR_D/2.0,9.0,App.Vector(xc,RACK_CLOSURE_Y,-1.0),App.Vector(0,0,1))).removeSplitter()
+    # Keep only the historical internal hex clearance required by the baseline.
+    # The old 15.75 mm lateral nut-loading slots punched visible rectangular
+    # holes through the carrier ends. They are obsolete in production v60,
+    # where the rack closure is rebuilt with its own top-retained metal nut.
     nut = hex_z(RACK_M4_NUT_AF,RACK_M4_NUT_H,RACK_M4_NUT_Z0); nut.translate(App.Vector(xc,RACK_CLOSURE_Y,0.0))
     q = q.cut(nut).removeSplitter()
-    if xc > 0:
-        slot = box(xc+3.45,RACK_CLOSURE_Y-RACK_M4_NUT_AF/2.0,RACK_M4_NUT_Z0,15.75,RACK_M4_NUT_AF,RACK_M4_NUT_H)
-    else:
-        slot = box(xc-19.2,RACK_CLOSURE_Y-RACK_M4_NUT_AF/2.0,RACK_M4_NUT_Z0,15.75,RACK_M4_NUT_AF,RACK_M4_NUT_H)
-    q = q.cut(slot).removeSplitter()
     require_single(q, f'upper-station@{xc}')
     return q
 
@@ -420,6 +419,21 @@ tube=cyl_x(RACK_R,400.0,-200.0,0.0,0.0); tube_common=RIGHT.common(tube).Volume
 if tube_common>1e-4: failures.append(f'RIGHT structural core intersects real rack tube by {tube_common:.6f} mm3')
 front_station=make_upper_station(FRONT_CLAMP_X); rear_station=make_upper_station(REAR_CLAMP_X); frame_bridge=make_clamp_frame_bridge()
 if frame_bridge.common(front_station).Volume<1.0 or frame_bridge.common(rear_station).Volume<1.0: failures.append('Clamp-frame bridge is not fused into both fixed stations')
+
+# Regression gate for the rectangular carrier-end holes: sample the exact old
+# lateral nut-slot path away from the central M4 bore. It must now be material.
+obsolete_rack_slot_checks=[]
+for xc in CLAMP_X:
+    xprobe = xc + (10.0 if xc > 0 else -10.0)
+    solid = bool(RIGHT.isInside(
+        App.Vector(xprobe,RACK_CLOSURE_Y,RACK_M4_NUT_Z0+RACK_M4_NUT_H/2.0),
+        1e-5,False
+    ))
+    obsolete_rack_slot_checks.append({
+        'station_x_mm':xc,'probe_x_mm':xprobe,'solid':solid
+    })
+    if not solid:
+        failures.append(f'obsolete rack nut side-slot still open at X={xc}')
 front_support=make_long_support(FRONT_CLAMP_X,ARM_Y0); rear_support=make_long_support(REAR_SUPPORT_X,0.0); backstop=make_backstop(); crosshead=make_crosshead()
 if rear_support.common(backstop).Volume<500.0: failures.append('Moved rear support lacks substantial backstop overlap')
 if rear_support.common(crosshead).Volume<300.0: failures.append('Moved rear support lacks substantial crosshead overlap')
