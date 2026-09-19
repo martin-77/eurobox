@@ -290,6 +290,10 @@ assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
 assert ch['full_drop_material_fraction'] >= 0.995, ch
+assert abs(ch['end_wall_thickness_mm'] - 3.2) <= 1e-9, ch
+assert len(ch['end_wall_checks']) == 2, ch
+assert {q['end'] for q in ch['end_wall_checks']} == {'x0','x1'}, ch
+assert all(q['material_fraction'] >= 0.999 for q in ch['end_wall_checks']), ch
 assert len(ch['checks']) == 5, ch
 for q in ch['checks']:
     assert [p['sample'] for p in q['samples']] == ['bottom', 'web', 'top'], q
