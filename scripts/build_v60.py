@@ -52,7 +52,10 @@ REAR_SUPPORT_X = 180.0
 # plate follows the stations and therefore becomes wider without growing the
 # printable BASE envelope.
 BOX_CLAMP_BOSS_HALF_X = 11.35
-BOX_CLAMP_HOLM_CLEAR_X = 12.0
+# This clearance must account for the actual Ø30 hand knob, not only the
+# 22.7 mm fixed station boss. 16 mm boss-to-holm clearance leaves 12.35 mm
+# radial knob-to-holm clearance at the installed stations.
+BOX_CLAMP_HOLM_CLEAR_X = 16.0
 BOX_CLAMP_EDGE_MARGIN_X = 15.0
 FRONT_HOLM_INNER_X = FRONT_CLAMP_X + ARM_W/2.0
 REAR_HOLM_INNER_X = REAR_SUPPORT_X - ARM_W/2.0
