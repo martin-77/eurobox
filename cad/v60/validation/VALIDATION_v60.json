@@ -87,8 +87,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 624964.169,
-    "left_volume_mm3": 624964.169,
+    "right_volume_mm3": 632459.938,
+    "left_volume_mm3": 632459.938,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -285,16 +285,22 @@
         "cap_fraction": 1.0,
         "drop_fractions": [
           1.0,
+          1.0,
           1.0
-        ]
+        ],
+        "central_head_fill_width_mm": 25.6,
+        "central_head_probe_material_fraction": 1.0
       },
       {
         "x_mm": 180.0,
         "cap_fraction": 1.0,
         "drop_fractions": [
           1.0,
+          1.0,
           1.0
-        ]
+        ],
+        "central_head_fill_width_mm": 25.6,
+        "central_head_probe_material_fraction": 1.0
       }
     ],
     "continuous_carrier": {
