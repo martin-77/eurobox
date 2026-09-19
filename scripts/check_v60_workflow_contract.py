@@ -179,6 +179,17 @@ assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
 
+gd = cc['green_shelf_drop']
+assert gd['target'] == 'green lower carrier shelf between saddle web +Y face and outer +Y wall', gd
+assert gd['root_side'] == 'internal saddle web at Y=7', gd
+assert gd['tip_side'] == 'outer +Y side wall inner face at Y=22.8', gd
+assert gd['y_mm'] == [7.0, 22.8], gd
+assert abs(gd['span_mm'] - 15.8) <= 1e-6, gd
+assert abs(gd['shelf_z_mm'] - 14.04) <= 1e-6, gd
+assert abs(gd['root_z_mm'] - 29.84) <= 1e-6, gd
+assert gd['centre_witness_material_fraction'] >= 0.999, gd
+assert gd['rack_closure_y_mm'] == 11.0, gd
+
 gh = core['geometry']['inner_green_shelf_support']
 assert gh['target'] == 'central lower long-holm flange between twin webs', gh
 assert gh['print_orientation'] == 'BASE upside-down; installed high-Z prints first', gh
