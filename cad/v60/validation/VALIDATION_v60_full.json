@@ -80,18 +80,18 @@
       },
       {
         "name": "cross_bottom_inner_drop_front",
-        "material_fraction": 0.998398,
+        "material_fraction": 0.994339,
         "volume_mm3": 6144.694
       },
       {
         "name": "station_floor_left",
-        "material_fraction": 0.9995,
-        "volume_mm3": 4204.74
+        "material_fraction": 1.0,
+        "volume_mm3": 3738.552
       },
       {
         "name": "station_floor_right",
-        "material_fraction": 0.9995,
-        "volume_mm3": 4204.74
+        "material_fraction": 1.0,
+        "volume_mm3": 3738.552
       }
     ],
     "cage_struct_y_mm": [
@@ -100,29 +100,45 @@
     ],
     "station_floor_y1_mm": 214.215,
     "cage_top_z_mm": 39.54,
+    "boss_spindle_ligaments": {
+      "boss_z0_mm": 20.0,
+      "boss_z1_mm": 39.54,
+      "spindle_axis_z_mm": 29.77,
+      "corridor_radius_mm": 5.9,
+      "lower_ligament_mm": 3.87,
+      "upper_ligament_mm": 3.87
+    },
+    "plate_counterbore_ligaments": {
+      "plate_z0_mm": 16.0,
+      "plate_z1_mm": 46.0,
+      "spindle_axis_z_mm": 29.77,
+      "counterbore_radius_mm": 6.0,
+      "lower_ligament_mm": 7.77,
+      "upper_ligament_mm": 10.23
+    },
     "lead_nut_seat_checks": [
       {
         "spindle_x_mm": -36.65,
-        "thread_axis_z_mm": 31.0,
-        "nut_floor_z_mm": 18.0,
-        "pocket_floor_z_mm": 18.0,
+        "thread_axis_z_mm": 29.77,
+        "nut_floor_z_mm": 16.77,
+        "pocket_floor_z_mm": 16.77,
         "nut_inboard_y_mm": 198.415,
         "pocket_inboard_stop_y_mm": 198.415,
         "pin_axis_y_mm": 205.415,
-        "pin_axis_z_mm": 21.0,
-        "pin_top_clearance_to_cage_top_mm": 16.84,
+        "pin_axis_z_mm": 19.77,
+        "pin_top_clearance_to_cage_top_mm": 18.07,
         "side_wall_thickness_mm": 3.15
       },
       {
         "spindle_x_mm": 136.65,
-        "thread_axis_z_mm": 31.0,
-        "nut_floor_z_mm": 18.0,
-        "pocket_floor_z_mm": 18.0,
+        "thread_axis_z_mm": 29.77,
+        "nut_floor_z_mm": 16.77,
+        "pocket_floor_z_mm": 16.77,
         "nut_inboard_y_mm": 198.415,
         "pocket_inboard_stop_y_mm": 198.415,
         "pin_axis_y_mm": 205.415,
-        "pin_axis_z_mm": 21.0,
-        "pin_top_clearance_to_cage_top_mm": 16.84,
+        "pin_axis_z_mm": 19.77,
+        "pin_top_clearance_to_cage_top_mm": 18.07,
         "side_wall_thickness_mm": 3.15
       }
     ],
@@ -821,7 +837,7 @@
       136.65
     ],
     "spindle_spacing_mm": 173.3,
-    "spindle_z_mm": 31.0,
+    "spindle_z_mm": 29.77,
     "thread": "RH 8x2",
     "integral_female_threads": false,
     "base_has_working_thread": false,
@@ -1784,11 +1800,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3186679
+    "file_bytes": 3188040
   },
   "handed_stl_export": {
-    "right_sha256": "b8ad7a5761b0fa4078c220c86d0b871624df97dcc796fc68993c1fad81972a8a",
-    "left_sha256": "9637721779b35bfe659178b4dc942a14d9a6036e1830f3a1fa0603c3b7401aed",
+    "right_sha256": "ca58f9be10db0ff54743ef8db126a207585b1bc19dee015a90cb5cb006387cda",
+    "left_sha256": "d6eae495f6975be25867db7d5691016b6ae4e7cd4518f3ad4f1c5520aed5d814",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -1811,13 +1827,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 37840,
-    "left_facets": 37840,
-    "right_volume_mm3": 659489.768676,
-    "left_volume_mm3": 659489.768676,
+    "right_facets": 37882,
+    "left_facets": 37882,
+    "right_volume_mm3": 658883.867973,
+    "left_volume_mm3": 658883.867973,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 192731.901274,
-    "left_area_mm2": 192731.901274,
+    "right_area_mm2": 192909.358388,
+    "left_area_mm2": 192909.358388,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
