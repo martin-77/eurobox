@@ -112,6 +112,15 @@ INDX_X_MAX = 298.0
 INDX_Y_MAX = 275.0
 V60_X_TARGET_MAX = 296.0
 
+# In inverted print orientation the lower crosshead flange is another late
+# horizontal surface.  The central part under the moving box-clamp plate cannot
+# receive a fixed DROP without entering the real plate envelope, so that
+# redundant central flange is removed.  The two outer flange sections remain
+# and get smooth front DROPs from their existing vertical webs.
+CROSSHEAD_DROP_WEB_OVERLAP = 0.20
+CROSSHEAD_DROP_FLANGE_OVERLAP = 0.20
+CROSSHEAD_DROP_TIP_OVERLAP = 0.20
+
 
 def box(x0, y0, z0, dx, dy, dz):
     return Part.makeBox(dx, dy, dz, App.Vector(x0, y0, z0))
@@ -287,6 +296,36 @@ def make_clamp_frame_bridge():
     q = fuse_seq([top,drop],'clamp-frame-bridge'); require_single(q,'clamp-frame-bridge'); return q
 
 
+def _crosshead_outer_front_drop(xa, xb, y0, y1):
+    # Existing vertical web occupies y0..y0+FLANGE_T.  In the upside-down print
+    # the installed high-Z root prints first; grow smoothly toward +Y/down to
+    # the lower flange tip.  Deliberate overlaps avoid tangent/slicer gaps.
+    y_root = y0 + FLANGE_T - CROSSHEAD_DROP_WEB_OVERLAP
+    y_tip = y1 + CROSSHEAD_DROP_TIP_OVERLAP
+    span = y_tip - y_root
+    flange_top = ARM_BOTTOM_Z + FLANGE_T
+    base_z = flange_top - CROSSHEAD_DROP_FLANGE_OVERLAP
+    root_z = flange_top + span
+    tip_z = flange_top + CROSSHEAD_DROP_FLANGE_OVERLAP
+
+    curve = []
+    for i in range(19):
+        t = i/18.0
+        y = y_root + span*_smoothstep(t)
+        z = root_z + (tip_z-root_z)*t
+        curve.append(App.Vector(xa,y,z))
+    pts = [
+        App.Vector(xa,y_root,base_z),
+        App.Vector(xa,y_root,root_z),
+    ] + curve[1:] + [
+        App.Vector(xa,y_tip,base_z),
+        App.Vector(xa,y_root,base_z),
+    ]
+    q = Part.Face(Part.makePolygon(pts)).extrude(App.Vector(xb-xa,0,0)).removeSplitter()
+    require_single(q,'crosshead-outer-front-drop')
+    return q
+
+
 def make_crosshead():
     x0 = FRONT_CLAMP_X - ARM_W/2.0
     x1 = REAR_SUPPORT_X + ARM_W/2.0
@@ -295,12 +334,25 @@ def make_crosshead():
     plate_x0 = PLATE_SWEEP_X0
     plate_x1 = PLATE_SWEEP_X1
     web_h = ARM_H-2.0*FLANGE_T
+
+    # Do NOT leave the old full-width lower flange under the moving plate:
+    # there is no printable fixed support path into that volume.  Keep only the
+    # structurally connected outer sections, then support those sections from
+    # their existing webs with smooth DROPs.
+    left_lower = box(x0,y0,ARM_BOTTOM_Z,plate_x0-x0,y1-y0,FLANGE_T)
+    right_lower = box(plate_x1,y0,ARM_BOTTOM_Z,x1-plate_x1,y1-y0,FLANGE_T)
+    left_drop = _crosshead_outer_front_drop(x0,plate_x0,y0,y1)
+    right_drop = _crosshead_outer_front_drop(plate_x1,x1,y0,y1)
+
     return fuse_seq([
-        box(x0,y0,ARM_BOTTOM_Z,x1-x0,y1-y0,FLANGE_T),
+        left_lower,
+        right_lower,
         box(x0,y0,ARM_TOP_Z-FLANGE_T,plate_x0-x0,y1-y0,FLANGE_T),
         box(plate_x1,y0,ARM_TOP_Z-FLANGE_T,x1-plate_x1,y1-y0,FLANGE_T),
         box(x0,y0,ARM_BOTTOM_Z+FLANGE_T,plate_x0-x0,4.5,web_h),
         box(plate_x1,y0,ARM_BOTTOM_Z+FLANGE_T,x1-plate_x1,4.5,web_h),
+        left_drop,
+        right_drop,
     ],'crosshead')
 
 
@@ -369,6 +421,38 @@ if rear_support.common(backstop).Volume<500.0: failures.append('Moved rear suppo
 if rear_support.common(crosshead).Volume<300.0: failures.append('Moved rear support lacks substantial crosshead overlap')
 if front_support.common(crosshead).Volume<300.0: failures.append('Front support is not continuously tied into crosshead')
 
+# Crosshead inverted-print gate.  The central plate corridor must contain no
+# leftover lower flange, while the two retained outer sections must contain the
+# full smooth front DROP.
+crosshead_print_checks=[]
+central_probe=box(
+    PLATE_SWEEP_X0+0.50,216.0,ARM_BOTTOM_Z,
+    (PLATE_SWEEP_X1-PLATE_SWEEP_X0)-1.0,
+    ARM_HEAD_FACE_Y-216.0,
+    FLANGE_T,
+)
+central_common=RIGHT.common(central_probe).Volume
+if central_common>1e-4:
+    failures.append(
+        f'Crosshead still leaves unsupported central lower flange: {central_common:.6f} mm3'
+    )
+
+for label,xa,xb in (
+    ('left',FRONT_CLAMP_X-ARM_W/2.0,PLATE_SWEEP_X0),
+    ('right',PLATE_SWEEP_X1,REAR_SUPPORT_X+ARM_W/2.0),
+):
+    probe=_crosshead_outer_front_drop(xa,xb,216.0,ARM_HEAD_FACE_Y)
+    frac=RIGHT.common(probe).Volume/probe.Volume
+    crosshead_print_checks.append({
+        'side':label,
+        'drop_material_fraction':round(frac,6),
+        'x_mm':[round(xa,3),round(xb,3)],
+    })
+    if frac<0.995:
+        failures.append(
+            f'Crosshead {label} outer DROP not fully present: {frac:.6f}'
+        )
+
 # Hard-check the exact green shelf from the user's slicer view.  At Y=100 the
 # two long holms are clear of carrier/crosshead end effects.  Probe the added
 # haunch solids themselves and five points 0.10 mm ABOVE the old lower-flange
@@ -428,7 +512,7 @@ for xc,support in ((FRONT_CLAMP_X,front_support),(REAR_SUPPORT_X,rear_support)):
 # The real final core must have the complete motion corridor free.
 plate_sweep_common = RIGHT.common(make_plate_sweep_clearance()).Volume
 if plate_sweep_common > 1e-4: failures.append(f'Final plate sweep corridor is blocked by {plate_sweep_common:.6f} mm3')
-V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'box_clamp_spindle_x_mm':[round(x,3) for x in BOX_CLAMP_SPINDLE_X],'box_clamp_plate_x_mm':[round(BOX_CLAMP_PLATE_X0,3),round(BOX_CLAMP_PLATE_X1,3)],'box_clamp_holm_clearance_mm':BOX_CLAMP_HOLM_CLEAR_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'inner_green_shelf_support':{'target':'central lower long-holm flange between twin webs','print_orientation':'BASE upside-down; installed high-Z prints first','checks':inner_green_shelf_checks},'holm_head_closures':drop_fractions},'failures':failures}
+V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'box_clamp_spindle_x_mm':[round(x,3) for x in BOX_CLAMP_SPINDLE_X],'box_clamp_plate_x_mm':[round(BOX_CLAMP_PLATE_X0,3),round(BOX_CLAMP_PLATE_X1,3)],'box_clamp_holm_clearance_mm':BOX_CLAMP_HOLM_CLEAR_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'inner_green_shelf_support':{'target':'central lower long-holm flange between twin webs','print_orientation':'BASE upside-down; installed high-Z prints first','checks':inner_green_shelf_checks},'crosshead_print_support':{'strategy':'remove central lower flange under moving plate; smooth DROP on both retained outer sections','central_lower_flange_common_mm3':round(central_common,9),'checks':crosshead_print_checks},'holm_head_closures':drop_fractions},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 HARD CHECKS FAILED: '+' | '.join(failures))

@@ -204,6 +204,17 @@ for q in gh['checks']:
     assert q['centre_overlap_each_side_mm'] == 0.2, q
     assert q['rise_mm'] == 10.0, q
 
+ch = core['geometry']['crosshead_print_support']
+assert ch['strategy'] == 'remove central lower flange under moving plate; smooth DROP on both retained outer sections', ch
+assert ch['central_lower_flange_common_mm3'] <= 0.0001, ch
+assert len(ch['checks']) == 2, ch
+assert all(q['drop_material_fraction'] >= 0.995 for q in ch['checks']), ch
+
+cage_checks = {q['name']: q for q in full['base']['cage_reinforcement_checks']}
+for name in ('cross_bottom_inner_drop_rear','cross_bottom_inner_drop_front'):
+    assert name in cage_checks, cage_checks
+    assert cage_checks[name]['material_fraction'] >= 0.990, cage_checks[name]
+
 checks = full['installed_support_orientation']['checks']
 assert len(checks) == 2
 for q in checks:

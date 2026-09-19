@@ -450,6 +450,42 @@ def make_station_floor_gusset(sx):
     return q.removeSplitter()
 
 
+def make_cage_cross_bottom_drop(cross_x0, cross_x1, cross_y0, cross_y1, side):
+    # The cage transverse box beam has a lower flange at the same inverted-print
+    # problem level.  Its two vertical webs are already structural; mirror the
+    # long-holm strategy inside the box and let two smooth DROPs meet at centre.
+    rear_inner = cross_y0 + C.WEB_T
+    front_inner = cross_y1 - C.WEB_T
+    centre = (rear_inner + front_inner) / 2.0
+    root_y = rear_inner if side < 0 else front_inner
+    tip_y = centre + (0.20 if side < 0 else -0.20)
+    span = abs(tip_y-root_y)
+
+    flange_top = FINAL_DECK_Z0 + C.FLANGE_T
+    base_z = flange_top - 0.20
+    root_z = flange_top + span
+    tip_z = flange_top + 0.20
+
+    curve=[]
+    for i in range(19):
+        t=i/18.0
+        y=root_y + (tip_y-root_y)*C._smoothstep(t)
+        z=root_z + (tip_z-root_z)*t
+        curve.append(App.Vector(cross_x0,y,z))
+    pts=[
+        App.Vector(cross_x0,root_y,base_z),
+        App.Vector(cross_x0,root_y,root_z),
+    ] + curve[1:] + [
+        App.Vector(cross_x0,tip_y,base_z),
+        App.Vector(cross_x0,root_y,base_z),
+    ]
+    q=Part.Face(Part.makePolygon(pts)).extrude(
+        App.Vector(cross_x1-cross_x0,0,0)
+    ).removeSplitter()
+    C.require_single(q,'cage-cross-bottom-drop')
+    return q
+
+
 def make_cage_reinforcement():
     # The cage remains a service housing for the removable wear cartridge.
     # Reinforcement therefore wraps around the service volume instead of filling
@@ -491,6 +527,8 @@ def make_cage_reinforcement():
               cross_x1-cross_x0,C.WEB_T,cross_web_z1-cross_web_z0),
         C.box(cross_x0,cross_y1-C.WEB_T,cross_web_z0,
               cross_x1-cross_x0,C.WEB_T,cross_web_z1-cross_web_z0),
+        make_cage_cross_bottom_drop(cross_x0,cross_x1,cross_y0,cross_y1,-1),
+        make_cage_cross_bottom_drop(cross_x0,cross_x1,cross_y0,cross_y1,1),
     ]
 
     probes = {
@@ -500,6 +538,8 @@ def make_cage_reinforcement():
         'cross_top': cross[1],
         'cross_drop_rear': cross[2],
         'cross_drop_front': cross[3],
+        'cross_bottom_inner_drop_rear': cross[4],
+        'cross_bottom_inner_drop_front': cross[5],
         'station_floor_left': make_station_floor_gusset(left_sx),
         'station_floor_right': make_station_floor_gusset(right_sx),
     }
