@@ -242,6 +242,14 @@ assert cc['rack_tube_common_mm3'] <= 0.0001, cc
 assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
+bd = cc['backstop_base_drop']
+assert bd['x_edge_inset_mm'] == 3.0, bd
+assert bd['material_fraction'] >= 0.995, bd
+assert bd['panel_common_mm3'] >= 5.0, bd
+assert bd['carrier_common_mm3'] >= 5.0, bd
+assert bd['rack_tube_common_mm3'] <= 0.0001, bd
+assert bd['z_root_tip_mm'][0] > bd['z_root_tip_mm'][1], bd
+assert bd['y_root_tip_mm'][0] > bd['y_root_tip_mm'][1], bd
 assert cc['section'] == 'fully_closed_box_with_internal_saddle_web', cc
 assert abs(cc['end_wall_thickness_mm'] - 3.2) <= 1e-9, cc
 assert set(cc['end_wall_material_fractions']) == {'x0','x1'}, cc

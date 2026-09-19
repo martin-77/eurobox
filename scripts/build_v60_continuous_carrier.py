@@ -59,6 +59,19 @@ CARRIER_GREEN_SHELF_SPAN = CARRIER_GREEN_SHELF_Y1 - CARRIER_GREEN_SHELF_Y0
 CARRIER_GREEN_SHELF_Z = CARRIER_BOTTOM_Z1
 CARRIER_GREEN_DROP_ROOT_Z = CARRIER_GREEN_SHELF_Z + CARRIER_GREEN_SHELF_SPAN
 
+# Rear-stop reinforcement DROP. The 50 mm hanging stop is a bending lever;
+# support it back toward the carrier with one broad, smooth, support-free haunch
+# instead of a massive solid block. Keep 3 mm edge relief in X.
+BACKSTOP_DROP_X_INSET = 3.0
+BACKSTOP_DROP_X0 = C.BACKSTOP_X0 + BACKSTOP_DROP_X_INSET
+BACKSTOP_DROP_X1 = C.BACKSTOP_X0 + C.BACKSTOP_W - BACKSTOP_DROP_X_INSET
+BACKSTOP_DROP_PANEL_Y = 12.0 - 0.20
+BACKSTOP_DROP_CARRIER_Y = CARRIER_Y1 - 0.20
+BACKSTOP_DROP_PANEL_Z = -18.0
+BACKSTOP_DROP_ROOT_Z = 18.0
+BACKSTOP_DROP_PANEL_OVERLAP_Y = 0.20
+BACKSTOP_DROP_CARRIER_OVERLAP_Y = 0.20
+
 
 def make_green_shelf_drop():
     # Same smooth self-supporting principle as the proven long-holm haunches,
@@ -200,6 +213,40 @@ def make_hanging_upper_station(xc):
     return q
 
 
+def make_backstop_base_drop():
+    # Smooth Y/Z haunch from the lower stop panel back into the carrier/base.
+    # In the prescribed upside-down print orientation, high installed Z prints
+    # first, so the section grows gradually toward the lower panel tip and stays
+    # self-supporting.
+    y_root = BACKSTOP_DROP_CARRIER_Y
+    y_tip = BACKSTOP_DROP_PANEL_Y
+    z_root = BACKSTOP_DROP_ROOT_Z
+    z_tip = BACKSTOP_DROP_PANEL_Z
+    span_y = y_root - y_tip
+    if span_y <= 0:
+        raise RuntimeError('backstop DROP has non-positive Y span')
+
+    curve = []
+    for i in range(19):
+        t = i / 18.0
+        # t=0 at carrier/root, t=1 at panel/tip.
+        y = y_root - span_y * C._smoothstep(t)
+        z = z_root + (z_tip - z_root) * t
+        curve.append(App.Vector(0.0, y, z))
+
+    yz = [
+        App.Vector(0.0, y_tip - BACKSTOP_DROP_PANEL_OVERLAP_Y, z_tip),
+        App.Vector(0.0, y_root + BACKSTOP_DROP_CARRIER_OVERLAP_Y, z_root),
+    ] + curve[1:-1] + [
+        App.Vector(0.0, y_tip - BACKSTOP_DROP_PANEL_OVERLAP_Y, z_tip),
+    ]
+    face = Part.Face(Part.makePolygon(yz))
+    q = face.extrude(App.Vector(BACKSTOP_DROP_X1-BACKSTOP_DROP_X0,0,0))
+    q.translate(App.Vector(BACKSTOP_DROP_X0,0,0))
+    C.require_single(q, 'backstop-base-drop')
+    return q
+
+
 def make_hanging_backstop():
     # The 50 mm stop is the third hanging function on the same carrier.
     # Its top/root deliberately overlaps the carrier and the moved rear holm.
@@ -213,8 +260,9 @@ def make_hanging_backstop():
         CARRIER_Y1,
         C.BOX_SUPPORT_Z - 18.0,
     )
-    q = C.fuse_seq([panel, root, bridge], 'hanging-backstop')
-    C.require_single(q, 'hanging-backstop')
+    drop = make_backstop_base_drop()
+    q = C.fuse_seq([panel, root, bridge, drop], 'hanging-backstop-with-base-drop')
+    C.require_single(q, 'hanging-backstop-with-base-drop')
     return q
 
 
@@ -252,6 +300,7 @@ def build_clean_right():
 
 RIGHT, CARRIER, FRONT_LONG, REAR_LONG, FRONT_CLAMP, REAR_CLAMP, BACKSTOP = build_clean_right()
 GREEN_SHELF_DROP = make_green_shelf_drop()
+BACKSTOP_BASE_DROP = make_backstop_base_drop()
 LEFT = C.mirror_x(RIGHT)
 
 # Make the clean architecture canonical for the full builder and all downstream
@@ -350,6 +399,37 @@ backstop_overlap = CARRIER.common(BACKSTOP).Volume
 if backstop_overlap < 100.0:
     failures.append(f'backstop is not substantially hanging from continuous carrier: {backstop_overlap:.3f}')
 
+# Hard-check the new reinforcement itself, not only the fused result.
+backstop_drop_volume = BACKSTOP_BASE_DROP.Volume
+backstop_drop_common = RIGHT.common(BACKSTOP_BASE_DROP).Volume
+backstop_drop_fraction = (
+    backstop_drop_common / backstop_drop_volume
+    if backstop_drop_volume > 1e-9 else 0.0
+)
+if backstop_drop_fraction < 0.995:
+    failures.append(
+        f'backstop base DROP not structurally present: {backstop_drop_fraction:.6f}'
+    )
+
+# Prove that the DROP really ties into BOTH the hanging panel and carrier/root.
+backstop_panel_only = C.box(
+    C.BACKSTOP_X0, 8.0, -42.0,
+    C.BACKSTOP_W, 4.0, 50.0,
+)
+drop_panel_overlap = BACKSTOP_BASE_DROP.common(backstop_panel_only).Volume
+drop_carrier_overlap = BACKSTOP_BASE_DROP.common(CARRIER).Volume
+if drop_panel_overlap < 5.0:
+    failures.append(f'backstop DROP does not overlap stop panel enough: {drop_panel_overlap:.3f} mm3')
+if drop_carrier_overlap < 5.0:
+    failures.append(f'backstop DROP does not overlap carrier enough: {drop_carrier_overlap:.3f} mm3')
+
+# Keep the measured rack tube clear.
+drop_tube_common = BACKSTOP_BASE_DROP.common(
+    C.cyl_x(C.RACK_R, 400.0, -200.0, 0.0, 0.0)
+).Volume
+if drop_tube_common > 1e-4:
+    failures.append(f'backstop DROP collides with rack tube: {drop_tube_common:.6f} mm3')
+
 front_holm_overlap = CARRIER.common(FRONT_LONG).Volume
 rear_holm_overlap = CARRIER.common(REAR_LONG).Volume
 if front_holm_overlap < 100.0:
@@ -413,6 +493,17 @@ report['geometry']['continuous_carrier'] = {
     'rear_holm_common_mm3': round(rear_holm_overlap,3),
     'clamp_overlaps': station_overlaps,
     'backstop_common_mm3': round(backstop_overlap,3),
+    'backstop_base_drop': {
+        'x_mm': [round(BACKSTOP_DROP_X0,3), round(BACKSTOP_DROP_X1,3)],
+        'y_root_tip_mm': [round(BACKSTOP_DROP_CARRIER_Y,3), round(BACKSTOP_DROP_PANEL_Y,3)],
+        'z_root_tip_mm': [round(BACKSTOP_DROP_ROOT_Z,3), round(BACKSTOP_DROP_PANEL_Z,3)],
+        'x_edge_inset_mm': BACKSTOP_DROP_X_INSET,
+        'material_fraction': round(backstop_drop_fraction,6),
+        'panel_common_mm3': round(drop_panel_overlap,3),
+        'carrier_common_mm3': round(drop_carrier_overlap,3),
+        'rack_tube_common_mm3': round(drop_tube_common,9),
+        'print_strategy': 'smooth high-Z carrier root growing down/out toward lower stop panel; support-free upside-down',
+    },
 }
 report['geometry']['plate_sweep_common_mm3'] = round(plate_common,9)
 report['failures'] = list(dict.fromkeys(report.get('failures', []) + failures))
