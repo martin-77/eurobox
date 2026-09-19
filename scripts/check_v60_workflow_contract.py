@@ -242,6 +242,10 @@ assert cc['rack_tube_common_mm3'] <= 0.0001, cc
 assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
+assert cc['section'] == 'fully_closed_box_with_internal_saddle_web', cc
+assert abs(cc['end_wall_thickness_mm'] - 3.2) <= 1e-9, cc
+assert set(cc['end_wall_material_fractions']) == {'x0','x1'}, cc
+assert all(v >= 0.999 for v in cc['end_wall_material_fractions'].values()), cc
 
 gd = cc['green_shelf_drop']
 assert gd['target'] == 'green lower carrier shelf between saddle web +Y face and outer +Y wall', gd

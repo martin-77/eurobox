@@ -36,6 +36,15 @@ CARRIER_SIDE_T = C.WEB_T
 CARRIER_SIDE_Z0 = CARRIER_BOTTOM_Z1
 CARRIER_SIDE_Z1 = CARRIER_TOP_Z0
 
+# Close both X ends of the hollow carrier. The former "closed box" only had
+# Y-side walls; its X end faces were still open and exposed the green-shelf
+# DROP in the slicer. Keep the cap inside the existing X envelope and overlap
+# top/bottom flanges by 0.20 mm for a robust fused printable wall.
+CARRIER_END_T = C.WEB_T
+CARRIER_END_OVERLAP_Z = 0.20
+CARRIER_END_Z0 = CARRIER_BOTTOM_Z1 - CARRIER_END_OVERLAP_Z
+CARRIER_END_Z1 = CARRIER_TOP_Z0 + CARRIER_END_OVERLAP_Z
+
 # Support the ACTUAL green shelf in the closed carrier.
 #
 # In Y/Z cross-section the visible unsupported shelf is the lower flange from
@@ -115,10 +124,18 @@ def make_continuous_carrier():
         CARRIER_X0, CARRIER_Y1 - CARRIER_SIDE_T, CARRIER_SIDE_Z0,
         dx, CARRIER_SIDE_T, CARRIER_SIDE_Z1 - CARRIER_SIDE_Z0,
     )
+    end_x0 = C.box(
+        CARRIER_X0, CARRIER_Y0, CARRIER_END_Z0,
+        CARRIER_END_T, CARRIER_Y1-CARRIER_Y0, CARRIER_END_Z1-CARRIER_END_Z0,
+    )
+    end_x1 = C.box(
+        CARRIER_X1-CARRIER_END_T, CARRIER_Y0, CARRIER_END_Z0,
+        CARRIER_END_T, CARRIER_Y1-CARRIER_Y0, CARRIER_END_Z1-CARRIER_END_Z0,
+    )
     green_drop = make_green_shelf_drop()
     q = C.fuse_seq(
-        [top, bottom, web, side_y0, side_y1, green_drop],
-        'continuous-rack-carrier-closed-box-with-green-shelf-drop',
+        [top, bottom, web, side_y0, side_y1, end_x0, end_x1, green_drop],
+        'continuous-rack-carrier-fully-closed-box-with-green-shelf-drop',
     )
     C.require_single(q, 'continuous-rack-carrier-closed-box')
     return q
@@ -176,25 +193,9 @@ def make_hanging_upper_station(xc):
     nut = C.hex_z(C.RACK_M4_NUT_AF, C.RACK_M4_NUT_H, C.RACK_M4_NUT_Z0)
     nut.translate(App.Vector(xc, C.RACK_CLOSURE_Y, 0.0))
     q = q.cut(nut).removeSplitter()
-    if xc > 0:
-        slot = C.box(
-            xc+3.45,
-            C.RACK_CLOSURE_Y-C.RACK_M4_NUT_AF/2.0,
-            C.RACK_M4_NUT_Z0,
-            15.75,
-            C.RACK_M4_NUT_AF,
-            C.RACK_M4_NUT_H,
-        )
-    else:
-        slot = C.box(
-            xc-19.2,
-            C.RACK_CLOSURE_Y-C.RACK_M4_NUT_AF/2.0,
-            C.RACK_M4_NUT_Z0,
-            15.75,
-            C.RACK_M4_NUT_AF,
-            C.RACK_M4_NUT_H,
-        )
-    q = q.cut(slot).removeSplitter()
+    # No lateral nut-loading slot here. The production rack closure is rebuilt
+    # later with a top-loaded metal nut/retainer, so a side breakout is both
+    # obsolete and visually/structurally harmful.
     C.require_single(q, f'hanging-upper-station@{xc}')
     return q
 
@@ -319,6 +320,25 @@ for label, probe in side_wall_probes.items():
     if frac < 0.999:
         failures.append(f'continuous carrier {label} side wall is not closed: {frac:.6f}')
 
+# The two X end faces must also be real walls. This is the regression gate for
+# the exact openings visible in the slicer screenshot.
+end_wall_probes = {
+    'x0': C.box(
+        CARRIER_X0, CARRIER_Y0, CARRIER_END_Z0,
+        CARRIER_END_T, CARRIER_Y1-CARRIER_Y0, CARRIER_END_Z1-CARRIER_END_Z0,
+    ),
+    'x1': C.box(
+        CARRIER_X1-CARRIER_END_T, CARRIER_Y0, CARRIER_END_Z0,
+        CARRIER_END_T, CARRIER_Y1-CARRIER_Y0, CARRIER_END_Z1-CARRIER_END_Z0,
+    ),
+}
+end_wall_fractions = {}
+for label, probe in end_wall_probes.items():
+    frac = RIGHT.common(probe).Volume / probe.Volume
+    end_wall_fractions[label] = round(frac, 6)
+    if frac < 0.999:
+        failures.append(f'continuous carrier {label} end wall is not closed: {frac:.6f}')
+
 station_overlaps = []
 for label, station in [('front', FRONT_CLAMP), ('rear', REAR_CLAMP)]:
     ov = CARRIER.common(station).Volume
@@ -356,13 +376,13 @@ report_path = os.path.join(C.OUT, 'VALIDATION_v60.json')
 with open(report_path, 'r', encoding='utf-8') as f:
     report = json.load(f)
 report['stage'] = 'clean_structural_core_continuous_carrier'
-report['architecture'] = 'one closed-box continuous rack-side carrier; two rack clamps and 50 mm backstop hang from it; long box holms fuse into same carrier'
+report['architecture'] = 'one fully closed-box continuous rack-side carrier with Y side walls and X end caps; two rack clamps and 50 mm backstop hang from it; long box holms fuse into same carrier'
 report['geometry']['right_bbox_mm'] = [round(RIGHT.BoundBox.XLength,3), round(RIGHT.BoundBox.YLength,3), round(RIGHT.BoundBox.ZLength,3)]
 report['geometry']['left_bbox_mm'] = [round(LEFT.BoundBox.XLength,3), round(LEFT.BoundBox.YLength,3), round(LEFT.BoundBox.ZLength,3)]
 report['geometry']['right_volume_mm3'] = round(RIGHT.Volume,3)
 report['geometry']['left_volume_mm3'] = round(LEFT.Volume,3)
 report['geometry']['continuous_carrier'] = {
-    'section': 'closed_box_with_internal_saddle_web',
+    'section': 'fully_closed_box_with_internal_saddle_web',
     'x_mm': [CARRIER_X0, CARRIER_X1],
     'y_mm': [CARRIER_Y0, CARRIER_Y1],
     'top_z_mm': [CARRIER_TOP_Z0, CARRIER_TOP_Z1],
@@ -370,6 +390,9 @@ report['geometry']['continuous_carrier'] = {
     'side_wall_thickness_mm': CARRIER_SIDE_T,
     'side_wall_z_mm': [CARRIER_SIDE_Z0, CARRIER_SIDE_Z1],
     'side_wall_material_fractions': side_wall_fractions,
+    'end_wall_thickness_mm': CARRIER_END_T,
+    'end_wall_z_mm': [CARRIER_END_Z0, CARRIER_END_Z1],
+    'end_wall_material_fractions': end_wall_fractions,
     'green_shelf_drop': {
         'target': 'green lower carrier shelf between saddle web +Y face and outer +Y wall',
         'print_orientation': 'BASE upside-down; high installed Z prints first',
