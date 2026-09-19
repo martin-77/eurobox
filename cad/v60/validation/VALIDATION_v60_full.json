@@ -45,12 +45,12 @@
     "cage_reinforcement_checks": [
       {
         "name": "holm_left",
-        "material_fraction": 0.994178,
+        "material_fraction": 0.991169,
         "volume_mm3": 17365.335
       },
       {
         "name": "holm_right",
-        "material_fraction": 0.995336,
+        "material_fraction": 0.990853,
         "volume_mm3": 17365.335
       },
       {
@@ -60,8 +60,8 @@
       },
       {
         "name": "cross_top",
-        "material_fraction": 0.998997,
-        "volume_mm3": 14268.4
+        "material_fraction": 0.991125,
+        "volume_mm3": 21574.6
       },
       {
         "name": "cross_drop_rear",
@@ -184,8 +184,8 @@
         "nut_inboard_y_mm": 198.415,
         "pocket_inboard_stop_y_mm": 198.415,
         "pin_axis_y_mm": 205.415,
-        "pin_axis_z_mm": 32.54,
-        "pin_top_clearance_to_carrier_top_mm": 5.3,
+        "pin_axis_z_mm": 34.54,
+        "pin_top_clearance_to_carrier_top_mm": 3.3,
         "side_wall_thickness_mm": 3.15
       },
       {
@@ -199,99 +199,213 @@
         "nut_inboard_y_mm": 198.415,
         "pocket_inboard_stop_y_mm": 198.415,
         "pin_axis_y_mm": 205.415,
-        "pin_axis_z_mm": 32.54,
-        "pin_top_clearance_to_carrier_top_mm": 5.3,
+        "pin_axis_z_mm": 34.54,
+        "pin_top_clearance_to_carrier_top_mm": 3.3,
         "side_wall_thickness_mm": 3.15
       }
     ],
     "lead_nut_pin_wall_checks": [
       {
         "spindle_x_mm": -28.65,
+        "mode": "top-open U-cradle",
         "samples": [
           {
             "wall_x_offset_mm": -9.775,
             "sample": "y-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": -9.775,
             "sample": "y+",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": -9.775,
             "sample": "z-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": -9.775,
-            "sample": "z+",
-            "solid": true
+            "sample": "axis",
+            "solid": false,
+            "expected_solid": false
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "top-throat",
+            "solid": false,
+            "expected_solid": false
           },
           {
             "wall_x_offset_mm": 9.775,
             "sample": "y-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": 9.775,
             "sample": "y+",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": 9.775,
             "sample": "z-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": 9.775,
-            "sample": "z+",
-            "solid": true
+            "sample": "axis",
+            "solid": false,
+            "expected_solid": false
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "top-throat",
+            "solid": false,
+            "expected_solid": false
           }
         ]
       },
       {
         "spindle_x_mm": 128.65,
+        "mode": "top-open U-cradle",
         "samples": [
           {
             "wall_x_offset_mm": -9.775,
             "sample": "y-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": -9.775,
             "sample": "y+",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": -9.775,
             "sample": "z-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": -9.775,
-            "sample": "z+",
-            "solid": true
+            "sample": "axis",
+            "solid": false,
+            "expected_solid": false
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "top-throat",
+            "solid": false,
+            "expected_solid": false
           },
           {
             "wall_x_offset_mm": 9.775,
             "sample": "y-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": 9.775,
             "sample": "y+",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": 9.775,
             "sample": "z-",
-            "solid": true
+            "solid": true,
+            "expected_solid": true
           },
           {
             "wall_x_offset_mm": 9.775,
-            "sample": "z+",
-            "solid": true
+            "sample": "axis",
+            "solid": false,
+            "expected_solid": false
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "top-throat",
+            "solid": false,
+            "expected_solid": false
+          }
+        ]
+      }
+    ],
+    "lead_nut_pin_top_insertion": [
+      {
+        "spindle_x_mm": -28.65,
+        "pin_axis_z_mm": 34.54,
+        "service_x_local_mm": [
+          -14.35,
+          15.05
+        ],
+        "path": [
+          {
+            "lift_mm": 8.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 4.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 2.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 1.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 0.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          }
+        ]
+      },
+      {
+        "spindle_x_mm": 128.65,
+        "pin_axis_z_mm": 34.54,
+        "service_x_local_mm": [
+          -14.35,
+          15.05
+        ],
+        "path": [
+          {
+            "lift_mm": 8.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 4.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 2.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 1.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
+          },
+          {
+            "lift_mm": 0.0,
+            "base_common_mm3": 0.0,
+            "lead_nut_common_mm3": 0.0
           }
         ]
       }
@@ -301,6 +415,8 @@
         "spindle_x_mm": -28.65,
         "carrier_cap_top_z_mm": 39.54,
         "base_top_z_mm": 39.54,
+        "allowed_pin_recess_width_mm": 3.8,
+        "pin_recess_open": true,
         "samples": [
           {
             "x_offset_mm": -6.0,
@@ -311,7 +427,7 @@
           },
           {
             "x_offset_mm": -6.0,
-            "y_mm": 205.415,
+            "y_mm": 202.715,
             "base_solid": false,
             "carrier_solid": true,
             "assembled_solid": true
@@ -332,7 +448,7 @@
           },
           {
             "x_offset_mm": 0.0,
-            "y_mm": 205.415,
+            "y_mm": 202.715,
             "base_solid": false,
             "carrier_solid": true,
             "assembled_solid": true
@@ -353,7 +469,7 @@
           },
           {
             "x_offset_mm": 6.0,
-            "y_mm": 205.415,
+            "y_mm": 202.715,
             "base_solid": false,
             "carrier_solid": true,
             "assembled_solid": true
@@ -371,6 +487,8 @@
         "spindle_x_mm": 128.65,
         "carrier_cap_top_z_mm": 39.54,
         "base_top_z_mm": 39.54,
+        "allowed_pin_recess_width_mm": 3.8,
+        "pin_recess_open": true,
         "samples": [
           {
             "x_offset_mm": -6.0,
@@ -381,7 +499,7 @@
           },
           {
             "x_offset_mm": -6.0,
-            "y_mm": 205.415,
+            "y_mm": 202.715,
             "base_solid": false,
             "carrier_solid": true,
             "assembled_solid": true
@@ -402,7 +520,7 @@
           },
           {
             "x_offset_mm": 0.0,
-            "y_mm": 205.415,
+            "y_mm": 202.715,
             "base_solid": false,
             "carrier_solid": true,
             "assembled_solid": true
@@ -423,7 +541,7 @@
           },
           {
             "x_offset_mm": 6.0,
-            "y_mm": 205.415,
+            "y_mm": 202.715,
             "base_solid": false,
             "carrier_solid": true,
             "assembled_solid": true
@@ -1660,6 +1778,78 @@
           "base_common_mm3": 0.0
         }
       ],
+      "lead_nut_pin_top_insertion": [
+        {
+          "spindle_x_mm": -28.65,
+          "pin_axis_z_mm": 34.54,
+          "service_x_local_mm": [
+            -14.35,
+            15.05
+          ],
+          "path": [
+            {
+              "lift_mm": 8.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 4.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 2.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 1.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 0.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            }
+          ]
+        },
+        {
+          "spindle_x_mm": 128.65,
+          "pin_axis_z_mm": 34.54,
+          "service_x_local_mm": [
+            -14.35,
+            15.05
+          ],
+          "path": [
+            {
+              "lift_mm": 8.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 4.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 2.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 1.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            },
+            {
+              "lift_mm": 0.0,
+              "base_common_mm3": 0.0,
+              "lead_nut_common_mm3": 0.0
+            }
+          ]
+        }
+      ],
       "plate_clip_service_path": [
         {
           "x_mm": -28.65,
@@ -2054,11 +2244,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3216100
+    "file_bytes": 3207493
   },
   "handed_stl_export": {
-    "right_sha256": "eeac99e7daabde22842c000267564a1907cdbcd51a9c76261c0a32954ba5acd6",
-    "left_sha256": "554a18be80dd001d55fc340d11d3779078ff1520ab4a6be19e4bafc8e60bad6f",
+    "right_sha256": "6efd90d6aeca09415e075607e4c4b4a13c44f54464d28c72ab99ecc701ba164a",
+    "left_sha256": "0f4398c92d953ec3ae511391bbde70d509304f9c3b886168b5ec286c9aea58b3",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -2081,13 +2271,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 38880,
-    "left_facets": 38880,
-    "right_volume_mm3": 663283.789344,
-    "left_volume_mm3": 663283.789344,
+    "right_facets": 38472,
+    "left_facets": 38472,
+    "right_volume_mm3": 670152.031724,
+    "left_volume_mm3": 670152.031724,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 193342.84714,
-    "left_area_mm2": 193342.84714,
+    "right_area_mm2": 196721.152129,
+    "left_area_mm2": 196721.152129,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
