@@ -65,12 +65,18 @@ CARRIER_GREEN_DROP_ROOT_Z = CARRIER_GREEN_SHELF_Z + CARRIER_GREEN_SHELF_SPAN
 BACKSTOP_DROP_X_INSET = 3.0
 BACKSTOP_DROP_X0 = C.BACKSTOP_X0 + BACKSTOP_DROP_X_INSET
 BACKSTOP_DROP_X1 = C.BACKSTOP_X0 + C.BACKSTOP_W - BACKSTOP_DROP_X_INSET
-BACKSTOP_DROP_PANEL_Y = 12.0 - 0.20
 BACKSTOP_DROP_CARRIER_Y = CARRIER_Y1 - 0.20
-BACKSTOP_DROP_PANEL_Z = -18.0
 BACKSTOP_DROP_ROOT_Z = 18.0
-BACKSTOP_DROP_PANEL_OVERLAP_Y = 0.20
-BACKSTOP_DROP_CARRIER_OVERLAP_Y = 0.20
+BACKSTOP_DROP_ROOT_LOW_Z = 14.0
+
+# The inner edge deliberately penetrates 0.60 mm into the 4 mm stop panel
+# (panel Y=8..12). The outer elliptic edge tapers to 1.20 mm total width at the
+# very bottom, giving a printable/non-fragile toe while still visually fading
+# into the stop.
+BACKSTOP_DROP_INNER_Y = 11.40
+BACKSTOP_DROP_TIP_OUTER_Y = 12.60
+BACKSTOP_DROP_TIP_Z = -41.80
+BACKSTOP_DROP_TIP_WIDTH = BACKSTOP_DROP_TIP_OUTER_Y - BACKSTOP_DROP_INNER_Y
 
 
 def make_green_shelf_drop():
@@ -214,38 +220,60 @@ def make_hanging_upper_station(xc):
 
 
 def make_backstop_base_drop():
-    # Robust convex Y/Z haunch from the lower stop panel back into the carrier.
-    # Keep it deliberately simple: in upside-down print orientation the high-Z
-    # carrier root prints first and the diagonal expands gradually down/outward
-    # toward the stop panel without support.
+    # Filled elliptic/crescent haunch in Y/Z:
+    #   - broad root inside the continuous carrier,
+    #   - quarter-ellipse-like outer contour down the stop,
+    #   - only 1.20 mm thick at the very bottom.
+    #
+    # This is intentionally a CLOSED prism, not an open rib. In the prescribed
+    # upside-down print orientation the section monotonically narrows toward
+    # lower installed Z, so every new layer is supported by the layer above it.
     y_root = BACKSTOP_DROP_CARRIER_Y
-    y_tip = BACKSTOP_DROP_PANEL_Y
     z_root = BACKSTOP_DROP_ROOT_Z
-    z_tip = BACKSTOP_DROP_PANEL_Z
-    if y_root <= y_tip:
-        raise RuntimeError('backstop DROP has non-positive Y span')
+    z_root_low = BACKSTOP_DROP_ROOT_LOW_Z
+    y_inner = BACKSTOP_DROP_INNER_Y
+    y_tip_outer = BACKSTOP_DROP_TIP_OUTER_Y
+    z_tip = BACKSTOP_DROP_TIP_Z
 
-    # Give both ends real overlap area instead of relying on a tangent/point
-    # contact. The 4-point convex section is OCC-stable and forms one valid
-    # printable solid.
-    root_y1 = y_root + BACKSTOP_DROP_CARRIER_OVERLAP_Y
-    root_y0 = y_root - 3.20
-    tip_y0 = y_tip - BACKSTOP_DROP_PANEL_OVERLAP_Y
-    tip_y1 = y_tip + 3.20
-    root_z0 = z_root - 4.00
-    tip_z1 = z_tip + 4.00
+    if y_root <= y_tip_outer:
+        raise RuntimeError('elliptic backstop DROP has non-positive Y span')
+    if z_root <= z_tip:
+        raise RuntimeError('elliptic backstop DROP has non-positive Z span')
+    if BACKSTOP_DROP_TIP_WIDTH < 1.0:
+        raise RuntimeError('elliptic backstop DROP tip is too thin')
 
+    # Outer contour follows a quarter ellipse:
+    # t=0 -> carrier root; t=1 -> tapered toe at bottom of stop.
+    arc = []
+    n = 28
+    for i in range(n + 1):
+        t = i / float(n)
+        a = 0.5 * math.pi * t
+        y = y_tip_outer + (y_root - y_tip_outer) * math.cos(a)
+        z = z_tip + (z_root - z_tip) * math.cos(a)
+        arc.append(App.Vector(0.0, y, z))
+
+    # Closed filled profile: panel-side inner edge, broad rectangular root, then
+    # the elliptic outer edge back to the tapered toe.
     yz = [
-        App.Vector(0.0, root_y0, root_z0),
-        App.Vector(0.0, root_y1, z_root),
-        App.Vector(0.0, tip_y1, tip_z1),
-        App.Vector(0.0, tip_y0, z_tip),
+        App.Vector(0.0, y_inner, z_tip),
+        App.Vector(0.0, y_inner, z_root_low),
+        App.Vector(0.0, y_root, z_root_low),
+        App.Vector(0.0, y_root, z_root),
+    ] + arc[1:] + [
+        App.Vector(0.0, y_inner, z_tip),
     ]
-    face = Part.Face(Part.makePolygon(yz + [yz[0]]))
+
+    face = Part.Face(Part.makePolygon(yz))
+    if not face.isValid():
+        raise RuntimeError('elliptic backstop DROP profile face is invalid')
+
     q = face.extrude(App.Vector(BACKSTOP_DROP_X1-BACKSTOP_DROP_X0,0,0))
     q.translate(App.Vector(BACKSTOP_DROP_X0,0,0))
     q = q.removeSplitter()
-    C.require_single(q, 'backstop-base-drop')
+    C.require_single(q, 'elliptic-backstop-base-drop')
+    if not q.isClosed():
+        raise RuntimeError('elliptic backstop DROP must be a closed solid')
     return q
 
 
@@ -403,6 +431,9 @@ if backstop_overlap < 100.0:
 
 # Hard-check the new reinforcement itself, not only the fused result.
 backstop_drop_volume = BACKSTOP_BASE_DROP.Volume
+backstop_drop_closed = bool(BACKSTOP_BASE_DROP.isClosed())
+if not backstop_drop_closed:
+    failures.append('backstop elliptic DROP is not a closed solid')
 backstop_drop_common = RIGHT.common(BACKSTOP_BASE_DROP).Volume
 backstop_drop_fraction = (
     backstop_drop_common / backstop_drop_volume
@@ -497,14 +528,19 @@ report['geometry']['continuous_carrier'] = {
     'backstop_common_mm3': round(backstop_overlap,3),
     'backstop_base_drop': {
         'x_mm': [round(BACKSTOP_DROP_X0,3), round(BACKSTOP_DROP_X1,3)],
-        'y_root_tip_mm': [round(BACKSTOP_DROP_CARRIER_Y,3), round(BACKSTOP_DROP_PANEL_Y,3)],
-        'z_root_tip_mm': [round(BACKSTOP_DROP_ROOT_Z,3), round(BACKSTOP_DROP_PANEL_Z,3)],
+        'profile': 'filled_quarter_ellipse_tapered_to_stop_bottom',
+        'y_root_tip_mm': [round(BACKSTOP_DROP_CARRIER_Y,3), round(BACKSTOP_DROP_TIP_OUTER_Y,3)],
+        'z_root_tip_mm': [round(BACKSTOP_DROP_ROOT_Z,3), round(BACKSTOP_DROP_TIP_Z,3)],
+        'root_low_z_mm': round(BACKSTOP_DROP_ROOT_LOW_Z,3),
+        'inner_panel_y_mm': round(BACKSTOP_DROP_INNER_Y,3),
+        'tip_width_mm': round(BACKSTOP_DROP_TIP_WIDTH,3),
         'x_edge_inset_mm': BACKSTOP_DROP_X_INSET,
+        'closed_solid': backstop_drop_closed,
         'material_fraction': round(backstop_drop_fraction,6),
         'panel_common_mm3': round(drop_panel_overlap,3),
         'carrier_common_mm3': round(drop_carrier_overlap,3),
         'rack_tube_common_mm3': round(drop_tube_common,9),
-        'print_strategy': 'smooth high-Z carrier root growing down/out toward lower stop panel; support-free upside-down',
+        'print_strategy': 'filled elliptic crescent; broad high-Z carrier root tapering continuously to 1.2 mm toe at stop bottom; closed X sides; support-free upside-down',
     },
 }
 report['geometry']['plate_sweep_common_mm3'] = round(plate_common,9)

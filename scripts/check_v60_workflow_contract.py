@@ -243,7 +243,11 @@ assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
 bd = cc['backstop_base_drop']
+assert bd['profile'] == 'filled_quarter_ellipse_tapered_to_stop_bottom', bd
 assert bd['x_edge_inset_mm'] == 3.0, bd
+assert bd['closed_solid'] is True, bd
+assert abs(bd['tip_width_mm'] - 1.2) <= 1e-9, bd
+assert bd['z_root_tip_mm'][1] <= -41.8 + 1e-9, bd
 assert bd['material_fraction'] >= 0.995, bd
 assert bd['panel_common_mm3'] >= 5.0, bd
 assert bd['carrier_common_mm3'] >= 5.0, bd
