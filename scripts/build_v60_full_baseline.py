@@ -634,6 +634,16 @@ NUT_PIN_GROOVE_X0 = 11.4
 NUT_PIN_GROOVE_W = 1.6
 NUT_PIN_CLIP_T = 1.3
 NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
+NUT_PIN_HEAD_R = 3.0
+NUT_PIN_HEAD_T = 2.0
+NUT_PIN_CLIP_OUTER_R = 3.2
+NUT_PIN_SERVICE_CLEAR = 0.35
+NUT_PIN_HEAD_POCKET_R = NUT_PIN_HEAD_R + NUT_PIN_SERVICE_CLEAR
+NUT_PIN_HEAD_POCKET_X0 = -14.0 - NUT_PIN_SERVICE_CLEAR
+NUT_PIN_HEAD_POCKET_LEN = NUT_PIN_HEAD_T + 2.0*NUT_PIN_SERVICE_CLEAR
+NUT_PIN_CLIP_POCKET_R = NUT_PIN_CLIP_OUTER_R + NUT_PIN_SERVICE_CLEAR
+NUT_PIN_CLIP_POCKET_X0 = NUT_PIN_CLIP_X - NUT_PIN_SERVICE_CLEAR
+NUT_PIN_CLIP_POCKET_LEN = NUT_PIN_CLIP_T + 2.0*NUT_PIN_SERVICE_CLEAR
 LEAD_NUT_POCKET_X_CLEAR = 0.20
 LEAD_NUT_POCKET_FREE_Y = 0.35
 LEAD_NUT_LOWER_LUG_Z0 = -13.0
@@ -655,9 +665,9 @@ NUT_PIN = C.fuse_seq([
     C.cyl_x(NUT_PIN_SHAFT_D/2.0,23.4,-12.0,0,0),
     C.cyl_x(NUT_PIN_GROOVE_D/2.0,NUT_PIN_GROOVE_W,NUT_PIN_GROOVE_X0,0,0),
     C.cyl_x(NUT_PIN_SHAFT_D/2.0,1.7,NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,0,0),
-    C.cyl_x(3.0,2.0,-14.0,0,0),
+    C.cyl_x(NUT_PIN_HEAD_R,NUT_PIN_HEAD_T,-14.0,0,0),
 ],'lead-nut-retaining-pin')
-NUT_PIN_CLIP = make_c_clip(3.2,1.25,NUT_PIN_CLIP_T,2.4)
+NUT_PIN_CLIP = make_c_clip(NUT_PIN_CLIP_OUTER_R,1.25,NUT_PIN_CLIP_T,2.4)
 
 for sx in SPINDLE_X:
     # The cartridge must have deterministic datums BEFORE its retaining pin is
@@ -698,11 +708,20 @@ for sx in SPINDLE_X:
     RIGHT_FULL = RIGHT_FULL.cut(
         C.cyl_x(LEAD_NUT_PIN_HOLE_D/2.0,24.0,sx-12.0,pin_y,pin_z)
     ).removeSplitter()
+    # Service clearances track the ACTUAL printed head/clip instead of the old
+    # oversized v50 pockets. This keeps the retaining hardware insertable while
+    # preserving the holm ties around the now-lowered structural pin axis.
     RIGHT_FULL = RIGHT_FULL.cut(
-        C.cyl_x(3.55,3.0,sx-14.0,pin_y,pin_z)
+        C.cyl_x(
+            NUT_PIN_HEAD_POCKET_R,NUT_PIN_HEAD_POCKET_LEN,
+            sx+NUT_PIN_HEAD_POCKET_X0,pin_y,pin_z,
+        )
     ).removeSplitter()
     RIGHT_FULL = RIGHT_FULL.cut(
-        C.cyl_x(4.10,4.0,sx+11.0,pin_y,pin_z)
+        C.cyl_x(
+            NUT_PIN_CLIP_POCKET_R,NUT_PIN_CLIP_POCKET_LEN,
+            sx+NUT_PIN_CLIP_POCKET_X0,pin_y,pin_z,
+        )
     ).removeSplitter()
 
 C.require_single(RIGHT_FULL,'RIGHT full with v50 cartridge pockets and smooth spindle corridors')
