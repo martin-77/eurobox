@@ -28,65 +28,69 @@
     ],
     "holm_station_checks": [
       {
-        "spindle_x_mm": -40.65,
+        "spindle_x_mm": -36.65,
         "holm_inner_x_mm": -64.0,
-        "boss_to_holm_gap_mm": 12.0
+        "boss_to_holm_gap_mm": 16.0,
+        "axis_to_holm_mm": 27.35,
+        "knob_to_holm_clearance_mm": 12.35
       },
       {
-        "spindle_x_mm": 140.65,
+        "spindle_x_mm": 136.65,
         "holm_inner_x_mm": 164.0,
-        "boss_to_holm_gap_mm": 12.0
+        "boss_to_holm_gap_mm": 16.0,
+        "axis_to_holm_mm": 27.35,
+        "knob_to_holm_clearance_mm": 12.35
       }
     ],
     "cage_reinforcement_checks": [
       {
         "name": "holm_left",
-        "material_fraction": 0.996731,
-        "volume_mm3": 8928.735
+        "material_fraction": 0.99139,
+        "volume_mm3": 11740.935
       },
       {
         "name": "holm_right",
-        "material_fraction": 0.993418,
-        "volume_mm3": 8928.735
+        "material_fraction": 0.993101,
+        "volume_mm3": 11740.935
       },
       {
         "name": "cross_bottom",
         "material_fraction": 1.0,
-        "volume_mm3": 16799.38
+        "volume_mm3": 15955.72
       },
       {
         "name": "cross_top",
-        "material_fraction": 0.994764,
-        "volume_mm3": 16799.38
+        "material_fraction": 1.0,
+        "volume_mm3": 15955.72
       },
       {
         "name": "cross_drop_rear",
         "material_fraction": 1.0,
-        "volume_mm3": 10704.96
+        "volume_mm3": 10167.36
       },
       {
         "name": "cross_drop_front",
         "material_fraction": 1.0,
-        "volume_mm3": 10704.96
+        "volume_mm3": 10167.36
       },
       {
         "name": "cross_bottom_inner_drop_rear",
         "material_fraction": 1.0,
-        "volume_mm3": 6469.596
+        "volume_mm3": 6144.694
       },
       {
         "name": "cross_bottom_inner_drop_front",
-        "material_fraction": 1.0,
-        "volume_mm3": 6469.596
+        "material_fraction": 0.998398,
+        "volume_mm3": 6144.694
       },
       {
         "name": "station_floor_left",
-        "material_fraction": 1.0,
+        "material_fraction": 0.9995,
         "volume_mm3": 4204.74
       },
       {
         "name": "station_floor_right",
-        "material_fraction": 1.0,
+        "material_fraction": 0.9995,
         "volume_mm3": 4204.74
       }
     ],
@@ -95,7 +99,125 @@
       214.115
     ],
     "station_floor_y1_mm": 214.215,
-    "cage_top_z_mm": 39.54
+    "cage_top_z_mm": 39.54,
+    "lead_nut_seat_checks": [
+      {
+        "spindle_x_mm": -36.65,
+        "thread_axis_z_mm": 31.0,
+        "nut_floor_z_mm": 18.0,
+        "pocket_floor_z_mm": 18.0,
+        "nut_inboard_y_mm": 198.415,
+        "pocket_inboard_stop_y_mm": 198.415,
+        "pin_axis_y_mm": 205.415,
+        "pin_axis_z_mm": 21.0,
+        "pin_top_clearance_to_cage_top_mm": 16.84,
+        "side_wall_thickness_mm": 3.15
+      },
+      {
+        "spindle_x_mm": 136.65,
+        "thread_axis_z_mm": 31.0,
+        "nut_floor_z_mm": 18.0,
+        "pocket_floor_z_mm": 18.0,
+        "nut_inboard_y_mm": 198.415,
+        "pocket_inboard_stop_y_mm": 198.415,
+        "pin_axis_y_mm": 205.415,
+        "pin_axis_z_mm": 21.0,
+        "pin_top_clearance_to_cage_top_mm": 16.84,
+        "side_wall_thickness_mm": 3.15
+      }
+    ],
+    "lead_nut_pin_wall_checks": [
+      {
+        "spindle_x_mm": -36.65,
+        "samples": [
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "y-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "y+",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "z-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "z+",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "y-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "y+",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "z-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "z+",
+            "solid": true
+          }
+        ]
+      },
+      {
+        "spindle_x_mm": 136.65,
+        "samples": [
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "y-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "y+",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "z-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": -9.775,
+            "sample": "z+",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "y-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "y+",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "z-",
+            "solid": true
+          },
+          {
+            "wall_x_offset_mm": 9.775,
+            "sample": "z+",
+            "solid": true
+          }
+        ]
+      }
+    ]
   },
   "rack": {
     "clamp_spacing_mm": 160.0,
@@ -690,15 +812,15 @@
       }
     ],
     "plate_x_mm": [
-      -55.65,
-      155.65
+      -51.65,
+      151.65
     ],
-    "plate_width_mm": 211.3,
+    "plate_width_mm": 203.3,
     "spindle_x_mm": [
-      -40.65,
-      140.65
+      -36.65,
+      136.65
     ],
-    "spindle_spacing_mm": 181.3,
+    "spindle_spacing_mm": 173.3,
     "spindle_z_mm": 31.0,
     "thread": "RH 8x2",
     "integral_female_threads": false,
@@ -706,140 +828,140 @@
     "working_female_thread_location": "removable_lead_nut_cartridge",
     "cartridge_insertion": [
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "lift_mm": 10.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "lift_mm": 5.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "lift_mm": 2.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "lift_mm": 0.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "lift_mm": 10.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "lift_mm": 5.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "lift_mm": 2.0,
         "base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "lift_mm": 0.0,
         "base_common_mm3": 0.0
       }
     ],
     "thread_motion": [
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 0,
         "rotation_deg": 0.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 0.5,
         "rotation_deg": -90.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 1.0,
         "rotation_deg": -180.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 2.0,
         "rotation_deg": -360.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 3.0,
         "rotation_deg": -540.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 4.0,
         "rotation_deg": -720.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 5.5,
         "rotation_deg": -990.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 0,
         "rotation_deg": 0.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 0.5,
         "rotation_deg": -90.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 1.0,
         "rotation_deg": -180.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 2.0,
         "rotation_deg": -360.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 3.0,
         "rotation_deg": -540.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 4.0,
         "rotation_deg": -720.0,
         "base_common_mm3": 0.0,
         "cartridge_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 5.5,
         "rotation_deg": -990.0,
         "base_common_mm3": 0.0,
@@ -848,98 +970,98 @@
     ],
     "knob_motion": [
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 0,
         "rotation_deg": 0.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 0.5,
         "rotation_deg": -90.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 1.0,
         "rotation_deg": -180.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 2.0,
         "rotation_deg": -360.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 3.0,
         "rotation_deg": -540.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 4.0,
         "rotation_deg": -720.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "open_mm": 5.5,
         "rotation_deg": -990.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 0,
         "rotation_deg": 0.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 0.5,
         "rotation_deg": -90.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 1.0,
         "rotation_deg": -180.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 2.0,
         "rotation_deg": -360.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 3.0,
         "rotation_deg": -540.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 4.0,
         "rotation_deg": -720.0,
         "knob_base_common_mm3": 0.0,
         "retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "open_mm": 5.5,
         "rotation_deg": -990.0,
         "knob_base_common_mm3": 0.0,
@@ -948,7 +1070,7 @@
     ],
     "assembly_approach": [
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "assembly_d_mm": -16.5,
         "rotation_deg": 2970.0,
         "plate_base_common_mm3": 0.0,
@@ -958,7 +1080,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "assembly_d_mm": -12.0,
         "rotation_deg": 2160.0,
         "plate_base_common_mm3": 0.0,
@@ -968,7 +1090,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "assembly_d_mm": -8.0,
         "rotation_deg": 1440.0,
         "plate_base_common_mm3": 0.0,
@@ -978,7 +1100,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "assembly_d_mm": -4.0,
         "rotation_deg": 720.0,
         "plate_base_common_mm3": 0.0,
@@ -988,7 +1110,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": -40.65,
+        "x_mm": -36.65,
         "assembly_d_mm": 0.0,
         "rotation_deg": -0.0,
         "plate_base_common_mm3": 0.0,
@@ -998,7 +1120,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "assembly_d_mm": -16.5,
         "rotation_deg": 2970.0,
         "plate_base_common_mm3": 0.0,
@@ -1008,7 +1130,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "assembly_d_mm": -12.0,
         "rotation_deg": 2160.0,
         "plate_base_common_mm3": 0.0,
@@ -1018,7 +1140,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "assembly_d_mm": -8.0,
         "rotation_deg": 1440.0,
         "plate_base_common_mm3": 0.0,
@@ -1028,7 +1150,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "assembly_d_mm": -4.0,
         "rotation_deg": 720.0,
         "plate_base_common_mm3": 0.0,
@@ -1038,7 +1160,7 @@
         "knob_retainer_base_common_mm3": 0.0
       },
       {
-        "x_mm": 140.65,
+        "x_mm": 136.65,
         "assembly_d_mm": 0.0,
         "rotation_deg": -0.0,
         "plate_base_common_mm3": 0.0,
@@ -1136,59 +1258,59 @@
       "service_channel_depth_mm": 2.0,
       "clip_insertion_path": [
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -10.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -7.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -4.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -2.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": 0.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -10.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -7.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -4.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -2.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": 0.0,
           "plate_common_mm3": 0.0
         }
       ],
       "checks": [
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "spindle_common_mm3": 0.0,
           "plate_common_mm3": 0.0,
           "counterbore_d_mm": 12.0,
@@ -1201,7 +1323,7 @@
           "shaft_groove_width_mm": 1.4
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "spindle_common_mm3": 0.0,
           "plate_common_mm3": 0.0,
           "counterbore_d_mm": 12.0,
@@ -1228,101 +1350,101 @@
       ],
       "lead_nut_drop_in": [
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "lift_mm": 10.0,
           "base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "lift_mm": 5.0,
           "base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "lift_mm": 2.0,
           "base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "lift_mm": 0.0,
           "base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "lift_mm": 10.0,
           "base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "lift_mm": 5.0,
           "base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "lift_mm": 2.0,
           "base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "lift_mm": 0.0,
           "base_common_mm3": 0.0
         }
       ],
       "plate_clip_service_path": [
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -10.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -7.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -4.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": -2.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "centre_z_offset_mm": 0.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -10.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -7.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -4.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": -2.0,
           "plate_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "centre_z_offset_mm": 0.0,
           "plate_common_mm3": 0.0
         }
       ],
       "threaded_plate_approach": [
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "assembly_d_mm": -16.5,
           "rotation_deg": 2970.0,
           "plate_base_common_mm3": 0.0,
@@ -1332,7 +1454,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "assembly_d_mm": -12.0,
           "rotation_deg": 2160.0,
           "plate_base_common_mm3": 0.0,
@@ -1342,7 +1464,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "assembly_d_mm": -8.0,
           "rotation_deg": 1440.0,
           "plate_base_common_mm3": 0.0,
@@ -1352,7 +1474,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "assembly_d_mm": -4.0,
           "rotation_deg": 720.0,
           "plate_base_common_mm3": 0.0,
@@ -1362,7 +1484,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "assembly_d_mm": 0.0,
           "rotation_deg": -0.0,
           "plate_base_common_mm3": 0.0,
@@ -1372,7 +1494,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "assembly_d_mm": -16.5,
           "rotation_deg": 2970.0,
           "plate_base_common_mm3": 0.0,
@@ -1382,7 +1504,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "assembly_d_mm": -12.0,
           "rotation_deg": 2160.0,
           "plate_base_common_mm3": 0.0,
@@ -1392,7 +1514,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "assembly_d_mm": -8.0,
           "rotation_deg": 1440.0,
           "plate_base_common_mm3": 0.0,
@@ -1402,7 +1524,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "assembly_d_mm": -4.0,
           "rotation_deg": 720.0,
           "plate_base_common_mm3": 0.0,
@@ -1412,7 +1534,7 @@
           "knob_retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "assembly_d_mm": 0.0,
           "rotation_deg": -0.0,
           "plate_base_common_mm3": 0.0,
@@ -1424,98 +1546,98 @@
       ],
       "operating_knob_clearance": [
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "open_mm": 0,
           "rotation_deg": 0.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "open_mm": 0.5,
           "rotation_deg": -90.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "open_mm": 1.0,
           "rotation_deg": -180.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "open_mm": 2.0,
           "rotation_deg": -360.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "open_mm": 3.0,
           "rotation_deg": -540.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "open_mm": 4.0,
           "rotation_deg": -720.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": -40.65,
+          "x_mm": -36.65,
           "open_mm": 5.5,
           "rotation_deg": -990.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "open_mm": 0,
           "rotation_deg": 0.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "open_mm": 0.5,
           "rotation_deg": -90.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "open_mm": 1.0,
           "rotation_deg": -180.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "open_mm": 2.0,
           "rotation_deg": -360.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "open_mm": 3.0,
           "rotation_deg": -540.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "open_mm": 4.0,
           "rotation_deg": -720.0,
           "knob_base_common_mm3": 0.0,
           "retainer_base_common_mm3": 0.0
         },
         {
-          "x_mm": 140.65,
+          "x_mm": 136.65,
           "open_mm": 5.5,
           "rotation_deg": -990.0,
           "knob_base_common_mm3": 0.0,
@@ -1651,8 +1773,8 @@
     "final_assembly_knob_retainer_count": 4,
     "final_assembly_plate_retainer_clip_count": 4,
     "final_assembly_installed_spindle_x_mm": [
-      -40.65,
-      140.65
+      -36.65,
+      136.65
     ],
     "final_assembly_left_hardware_transform": "rigid 180deg turnaround about plate centre for spindle/cartridge/pin/clip/knob/retainer stack; no RH8x2 reflection"
   },
@@ -1662,11 +1784,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3167313
+    "file_bytes": 3186679
   },
   "handed_stl_export": {
-    "right_sha256": "597caf584e9b80ed5c5b632ae051ad3f96079a41397dcde4d75dd56f18148845",
-    "left_sha256": "4ab4092c479bec5a7bf74b959f5035ffdc98f63c58e17d8dd894d59cfb90eda3",
+    "right_sha256": "b8ad7a5761b0fa4078c220c86d0b871624df97dcc796fc68993c1fad81972a8a",
+    "left_sha256": "9637721779b35bfe659178b4dc942a14d9a6036e1830f3a1fa0603c3b7401aed",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -1689,13 +1811,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 36826,
-    "left_facets": 36826,
-    "right_volume_mm3": 657919.538302,
-    "left_volume_mm3": 657919.538302,
+    "right_facets": 37840,
+    "left_facets": 37840,
+    "right_volume_mm3": 659489.768676,
+    "left_volume_mm3": 659489.768676,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 191608.324489,
-    "left_area_mm2": 191608.324489,
+    "right_area_mm2": 192731.901274,
+    "left_area_mm2": 192731.901274,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {

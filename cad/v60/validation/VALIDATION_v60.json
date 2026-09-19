@@ -29,14 +29,14 @@
     "rear_support_local_x_mm": 180.0,
     "rear_support_physical_x_mm": 299.0,
     "box_clamp_spindle_x_mm": [
-      -40.65,
-      140.65
+      -36.65,
+      136.65
     ],
     "box_clamp_plate_x_mm": [
-      -55.65,
-      155.65
+      -51.65,
+      151.65
     ],
-    "box_clamp_holm_clearance_mm": 12.0,
+    "box_clamp_holm_clearance_mm": 16.0,
     "pivot_yz_mm": [
       -12.0,
       -5.5
@@ -50,8 +50,8 @@
     ],
     "plate_sweep_xyz_mm": [
       [
-        -56.05,
-        156.05
+        -52.05,
+        152.05
       ],
       [
         214.315,
@@ -87,8 +87,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 553939.251,
-    "left_volume_mm3": 553939.251,
+    "right_volume_mm3": 555805.616,
+    "left_volume_mm3": 555805.616,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -180,14 +180,14 @@
           "drop_material_fraction": 1.0,
           "x_mm": [
             -96.0,
-            -56.05
+            -52.05
           ]
         },
         {
           "side": "right",
           "drop_material_fraction": 1.0,
           "x_mm": [
-            156.05,
+            152.05,
             196.0
           ]
         }
