@@ -871,11 +871,14 @@
       "measured_nut_af_mm": 6.81,
       "measured_nut_max_corner_mm": 7.8,
       "upper_nut_pocket_height_mm": 3.6,
-      "upper_nut_floor_z_mm": 11.04,
-      "upper_nut_floor_thickness_mm": 1.5,
+      "upper_nut_floor_z_mm": 11.54,
+      "upper_nut_floor_thickness_mm": 2.0,
+      "upper_nut_floor_screw_clear_d_mm": 4.6,
+      "upper_nut_floor_radial_ligament_mm": 1.15,
+      "upper_nut_floor_material_fraction": 1.0,
       "retainer_thread": "explicit matched printable 12x3 true radial/axial service thread; final BASE cut + compact matched-pair witness",
       "retainer_pitch_mm": 3.0,
-      "retainer_length_mm": 24.3,
+      "retainer_length_mm": 23.8,
       "retainer_top_z_mm": 39.34,
       "retainer_top_recess_mm": 0.2,
       "retainer_through_bore_d_mm": 5.0,
@@ -885,6 +888,7 @@
       "knob_plastic_web_mm": 3.2,
       "usable_screw_length_above_knob_mm": 23.6,
       "calculated_screw_tip_z_mm": 15.1,
+      "full_nut_screw_overrun_margin_mm": 0.36,
       "base_tube_common_mm3": 0.0,
       "retainer_thread_profile_generator": "true_radial_axial_OCC_fused",
       "retainer_male_major_d_mm": 12.0,
@@ -908,12 +912,12 @@
         "axial_root_clearance_mm": 0.3,
         "axial_crest_clearance_mm": 0.3,
         "target_nozzle_mm": 0.4,
-        "approx_full_turns": 8.1,
+        "approx_full_turns": 7.933,
         "lower_transition": {
           "shape": "45deg_conical_frustum",
           "z_mm": [
-            11.04,
-            12.84
+            11.54,
+            13.34
           ],
           "diameter_mm": [
             6.9,
@@ -921,13 +925,13 @@
           ],
           "height_mm": 1.8,
           "radial_per_vertical_slope": 1.0,
-          "female_cylindrical_bore_starts_z_mm": 12.84,
+          "female_cylindrical_bore_starts_z_mm": 13.34,
           "purpose": "replace abrupt lower annular shoulder with support-friendly taper"
         }
       },
       "female_thread_removed_mm3": [
-        496.699256,
-        496.699256
+        487.560439,
+        487.560439
       ],
       "female_helical_witness": [
         {
@@ -935,7 +939,7 @@
           "blocked_sample_points": 0,
           "sample_radius_mm": 6.3,
           "sample_z_mm": 39.34,
-          "final_base_removed_mm3": 496.699256,
+          "final_base_removed_mm3": 487.560439,
           "entry_clear_d_mm": 13.0
         },
         {
@@ -943,7 +947,7 @@
           "blocked_sample_points": 0,
           "sample_radius_mm": 6.3,
           "sample_z_mm": 39.34,
-          "final_base_removed_mm3": 496.699256,
+          "final_base_removed_mm3": 487.560439,
           "entry_clear_d_mm": 13.0
         }
       ],
@@ -1141,7 +1145,7 @@
           "samples": [
             {
               "fraction": 0.25,
-              "z_mm": 11.49,
+              "z_mm": 11.99,
               "expected_radius_mm": 3.9,
               "inner_probe_radius_mm": 3.72,
               "outer_probe_radius_mm": 4.08,
@@ -1150,7 +1154,7 @@
             },
             {
               "fraction": 0.5,
-              "z_mm": 11.94,
+              "z_mm": 12.44,
               "expected_radius_mm": 4.35,
               "inner_probe_radius_mm": 4.17,
               "outer_probe_radius_mm": 4.53,
@@ -1159,7 +1163,7 @@
             },
             {
               "fraction": 0.75,
-              "z_mm": 12.39,
+              "z_mm": 12.89,
               "expected_radius_mm": 4.8,
               "inner_probe_radius_mm": 4.62,
               "outer_probe_radius_mm": 4.98,
@@ -1173,7 +1177,7 @@
           "samples": [
             {
               "fraction": 0.25,
-              "z_mm": 11.49,
+              "z_mm": 11.99,
               "expected_radius_mm": 3.9,
               "inner_probe_radius_mm": 3.72,
               "outer_probe_radius_mm": 4.08,
@@ -1182,7 +1186,7 @@
             },
             {
               "fraction": 0.5,
-              "z_mm": 11.94,
+              "z_mm": 12.44,
               "expected_radius_mm": 4.35,
               "inner_probe_radius_mm": 4.17,
               "outer_probe_radius_mm": 4.53,
@@ -1191,7 +1195,7 @@
             },
             {
               "fraction": 0.75,
-              "z_mm": 12.39,
+              "z_mm": 12.89,
               "expected_radius_mm": 4.8,
               "inner_probe_radius_mm": 4.62,
               "outer_probe_radius_mm": 4.98,
@@ -1203,8 +1207,8 @@
       ],
       "lower_transition_shape": "45deg_conical_frustum",
       "lower_transition_z_mm": [
-        11.04,
-        12.84
+        11.54,
+        13.34
       ],
       "lower_transition_d_mm": [
         6.9,
@@ -2334,11 +2338,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3211233
+    "file_bytes": 3181018
   },
   "handed_stl_export": {
-    "right_sha256": "c669f6a0da6eb292e5aadfa65a94622084a4ec577b271014a0f209983c8b3c81",
-    "left_sha256": "4f869f6fc0919592f42956562fb61a4ec7c47afbe80c7396a767fcf65651d060",
+    "right_sha256": "4b62a6aa6e96e0152bb964a13c6d65c568a62ac60ef7129080832d3314575b1c",
+    "left_sha256": "6e5a6d77f0875a71b96a587bf6f6062d16db19ec6fd367337c6080b73275bd8f",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -2361,13 +2365,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 38662,
-    "left_facets": 38662,
-    "right_volume_mm3": 701653.340862,
-    "left_volume_mm3": 701653.340862,
+    "right_facets": 38186,
+    "left_facets": 38186,
+    "right_volume_mm3": 702990.019619,
+    "left_volume_mm3": 702990.019619,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 195702.102671,
-    "left_area_mm2": 195702.102671,
+    "right_area_mm2": 195950.573118,
+    "left_area_mm2": 195950.573118,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {

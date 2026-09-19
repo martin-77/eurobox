@@ -87,8 +87,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 632459.938,
-    "left_volume_mm3": 632459.938,
+    "right_volume_mm3": 634013.99,
+    "left_volume_mm3": 634013.99,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -360,6 +360,22 @@
       "rack_tube_common_mm3": 0.0,
       "front_holm_common_mm3": 1231.36,
       "rear_holm_common_mm3": 13591.635,
+      "front_holm_root_tie": {
+        "y_mm": [
+          18.0,
+          34.0
+        ],
+        "carrier_engagement_mm": 8.0,
+        "holm_engagement_mm": 10.0,
+        "material_fraction": 1.0,
+        "carrier_common_mm3": 3656.338,
+        "holm_common_mm3": 4623.012,
+        "section": "closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls",
+        "x_z_envelope_growth_mm": [
+          0.0,
+          0.0
+        ]
+      },
       "clamp_overlaps": [
         {
           "station": "front",
