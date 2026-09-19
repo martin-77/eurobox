@@ -37,6 +37,16 @@ CARRIER_SIDE_T = C.WEB_T
 CARRIER_SIDE_Z0 = CARRIER_BOTTOM_Z1
 CARRIER_SIDE_Z1 = CARRIER_TOP_Z0
 
+# Front long-holm root reinforcement.  The original direct carrier/holm
+# intersection was only Y=24..26 (2 mm).  Continue the actual I-beam load paths
+# through a local closed root sleeve from Y=18..34: 8 mm embedded in the carrier
+# and 10 mm embedded in the long holm, with no X/Z envelope growth.
+FRONT_ROOT_Y0 = 18.0
+FRONT_ROOT_Y1 = 34.0
+FRONT_ROOT_CARRIER_ENGAGEMENT = CARRIER_Y1 - FRONT_ROOT_Y0
+FRONT_ROOT_HOLM_ENGAGEMENT = FRONT_ROOT_Y1 - C.ARM_Y0
+FRONT_ROOT_SIDE_T = C.WEB_T
+
 # Close both X ends of the hollow carrier. The former "closed box" only had
 # Y-side walls; its X end faces were still open and exposed the green-shelf
 # DROP in the slicer. Keep the cap inside the existing X envelope and overlap
@@ -105,6 +115,34 @@ def make_green_shelf_drop():
     q = face.extrude(App.Vector(CARRIER_X1 - CARRIER_X0, 0, 0))
     q.translate(App.Vector(CARRIER_X0, 0, 0))
     C.require_single(q, 'green-shelf-drop')
+    return q
+
+
+def make_front_holm_root_tie():
+    xc = C.FRONT_CLAMP_X
+    length = FRONT_ROOT_Y1 - FRONT_ROOT_Y0
+    web_h = C.ARM_H - 2.0*C.FLANGE_T
+    web_z = C.ARM_BOTTOM_Z + C.FLANGE_T
+    parts = [
+        # Continue both load-bearing flanges.
+        C.box(xc-C.ARM_W/2.0, FRONT_ROOT_Y0, C.ARM_TOP_Z-C.FLANGE_T,
+              C.ARM_W, length, C.FLANGE_T),
+        C.box(xc-C.ARM_W/2.0, FRONT_ROOT_Y0, C.ARM_BOTTOM_Z,
+              C.ARM_W, length, C.FLANGE_T),
+        # Continue the two real long-holm webs backward through the carrier.
+        C.box(xc-8.0-C.WEB_T/2.0, FRONT_ROOT_Y0, web_z,
+              C.WEB_T, length, web_h),
+        C.box(xc+8.0-C.WEB_T/2.0, FRONT_ROOT_Y0, web_z,
+              C.WEB_T, length, web_h),
+        # Close the root laterally so torsion is carried as a local box instead
+        # of being dumped into the first 2 mm of I-beam overlap.
+        C.box(xc-C.ARM_W/2.0, FRONT_ROOT_Y0, web_z,
+              FRONT_ROOT_SIDE_T, length, web_h),
+        C.box(xc+C.ARM_W/2.0-FRONT_ROOT_SIDE_T, FRONT_ROOT_Y0, web_z,
+              FRONT_ROOT_SIDE_T, length, web_h),
+    ]
+    q = C.fuse_seq(parts, 'front-holm-closed-root-tie')
+    C.require_single(q, 'front-holm-closed-root-tie')
     return q
 
 
@@ -310,9 +348,10 @@ def build_clean_right():
     rear_clamp = make_hanging_upper_station(C.REAR_CLAMP_X)
     backstop = make_hanging_backstop()
     crosshead = C.make_crosshead()
+    front_root_tie = make_front_holm_root_tie()
 
     q = C.fuse_seq(
-        [carrier, front_long, rear_long, front_clamp, rear_clamp, backstop, crosshead],
+        [carrier, front_long, rear_long, front_clamp, rear_clamp, backstop, crosshead, front_root_tie],
         'v60 continuous-carrier RIGHT',
     )
     q = q.cut(C.make_plate_sweep_clearance()).removeSplitter()
@@ -337,6 +376,7 @@ def build_clean_right():
 RIGHT, CARRIER, FRONT_LONG, REAR_LONG, FRONT_CLAMP, REAR_CLAMP, BACKSTOP = build_clean_right()
 GREEN_SHELF_DROP = make_green_shelf_drop()
 BACKSTOP_BASE_DROP = make_backstop_base_drop()
+FRONT_HOLM_ROOT_TIE = make_front_holm_root_tie()
 LEFT = C.mirror_x(RIGHT)
 
 # Make the clean architecture canonical for the full builder and all downstream
@@ -476,6 +516,22 @@ if front_holm_overlap < 100.0:
 if rear_holm_overlap < 100.0:
     failures.append(f'rear long holm not fused into continuous carrier: {rear_holm_overlap:.3f}')
 
+# Structural regression gate for the front-root load path.  Validate the actual
+# reinforcing member and both sides of the load transfer separately.
+front_root_fraction = RIGHT.common(FRONT_HOLM_ROOT_TIE).Volume / FRONT_HOLM_ROOT_TIE.Volume
+front_root_carrier_common = FRONT_HOLM_ROOT_TIE.common(CARRIER).Volume
+front_root_holm_common = FRONT_HOLM_ROOT_TIE.common(FRONT_LONG).Volume
+if front_root_fraction < 0.995:
+    failures.append(f'front holm root tie missing from final core: {front_root_fraction:.6f}')
+if FRONT_ROOT_CARRIER_ENGAGEMENT < 8.0 - 1e-9:
+    failures.append(f'front root carrier engagement too short: {FRONT_ROOT_CARRIER_ENGAGEMENT:.3f} mm')
+if FRONT_ROOT_HOLM_ENGAGEMENT < 10.0 - 1e-9:
+    failures.append(f'front root holm engagement too short: {FRONT_ROOT_HOLM_ENGAGEMENT:.3f} mm')
+if front_root_carrier_common < 2500.0:
+    failures.append(f'front root tie/carrier overlap too small: {front_root_carrier_common:.3f} mm3')
+if front_root_holm_common < 4000.0:
+    failures.append(f'front root tie/holm overlap too small: {front_root_holm_common:.3f} mm3')
+
 # The measured rack tube must remain free; the carrier uses the same v50 saddle.
 tube = C.cyl_x(C.RACK_R, 400.0, -200.0, 0.0, 0.0)
 tube_common = RIGHT.common(tube).Volume
@@ -530,6 +586,16 @@ report['geometry']['continuous_carrier'] = {
     'rack_tube_common_mm3': round(tube_common,9),
     'front_holm_common_mm3': round(front_holm_overlap,3),
     'rear_holm_common_mm3': round(rear_holm_overlap,3),
+    'front_holm_root_tie': {
+        'y_mm': [FRONT_ROOT_Y0, FRONT_ROOT_Y1],
+        'carrier_engagement_mm': round(FRONT_ROOT_CARRIER_ENGAGEMENT,3),
+        'holm_engagement_mm': round(FRONT_ROOT_HOLM_ENGAGEMENT,3),
+        'material_fraction': round(front_root_fraction,6),
+        'carrier_common_mm3': round(front_root_carrier_common,3),
+        'holm_common_mm3': round(front_root_holm_common,3),
+        'section': 'closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls',
+        'x_z_envelope_growth_mm': [0.0,0.0],
+    },
     'clamp_overlaps': station_overlaps,
     'backstop_common_mm3': round(backstop_overlap,3),
     'backstop_base_drop': {

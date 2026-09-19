@@ -200,6 +200,11 @@ assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
 assert closure['carrier_top_plane_z_mm'] == 39.54, closure
 assert closure['lower_closure_thickness_mm'] == 7.0, closure
 assert closure['upper_nut_pocket_af_mm'] == 6.9, closure
+assert closure['upper_nut_floor_thickness_mm'] >= 2.0, closure
+assert closure['upper_nut_floor_screw_clear_d_mm'] <= 4.6, closure
+assert closure['upper_nut_floor_radial_ligament_mm'] >= 1.15, closure
+assert closure['upper_nut_floor_material_fraction'] >= 0.985, closure
+assert closure['full_nut_screw_overrun_margin_mm'] >= 0.30, closure
 assert closure['screw_length_mm'] == 30.0, closure
 assert closure['retainer_pitch_mm'] == 3.0, closure
 assert closure['retainer_male_major_d_mm'] == 12.0, closure
@@ -211,7 +216,7 @@ assert closure['female_thread_start_recess_mm'] <= 0.60, closure
 assert len(closure['female_thread_removed_mm3']) == 2, closure
 assert all(v >= 8.0 for v in closure['female_thread_removed_mm3']), closure
 assert closure['lower_transition_shape'] == '45deg_conical_frustum', closure
-assert closure['lower_transition_z_mm'] == [11.04, 12.84], closure
+assert closure['lower_transition_z_mm'] == [11.54, 13.34], closure
 assert closure['lower_transition_d_mm'] == [6.9, 10.5], closure
 
 ltw = closure['lower_transition_witness']
@@ -233,11 +238,11 @@ assert p['axial_crest_clearance_mm'] >= 0.25, p
 assert p['target_nozzle_mm'] == 0.4, p
 lt = p['lower_transition']
 assert lt['shape'] == '45deg_conical_frustum', lt
-assert lt['z_mm'] == [11.04, 12.84], lt
+assert lt['z_mm'] == [11.54, 13.34], lt
 assert lt['diameter_mm'] == [6.9, 10.5], lt
 assert abs(lt['height_mm'] - 1.8) <= 1e-9, lt
 assert abs(lt['radial_per_vertical_slope'] - 1.0) <= 1e-9, lt
-assert abs(lt['female_cylindrical_bore_starts_z_mm'] - 12.84) <= 1e-9, lt
+assert abs(lt['female_cylindrical_bore_starts_z_mm'] - 13.34) <= 1e-9, lt
 
 mouth = closure['female_helical_witness']
 assert len(mouth) == 2, mouth
@@ -259,6 +264,14 @@ assert cc['rack_tube_common_mm3'] <= 0.0001, cc
 assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
+fr = cc['front_holm_root_tie']
+assert fr['section'] == 'closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls', fr
+assert fr['carrier_engagement_mm'] >= 8.0, fr
+assert fr['holm_engagement_mm'] >= 10.0, fr
+assert fr['material_fraction'] >= 0.995, fr
+assert fr['carrier_common_mm3'] >= 2500.0, fr
+assert fr['holm_common_mm3'] >= 4000.0, fr
+assert fr['x_z_envelope_growth_mm'] == [0.0,0.0], fr
 bd = cc['backstop_base_drop']
 assert bd['profile'] == 'filled_quarter_ellipse_tapered_to_stop_bottom', bd
 assert bd['x_edge_inset_mm'] == 3.0, bd

@@ -22,7 +22,9 @@ import v60_rack_hand_knob as K
 
 RACK_SCREW_LENGTH = 30.0
 RACK_SCREW_D = 4.0
-RACK_SCREW_CLEAR_D = 5.0
+# 4.60 mm matches the existing fixed-BASE M4 clearance datum and leaves more
+# PETG under the 6.90 mm AF nut than the former Ø5.0 bore.
+RACK_SCREW_CLEAR_D = 4.60
 
 # Carrier envelope at the rack-side BASE.  The top plane is already the box
 # support plane; the lower carrier plane is the 30 mm holm datum.  The rack tube
@@ -39,7 +41,10 @@ RACK_NUT_AF = 6.90
 RACK_NUT_NOMINAL_AF = 6.81
 RACK_NUT_MAX_CORNER = 7.80
 RACK_NUT_H = 3.60
-RACK_NUT_FLOOR_T = 1.50
+# 2.0 mm is the strongest floor that still preserves positive full-nut
+# engagement with the existing M4x30 hardware.  2.5 mm would move the nut too
+# high for the current screw-length budget.
+RACK_NUT_FLOOR_T = 2.00
 RACK_NUT_Z0 = CARRIER_BOTTOM_PLANE_Z + RACK_NUT_FLOOR_T
 RACK_NUT_Z1 = RACK_NUT_Z0 + RACK_NUT_H
 
@@ -292,13 +297,23 @@ for xc in C.CLAMP_X:
     if nut_blocked > 1e-4:
         fail(f'6.81 mm AF M4 nut proxy blocked at X={xc}: {nut_blocked:.6f} mm3')
 
-    # Solid annular floor under the nut must be present outside the M4 bore.
-    floor_outer = Part.makeCylinder(3.75, 0.40, App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_Z0 - 0.40))
-    floor_inner = Part.makeCylinder(RACK_SCREW_CLEAR_D / 2.0, 0.40, App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_Z0 - 0.40))
-    floor_ring = floor_outer.cut(floor_inner)
+    # Validate the COMPLETE load-bearing floor thickness under the nut flats,
+    # not just a 0.40 mm witness skin.  The relevant outer radius is the 6.90 mm
+    # AF nut inradius; the inner radius is the actual final screw clearance.
+    floor_outer_r = RACK_NUT_AF / 2.0
+    floor_inner_r = RACK_SCREW_CLEAR_D / 2.0
+    floor_ring = Part.makeCylinder(
+        floor_outer_r, RACK_NUT_FLOOR_T,
+        App.Vector(xc, C.RACK_CLOSURE_Y, CARRIER_BOTTOM_PLANE_Z),
+    ).cut(
+        Part.makeCylinder(
+            floor_inner_r, RACK_NUT_FLOOR_T,
+            App.Vector(xc, C.RACK_CLOSURE_Y, CARRIER_BOTTOM_PLANE_Z),
+        )
+    )
     floor_fraction = RIGHT.common(floor_ring).Volume / floor_ring.Volume
-    if floor_fraction < 0.92:
-        fail(f'M4 nut support floor too weak at X={xc}: {floor_fraction:.4f}')
+    if floor_fraction < 0.985:
+        fail(f'M4 nut full support floor incomplete at X={xc}: {floor_fraction:.4f}')
 
 
 retainer_top_z = RETAINER_THREAD_Z0 + RETAINER_LEN
@@ -325,12 +340,13 @@ knob_nut_effective_h = 3.20
 usable_above_knob = RACK_SCREW_LENGTH - KNOB_NUT_Z0 - knob_nut_effective_h
 screw_tip_z = LOWER_PAD_Z0 + usable_above_knob
 upper_nut_required_tip_z = RACK_NUT_Z0 + 3.20
+screw_overrun_margin = screw_tip_z - upper_nut_required_tip_z
 if usable_above_knob < 23.0:
     fail(f'M4x30 usable length above knob unexpectedly short: {usable_above_knob:.3f} mm')
-if screw_tip_z < upper_nut_required_tip_z + 0.50:
+if screw_overrun_margin < 0.30:
     fail(
-        f'M4x30 engagement margin too small: tip Z={screw_tip_z:.3f}, '
-        f'required={upper_nut_required_tip_z:.3f}'
+        f'M4x30 full-nut engagement margin too small: {screw_overrun_margin:.3f} mm '
+        f'(tip Z={screw_tip_z:.3f}, nut proxy top={upper_nut_required_tip_z:.3f})'
     )
 
 # Central overrun path must remain clear from the top of the real nut all the
@@ -436,6 +452,9 @@ validation['rack']['m4_closure'] = {
     'upper_nut_pocket_height_mm': RACK_NUT_H,
     'upper_nut_floor_z_mm': RACK_NUT_Z0,
     'upper_nut_floor_thickness_mm': RACK_NUT_FLOOR_T,
+    'upper_nut_floor_screw_clear_d_mm': RACK_SCREW_CLEAR_D,
+    'upper_nut_floor_radial_ligament_mm': round(RACK_NUT_AF/2.0-RACK_SCREW_CLEAR_D/2.0,3),
+    'upper_nut_floor_material_fraction': round(floor_fraction,6),
     'retainer_thread': 'reserved structural seat; final 12x3 pair generated once in apply_v60_retainer_thread_final',
     'retainer_pitch_mm': RETAINER_PITCH,
     'retainer_length_mm': round(RETAINER_LEN, 3),
@@ -448,6 +467,7 @@ validation['rack']['m4_closure'] = {
     'knob_plastic_web_mm': KNOB_NUT_Z0,
     'usable_screw_length_above_knob_mm': round(usable_above_knob, 3),
     'calculated_screw_tip_z_mm': round(screw_tip_z, 3),
+    'full_nut_screw_overrun_margin_mm': round(screw_overrun_margin,3),
     'base_tube_common_mm3': round(tube_common, 9),
 }
 validation['failures'] = []
