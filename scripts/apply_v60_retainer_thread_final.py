@@ -216,13 +216,10 @@ RIGHT = R.RIGHT
 # subtraction made OCC return an invalid BRep even though the geometry was
 # conceptually sound.
 for xc in C.CLAMP_X:
-    # First remove the 45-degree lower transition.  It starts at the metal nut
-    # pocket inradius and reaches the full female crest-bore radius without a
-    # printable horizontal ring shoulder.
-    transition_cutter = LOWER_TRANSITION_CUTTER.copy()
-    transition_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, 0.0))
-    RIGHT = RIGHT.cut(transition_cutter).removeSplitter()
-
+    # Keep this pre-helix stage topologically simple. The lower 45-degree
+    # transition is deliberately applied AFTER both expensive helical groove
+    # booleans; doing it here multiplied OCC boolean time by an order of
+    # magnitude without changing the final geometry.
     core_cutter = FEMALE_CORE_CUTTER.copy()
     core_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, THREAD_Z0))
     RIGHT = RIGHT.cut(core_cutter).removeSplitter()
@@ -257,8 +254,23 @@ for xc in C.CLAMP_X:
             f'Female retainer helix at X={xc} removed only {removed:.3f} mm3; '
             'usable helical groove did not materially reach the BASE'
         )
+stage('cut print-friendly lower retainer transitions after helical grooves')
+_t = start_timer('retainer.cut_lower_transitions_post_helix')
+for xc in C.CLAMP_X:
+    transition_cutter = LOWER_TRANSITION_CUTTER.copy()
+    transition_cutter.translate(App.Vector(xc, C.RACK_CLOSURE_Y, 0.0))
+    before = RIGHT.Volume
+    RIGHT = RIGHT.cut(transition_cutter).removeSplitter()
+    C.require_single(RIGHT, f'BASE after lower 45deg retainer transition X={xc}')
+    removed = before - RIGHT.Volume
+    if removed <= 0.10:
+        raise RuntimeError(
+            f'Lower retainer transition at X={xc} removed only {removed:.3f} mm3'
+        )
+stop_timer('retainer.cut_lower_transitions_post_helix', _t)
+
 _t = start_timer('retainer.validate_and_mirror_final_threaded_base')
-C.require_single(RIGHT, 'RIGHT base with final explicit female retainer threads')
+C.require_single(RIGHT, 'RIGHT base with final explicit female retainer threads and lower tapers')
 LEFT = C.mirror_x(RIGHT)
 C.require_single(LEFT, 'LEFT base with final explicit female retainer threads')
 stop_timer('retainer.validate_and_mirror_final_threaded_base', _t)
