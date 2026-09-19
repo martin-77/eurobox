@@ -34,7 +34,6 @@ PLATE_RETAINER_COUNTERBORE_DEPTH = 2.0
 PLATE_RETAINER_CHANNEL_W = 11.4
 UNDERHOOK = 4.2
 UNDERHOOK_T = 4.0
-SPINDLE_Z = 31.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
 THREAD_CORE_R = 3.25
@@ -53,6 +52,9 @@ RH8_FEMALE_CREST_MATERIAL_W = THREAD_PITCH - RH8_FEMALE_ROOT_W
 LEAD_THREAD_LEN = 22.2
 NUT_THREAD_LEN = 14.0
 SHOULDER_D = 11.0
+# Smooth BASE corridor around the largest inboard spindle feature (Ø11
+# shoulder) with 0.40 mm radial FDM/service clearance.
+SPINDLE_TUNNEL_R = SHOULDER_D/2.0 + 0.40
 SPINDLE_LOCAL_JOURNAL = 8.0
 SPINDLE_LOCAL_SHOULDER = 1.8
 # The knob is 7 mm thick.  Its complete thickness must sit on the hex before
@@ -85,6 +87,11 @@ PRINT_BASE_PLANE_Z = C.BOX_SUPPORT_Z
 PRINT_GUIDE_Z1 = PRINT_BASE_PLANE_Z
 PRINT_FRAME_BOSS_Z0 = 20.0
 PRINT_FRAME_BOSS_Z1 = PRINT_BASE_PLANE_Z
+# Centre the COMPLETE screw/thread axis in the fixed structural boss. The old
+# hard-coded Z=31.0 left only 2.64 mm above the Ø11.8 service corridor but
+# 5.10 mm below it. Deriving the datum from the boss faces gives equal
+# 3.87 mm ligaments with the current 20.00..39.54 mm boss.
+SPINDLE_Z = (PRINT_FRAME_BOSS_Z0 + PRINT_FRAME_BOSS_Z1) / 2.0
 PRINT_FRAME_TIE_T = 6.0
 FINAL_DECK_Z0 = C.ARM_BOTTOM_Z
 FINAL_DECK_Z1 = PRINT_GUIDE_Z0
@@ -700,7 +707,7 @@ for sx in SPINDLE_X:
     tunnel_y0 = PLATE_SPINDLE_Y - PLATE_OPEN - spindle_rear_reach - 1.0
     tunnel_y1 = PLATE_SPINDLE_Y-PLATE_Y+0.50
     RIGHT_FULL = RIGHT_FULL.cut(
-        cyl_y(5.90,tunnel_y1-tunnel_y0,sx,tunnel_y0,SPINDLE_Z)
+        cyl_y(SPINDLE_TUNNEL_R,tunnel_y1-tunnel_y0,sx,tunnel_y0,SPINDLE_Z)
     ).removeSplitter()
 
     pin_y = NUT_Y0 + LEAD_NUT_PIN_LOCAL_Y
@@ -1031,6 +1038,35 @@ for sx,holm_inner_x,side in station_check_refs:
 
 # Prove the lead nut has a real mechanical seat and that its cross-pin is
 # captured by structural cage material instead of floating above the cage top.
+# Fixed-boss ligament symmetry is a hard mechanical gate. Keep this tied to
+# the actual largest spindle corridor, not only to the nominal RH8x2 diameter.
+boss_spindle_ligaments={
+    'boss_z0_mm':round(PRINT_FRAME_BOSS_Z0,3),
+    'boss_z1_mm':round(PRINT_FRAME_BOSS_Z1,3),
+    'spindle_axis_z_mm':round(SPINDLE_Z,3),
+    'corridor_radius_mm':round(SPINDLE_TUNNEL_R,3),
+    'lower_ligament_mm':round((SPINDLE_Z-SPINDLE_TUNNEL_R)-PRINT_FRAME_BOSS_Z0,3),
+    'upper_ligament_mm':round(PRINT_FRAME_BOSS_Z1-(SPINDLE_Z+SPINDLE_TUNNEL_R),3),
+}
+if abs(boss_spindle_ligaments['lower_ligament_mm']-boss_spindle_ligaments['upper_ligament_mm'])>1e-6:
+    fail('box-clamp spindle corridor is not centred vertically in fixed boss')
+if min(boss_spindle_ligaments['lower_ligament_mm'],boss_spindle_ligaments['upper_ligament_mm'])<3.5:
+    fail('box-clamp spindle corridor leaves less than 3.5 mm fixed-boss ligament')
+
+# The moving plate intentionally stays at Z=16..46 to preserve the proven box
+# rim/hook geometry. Its screw axis therefore moves off plate centre slightly;
+# prove the larger Ø12 retainer counterbore still has generous material.
+plate_counterbore_ligaments={
+    'plate_z0_mm':round(PLATE_Z0,3),
+    'plate_z1_mm':round(PLATE_Z1,3),
+    'spindle_axis_z_mm':round(SPINDLE_Z,3),
+    'counterbore_radius_mm':round(PLATE_RETAINER_COUNTERBORE_D/2.0,3),
+    'lower_ligament_mm':round(SPINDLE_Z-PLATE_RETAINER_COUNTERBORE_D/2.0-PLATE_Z0,3),
+    'upper_ligament_mm':round(PLATE_Z1-(SPINDLE_Z+PLATE_RETAINER_COUNTERBORE_D/2.0),3),
+}
+if min(plate_counterbore_ligaments['lower_ligament_mm'],plate_counterbore_ligaments['upper_ligament_mm'])<6.0:
+    fail('box-clamp plate counterbore leaves less than 6 mm vertical ligament')
+
 lead_nut_seat_checks=[]
 lead_nut_pin_wall_checks=[]
 for sx in SPINDLE_X:
@@ -1333,7 +1369,7 @@ def local_y_extent(d):
 width_states={str(d):local_y_extent(d) for d in (0.0,5.5)}; holder_half=C.RACK_CTC/2+max(width_states.values())
 if holder_half>C.BOX_W/2+0.02: fail(f'complete holder exceeds 600 mm box width: {2*holder_half:.3f} mm')
 
-V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z,'lead_nut_seat_checks':lead_nut_seat_checks,'lead_nut_pin_wall_checks':lead_nut_pin_wall_checks},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'knob_motion':knob_motion,'assembly_approach':assembly_approach,'thread_brep_common_tolerance_mm3':1.20,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
+V={'version':'v60','stage':'full_direct_mechanism_v50_solutions_restored','architecture':'clean structural core + proven v50 rack joint/backstop/drop/cage solutions','base':{'right_bbox_mm':[round(RIGHT_FULL.BoundBox.XLength,3),round(RIGHT_FULL.BoundBox.YLength,3),round(RIGHT_FULL.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT_FULL.BoundBox.XLength,3),round(LEFT_FULL.BoundBox.YLength,3),round(LEFT_FULL.BoundBox.ZLength,3)],'mirror_delta_mm3':round(full_mirror_delta,9),'mirror_bound_delta_mm':round(mirror_bound_delta,9),'mirror_face_delta':mirror_face_delta,'pin_bore_clearance':pin_bore_clearance,'holm_station_checks':holm_station_checks,'cage_reinforcement_checks':cage_reinforcement_checks,'cage_struct_y_mm':[round(CAGE_Y0,3),round(CAGE_STRUCT_Y1,3)],'station_floor_y1_mm':round(STATION_FLOOR_Y1,3),'cage_top_z_mm':PRINT_BASE_PLANE_Z,'boss_spindle_ligaments':boss_spindle_ligaments,'plate_counterbore_ligaments':plate_counterbore_ligaments,'lead_nut_seat_checks':lead_nut_seat_checks,'lead_nut_pin_wall_checks':lead_nut_pin_wall_checks},'rack':{'clamp_spacing_mm':C.CLAMP_SPACING,'joint':'v51 broad central Upper bearing + replaceable Lower fork','upper_pivot_width_mm':C.UPPER_PIVOT_W,'lower_fork_outer_width_mm':LOWER_FORK_W,'lower_fork_ear_thickness_mm':LOWER_FORK_EAR_T,'lower_web_top_z_mm':LOWER_WEB_TOP_Z,'lower_sweep':lower_sweep,'tightening_sweep':tightening_sweep,'pin_checks':pin_checks,'m4_closure_checks':closure_checks,'m4_closure':{'mode':'M4x20 from below into side-loaded captive M4 nut','screw_length_mm':RACK_M4_SCREW_LENGTH,'lower_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,'base_clearance_d_mm':C.RACK_M4_BASE_CLEAR_D,'base_bore_z_mm':[RACK_M4_BASE_BORE_Z0,RACK_M4_BASE_BORE_Z1],'nut_pocket_af_mm':C.RACK_M4_NUT_AF,'nut_pocket_height_mm':C.RACK_M4_NUT_H,'closure_pad_x_mm':RACK_CLOSURE_PAD_X,'closure_pad_y_mm':[RACK_CLOSURE_PAD_Y0,RACK_CLOSURE_PAD_Y1],'closure_pad_z_mm':[RACK_CLOSURE_PAD_Z0,RACK_CLOSURE_PAD_Z1],'closure_pad_material_fraction':round(closure_pad_fraction,6),'nominal_gap_mm':round(closure_nominal_gap,3),'mapped_tube_adjustment_mm':round(closure_mapped_tube_adjustment,3),'required_tube_adjustment_mm':round(required_tube_adjustment,3),'nut_engagement_mm':round(rack_nut_engagement,3),'tip_clearance_mm':round(rack_tip_clearance,3),'front_ligament_mm':round(closure_front_ligament,3),'side_ligament_mm':round(closure_side_ligament,3)}},'box_clamp':{'architecture':'v50_direct_removable_lead_nut_cartridge_local_holm_stations','plate_travel_mm':PLATE_OPEN,'plate_motion':plate_motion,'plate_x_mm':[round(PLATE_X0,3),round(PLATE_X1,3)],'plate_width_mm':round(PLATE_X,3),'spindle_x_mm':[round(x,3) for x in SPINDLE_X],'spindle_spacing_mm':round(SPINDLE_X[1]-SPINDLE_X[0],3),'spindle_z_mm':SPINDLE_Z,'thread':'RH 8x2','integral_female_threads':False,'base_has_working_thread':False,'working_female_thread_location':'removable_lead_nut_cartridge','cartridge_insertion':cartridge_insertion,'thread_motion':thread_motion,'knob_motion':knob_motion,'assembly_approach':assembly_approach,'thread_brep_common_tolerance_mm3':1.20,'width_states_local_y_mm':{k:round(v,3) for k,v in width_states.items()},'effective_total_width_mm':round(max(C.BOX_W,2*holder_half),3)},'failures':failures}
 V['box_clamp']['lead_screw']={
     'construction':'single OpenSCAD CGAL union; exact final printable STL retained',
     'main_thread':'true radial/axial RH8x2',
