@@ -908,11 +908,26 @@
         "axial_root_clearance_mm": 0.3,
         "axial_crest_clearance_mm": 0.3,
         "target_nozzle_mm": 0.4,
-        "approx_full_turns": 8.1
+        "approx_full_turns": 8.1,
+        "lower_transition": {
+          "shape": "45deg_conical_frustum",
+          "z_mm": [
+            11.04,
+            12.84
+          ],
+          "diameter_mm": [
+            6.9,
+            10.5
+          ],
+          "height_mm": 1.8,
+          "radial_per_vertical_slope": 1.0,
+          "female_cylindrical_bore_starts_z_mm": 12.84,
+          "purpose": "replace abrupt lower annular shoulder with support-friendly taper"
+        }
       },
       "female_thread_removed_mm3": [
-        495.126261,
-        495.126261
+        496.699256,
+        496.699256
       ],
       "female_helical_witness": [
         {
@@ -920,7 +935,7 @@
           "blocked_sample_points": 0,
           "sample_radius_mm": 6.3,
           "sample_z_mm": 39.34,
-          "final_base_removed_mm3": 495.126261,
+          "final_base_removed_mm3": 496.699256,
           "entry_clear_d_mm": 13.0
         },
         {
@@ -928,7 +943,7 @@
           "blocked_sample_points": 0,
           "sample_radius_mm": 6.3,
           "sample_z_mm": 39.34,
-          "final_base_removed_mm3": 495.126261,
+          "final_base_removed_mm3": 496.699256,
           "entry_clear_d_mm": 13.0
         }
       ],
@@ -1119,6 +1134,81 @@
           "ridge_center_solid": true,
           "between_turns_solid": false
         }
+      ],
+      "lower_transition_witness": [
+        {
+          "x_mm": -80.0,
+          "samples": [
+            {
+              "fraction": 0.25,
+              "z_mm": 11.49,
+              "expected_radius_mm": 3.9,
+              "inner_probe_radius_mm": 3.72,
+              "outer_probe_radius_mm": 4.08,
+              "inner_probe_solid": false,
+              "outer_probe_solid": true
+            },
+            {
+              "fraction": 0.5,
+              "z_mm": 11.94,
+              "expected_radius_mm": 4.35,
+              "inner_probe_radius_mm": 4.17,
+              "outer_probe_radius_mm": 4.53,
+              "inner_probe_solid": false,
+              "outer_probe_solid": true
+            },
+            {
+              "fraction": 0.75,
+              "z_mm": 12.39,
+              "expected_radius_mm": 4.8,
+              "inner_probe_radius_mm": 4.62,
+              "outer_probe_radius_mm": 4.98,
+              "inner_probe_solid": false,
+              "outer_probe_solid": true
+            }
+          ]
+        },
+        {
+          "x_mm": 80.0,
+          "samples": [
+            {
+              "fraction": 0.25,
+              "z_mm": 11.49,
+              "expected_radius_mm": 3.9,
+              "inner_probe_radius_mm": 3.72,
+              "outer_probe_radius_mm": 4.08,
+              "inner_probe_solid": false,
+              "outer_probe_solid": true
+            },
+            {
+              "fraction": 0.5,
+              "z_mm": 11.94,
+              "expected_radius_mm": 4.35,
+              "inner_probe_radius_mm": 4.17,
+              "outer_probe_radius_mm": 4.53,
+              "inner_probe_solid": false,
+              "outer_probe_solid": true
+            },
+            {
+              "fraction": 0.75,
+              "z_mm": 12.39,
+              "expected_radius_mm": 4.8,
+              "inner_probe_radius_mm": 4.62,
+              "outer_probe_radius_mm": 4.98,
+              "inner_probe_solid": false,
+              "outer_probe_solid": true
+            }
+          ]
+        }
+      ],
+      "lower_transition_shape": "45deg_conical_frustum",
+      "lower_transition_z_mm": [
+        11.04,
+        12.84
+      ],
+      "lower_transition_d_mm": [
+        6.9,
+        10.5
       ],
       "entry_clear_d_mm": 13.0,
       "entry_clear_depth_mm": 0.45,
@@ -2244,11 +2334,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3203324
+    "file_bytes": 3211233
   },
   "handed_stl_export": {
-    "right_sha256": "902a530baedc442f1ee2e84a8e90268cd7425dca9de8671d3603d5e1b1386f1d",
-    "left_sha256": "30f139268c20913b80d074e22fb1b2363d11528abf97e6a04257d1ae0c4141d9",
+    "right_sha256": "c669f6a0da6eb292e5aadfa65a94622084a4ec577b271014a0f209983c8b3c81",
+    "left_sha256": "4f869f6fc0919592f42956562fb61a4ec7c47afbe80c7396a767fcf65651d060",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -2271,13 +2361,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 38350,
-    "left_facets": 38350,
-    "right_volume_mm3": 701652.674999,
-    "left_volume_mm3": 701652.674999,
+    "right_facets": 38662,
+    "left_facets": 38662,
+    "right_volume_mm3": 701653.340862,
+    "left_volume_mm3": 701653.340862,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 195713.247961,
-    "left_area_mm2": 195713.247961,
+    "right_area_mm2": 195702.102671,
+    "left_area_mm2": 195702.102671,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
