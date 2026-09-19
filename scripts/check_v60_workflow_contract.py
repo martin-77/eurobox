@@ -299,6 +299,15 @@ for q in ch['checks']:
     assert [p['sample'] for p in q['samples']] == ['bottom', 'web', 'top'], q
     assert all(p['solid'] for p in q['samples']), q
 
+hh = core['geometry']['holm_head_closures']
+assert len(hh) == 2, hh
+for q in hh:
+    assert abs(q['central_head_fill_width_mm'] - 25.6) <= 1e-9, q
+    assert q['cap_fraction'] >= 0.999, q
+    assert len(q['drop_fractions']) == 3, q
+    assert all(v >= 0.999 for v in q['drop_fractions']), q
+    assert q['central_head_probe_material_fraction'] >= 0.999, q
+
 cage_checks = {q['name']: q for q in full['base']['cage_reinforcement_checks']}
 for name in ('cross_bottom_inner_drop_rear','cross_bottom_inner_drop_front'):
     assert name in cage_checks, cage_checks

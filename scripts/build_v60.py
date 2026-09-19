@@ -258,12 +258,45 @@ def make_i_beam_y(xc, y0, y1):
 
 
 def make_holm_head_closure(xc):
-    cap = box(xc-ARM_W/2.0, ARM_HEAD_FACE_Y-ARM_HEAD_CAP_T, ARM_BOTTOM_Z, ARM_W, ARM_HEAD_CAP_T, ARM_H)
-    drops = [
-        box(xc-ARM_W/2.0, ARM_HEAD_DROP_Y0, ARM_BOTTOM_Z, WEB_T, ARM_HEAD_DROP_Y1-ARM_HEAD_DROP_Y0, ARM_H),
-        box(xc+ARM_W/2.0-WEB_T, ARM_HEAD_DROP_Y0, ARM_BOTTOM_Z, WEB_T, ARM_HEAD_DROP_Y1-ARM_HEAD_DROP_Y0, ARM_H),
-    ]
-    return cap, drops
+    cap = box(
+        xc-ARM_W/2.0,
+        ARM_HEAD_FACE_Y-ARM_HEAD_CAP_T,
+        ARM_BOTTOM_Z,
+        ARM_W,
+        ARM_HEAD_CAP_T,
+        ARM_H,
+    )
+
+    # The old head closure had only two 3.2 mm side walls behind the front cap.
+    # That left a 25.6 mm wide rectangular cavity visible in the slicer. Keep
+    # the side walls, but fill the COMPLETE centre between them over the same
+    # Y interval so the holm head is genuinely closed, not merely capped at its
+    # very front face.
+    left_drop = box(
+        xc-ARM_W/2.0,
+        ARM_HEAD_DROP_Y0,
+        ARM_BOTTOM_Z,
+        WEB_T,
+        ARM_HEAD_DROP_Y1-ARM_HEAD_DROP_Y0,
+        ARM_H,
+    )
+    center_fill = box(
+        xc-ARM_W/2.0+WEB_T,
+        ARM_HEAD_DROP_Y0,
+        ARM_BOTTOM_Z,
+        ARM_W-2.0*WEB_T,
+        ARM_HEAD_DROP_Y1-ARM_HEAD_DROP_Y0,
+        ARM_H,
+    )
+    right_drop = box(
+        xc+ARM_W/2.0-WEB_T,
+        ARM_HEAD_DROP_Y0,
+        ARM_BOTTOM_Z,
+        WEB_T,
+        ARM_HEAD_DROP_Y1-ARM_HEAD_DROP_Y0,
+        ARM_H,
+    )
+    return cap, [left_drop, center_fill, right_drop]
 
 
 def make_long_support(xc, y0):
@@ -568,10 +601,39 @@ if panel_clearance<1.5: failures.append('Rear stop contact wall is not safely ou
 drop_fractions=[]
 for xc,support in ((FRONT_CLAMP_X,front_support),(REAR_SUPPORT_X,rear_support)):
     cap,drops=make_holm_head_closure(xc)
-    drop_fractions.append({'x_mm':xc,'cap_fraction':round(support.common(cap).Volume/cap.Volume,6),'drop_fractions':[round(support.common(q).Volume/q.Volume,6) for q in drops]})
-    if support.common(cap).Volume/cap.Volume<0.999: failures.append(f'Holm {xc} head cap missing')
-    for i,q in enumerate(drops):
-        if support.common(q).Volume/q.Volume<0.999: failures.append(f'Holm {xc} DROP {i} missing')
+    cap_fraction=support.common(cap).Volume/cap.Volume
+    drop_fracs=[support.common(q).Volume/q.Volume for q in drops]
+
+    # Probe the exact formerly-open centre, deliberately inset from side walls,
+    # top/bottom flanges and the front cap. A full-volume fraction here catches
+    # the slicer-visible rectangular pocket instead of merely proving that a
+    # thin face cap exists.
+    center_probe=box(
+        xc-ARM_W/2.0+WEB_T+0.40,
+        ARM_HEAD_DROP_Y0+0.40,
+        ARM_BOTTOM_Z+0.40,
+        ARM_W-2.0*WEB_T-0.80,
+        ARM_HEAD_DROP_Y1-ARM_HEAD_DROP_Y0-0.80,
+        ARM_H-0.80,
+    )
+    center_fraction=support.common(center_probe).Volume/center_probe.Volume
+
+    drop_fractions.append({
+        'x_mm':xc,
+        'cap_fraction':round(cap_fraction,6),
+        'drop_fractions':[round(v,6) for v in drop_fracs],
+        'central_head_fill_width_mm':round(ARM_W-2.0*WEB_T,3),
+        'central_head_probe_material_fraction':round(center_fraction,6),
+    })
+    if cap_fraction<0.999:
+        failures.append(f'Holm {xc} head cap missing')
+    for i,frac in enumerate(drop_fracs):
+        if frac<0.999:
+            failures.append(f'Holm {xc} head closure component {i} missing: {frac:.6f}')
+    if center_fraction<0.999:
+        failures.append(
+            f'Holm {xc} central rectangular head cavity still open: {center_fraction:.6f}'
+        )
 # The real final core must have the complete motion corridor free.
 plate_sweep_common = RIGHT.common(make_plate_sweep_clearance()).Volume
 if plate_sweep_common > 1e-4: failures.append(f'Final plate sweep corridor is blocked by {plate_sweep_common:.6f} mm3')
@@ -582,5 +644,5 @@ if failures:
 if __name__=='__main__':
     export_shape('eurobox_v60_base_right_core',RIGHT); export_shape('eurobox_v60_base_left_core',LEFT)
     with open(os.path.join(OUT,'README_BUILD_v60.txt'),'w',encoding='utf-8') as f:
-        f.write('Eurobox v60 clean rebuild with proven v50 mechanics restored.\nBroad central Upper pivot + replaceable Lower fork; M4 positive closure.\nRear stop contact wall outboard of rack tube; long holms closed with caps and side DROPs.\nClamp plate moves in front of a continuous rear-set crosshead; only local spindle and lead-nut features machine that beam.\nDirect RIGHT structural construction; LEFT is exact X mirror.\n')
+        f.write('Eurobox v60 clean rebuild with proven v50 mechanics restored.\nBroad central Upper pivot + replaceable Lower fork; M4 positive closure.\nRear stop contact wall outboard of rack tube; long holm heads fully closed across side walls and former central cavities.\nClamp plate moves in front of a continuous rear-set crosshead; only local spindle and lead-nut features machine that beam.\nDirect RIGHT structural construction; LEFT is exact X mirror.\n')
     print(json.dumps(V,indent=2),flush=True)
