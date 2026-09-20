@@ -87,14 +87,14 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 636974.267,
-    "left_volume_mm3": 636974.267,
+    "right_volume_mm3": 635548.135,
+    "left_volume_mm3": 635548.135,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 6655.128,
+    "front_support_crosshead_common_mm3": 6342.016,
     "rear_support_backstop_common_mm3": 5904.0,
-    "rear_support_crosshead_common_mm3": 6655.128,
+    "rear_support_crosshead_common_mm3": 6342.016,
     "inner_green_shelf_support": {
       "target": "central lower long-holm flange between twin webs",
       "print_orientation": "BASE upside-down; installed high-Z prints first",
@@ -172,12 +172,12 @@
       ]
     },
     "crosshead_print_support": {
-      "strategy": "original front/Y0 web retained; missing rear/Y1 wall closed only in long-holm zones; rear continuation is straight and hollow",
+      "strategy": "original front/Y0 web retained; holm-zone DROP removed; missing rear/Y1 wall added; long holm is straight hollow multi-web from crosshead through head root",
       "crosshead_y_mm": [
         202.1,
         214.115
       ],
-      "full_drop_material_fraction": 1.0,
+      "central_drop_material_fraction": 1.0,
       "end_wall_thickness_mm": 3.2,
       "end_wall_checks": [
         {
@@ -284,26 +284,60 @@
         "holm": "front_holm",
         "front_y0_web_material_fraction": 1.0,
         "rear_y1_wall_material_fraction": 1.0,
-        "rear_hollow_sleeve_material_fraction": 1.0,
+        "straight_holm_tail_material_fraction": 1.0,
+        "straight_tail_y_mm": [
+          201.9,
+          220.0
+        ],
         "rear_open_span_mm": 5.685,
-        "interior_remains_hollow": true,
-        "hollow_probe_xyz_mm": [
-          -80.0,
-          216.958,
-          24.54
+        "legacy_haunch_residual_mm3": 0.0,
+        "hollow_cell_probes": [
+          {
+            "x_offset_mm": -12.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": -4.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": 4.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": 12.0,
+            "solid": false
+          }
         ]
       },
       {
         "holm": "rear_holm",
         "front_y0_web_material_fraction": 1.0,
         "rear_y1_wall_material_fraction": 1.0,
-        "rear_hollow_sleeve_material_fraction": 1.0,
+        "straight_holm_tail_material_fraction": 1.0,
+        "straight_tail_y_mm": [
+          201.9,
+          220.0
+        ],
         "rear_open_span_mm": 5.685,
-        "interior_remains_hollow": true,
-        "hollow_probe_xyz_mm": [
-          180.0,
-          216.958,
-          24.54
+        "legacy_haunch_residual_mm3": 0.0,
+        "hollow_cell_probes": [
+          {
+            "x_offset_mm": -12.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": -4.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": 4.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": 12.0,
+            "solid": false
+          }
         ]
       }
     ],
