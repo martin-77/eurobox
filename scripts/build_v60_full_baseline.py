@@ -388,7 +388,10 @@ module ridge_rh(z0,len,steps){{
 module ridge_lh(z0,len,steps,phase=0){{
   a1=-360*len/pitch;
   function ang(i)=phase+a1*i/steps;
-  function zc(i)=pitch*(-ang(i))/360;
+  // Phase rotates the ridge only; it must never shift the physical axial
+  // start.  zc therefore remains 0..len even when the first 0.8 mm are left
+  // smooth as the vertical print foot.
+  function zc(i)=len*i/steps;
   function pt(r,a,z)=[r*cos(a),r*sin(a),z];
   pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
          each [pt(inner_r,a,z-root_half),
