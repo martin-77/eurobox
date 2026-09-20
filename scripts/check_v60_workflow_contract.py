@@ -385,15 +385,16 @@ junctions = core['geometry']['crosshead_holm_straight_junctions']
 assert len(junctions) == 2, junctions
 assert {q['holm'] for q in junctions} == {'front_holm','rear_holm'}, junctions
 for q in junctions:
-    assert q['profile'] == 'straight crosshead front web + straight hollow long-holm tail', q
-    assert q['crosshead_front_web_fraction'] >= 0.999, q
+    assert q['profile'] == 'full-depth straight hollow crosshead end + straight hollow long-holm tail', q
+    assert abs(q['crosshead_depth_mm'] - 12.015) <= 1e-3, q
+    assert q['crosshead_end_section_fraction'] >= 0.999, q
     assert q['straight_holm_tail_fraction'] >= 0.999, q
     assert q['interface_common_mm3'] >= 50.0, q
     assert q['plate_sweep_common_mm3'] <= 0.000001, q
     assert q['interior_remains_hollow'] is True, q
 
 ch = core['geometry']['crosshead_print_support']
-assert ch['strategy'] == 'central smooth lower-flange DROP with straight vertical front webs in both 32 mm long-holm junction zones', ch
+assert ch['strategy'] == 'central smooth lower-flange DROP with full-depth straight hollow box sections in both 32 mm long-holm junction zones', ch
 assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
