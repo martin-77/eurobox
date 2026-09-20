@@ -332,12 +332,16 @@ assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
 fr = cc['front_holm_root_tie']
-assert fr['section'] == 'closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls', fr
-assert fr['carrier_engagement_mm'] >= 8.0, fr
+assert fr['section'] == 'straight_hollow_root_sleeve_spanning_full_carrier_depth_and_long_holm_root', fr
+assert fr['carrier_y_mm'] == [-8.0,26.0], fr
+assert abs(fr['carrier_depth_mm'] - 34.0) <= 1e-9, fr
+assert fr['y_mm'] == [-8.0,34.0], fr
+assert fr['carrier_engagement_mm'] >= 34.0, fr
 assert fr['holm_engagement_mm'] >= 10.0, fr
 assert fr['material_fraction'] >= 0.995, fr
 assert fr['carrier_common_mm3'] >= 2500.0, fr
 assert fr['holm_common_mm3'] >= 4000.0, fr
+assert fr['interior_remains_hollow'] is True, fr
 assert fr['x_z_envelope_growth_mm'] == [0.0,0.0], fr
 bd = cc['backstop_base_drop']
 assert bd['profile'] == 'filled_quarter_ellipse_tapered_to_stop_bottom', bd
