@@ -1141,7 +1141,9 @@ C.require_single(SPINDLE_PRINT_Z,'build-plane lead screw')
 # Mechanical model keeps the historical installed transform.  Recreate it from
 # an unshifted master so all existing Y datums and RH8x2 chirality remain exact.
 SPINDLE_MASTER_Z=import_scad_shape(SPINDLE_SCAD)
-SPINDLE_MASTER_Z.translate(App.Vector(0,0,stud0))
+SPINDLE_MASTER_Z.translate(
+    App.Vector(0,0,-(HEX_LEN+OUTER_STUD_LEN))
+)
 SPINDLE=rotate_z180(z_to_y(SPINDLE_MASTER_Z))
 C.require_single(SPINDLE,'complete manifold RH8x2 lead screw installed')
 SPINDLE_COMPILED_STL=os.path.splitext(SPINDLE_SCAD)[0]+'_compiled.stl'
