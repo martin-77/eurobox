@@ -164,13 +164,14 @@ MALE_THREAD = make_true_thread_solid(
 # connected radial/axial helical groove into that bore wall.
 FEMALE_RIDGE_RAW = B.import_scad_shape(female_scad)
 C.require_single(FEMALE_RIDGE_RAW, 'raw final female true helical ridge')
-# The SCAD helix carries one pitch of negative overrun for robust thread
-# generation.  Clip that overrun at the start of the 2 mm retainer nose zone:
-# no helical cutter is ever allowed below the metal-nut pocket top.
+# The SCAD helix carries negative overrun for robust generation, but the
+# actual male thread starts only AFTER the 2 mm smooth nose.  Clip the female
+# groove at local Z=0 as well: the complete nose zone remains smooth and the
+# metal-nut pocket below it cannot be touched by any helical cutter.
 female_ridge_clip = Part.makeCylinder(
     FEMALE_MAJOR_R + 0.20,
-    THREAD_LEN + TOP_OVERRUN + R.RETAINER_NOSE_LEN + 0.20,
-    App.Vector(0,0,-R.RETAINER_NOSE_LEN),
+    THREAD_LEN + TOP_OVERRUN + 0.20,
+    App.Vector(0,0,0.0),
 )
 FEMALE_RIDGE_CUTTER = FEMALE_RIDGE_RAW.common(
     female_ridge_clip
