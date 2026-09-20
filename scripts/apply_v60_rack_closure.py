@@ -178,8 +178,8 @@ for xc in C.CLAMP_X:
     RIGHT = RIGHT.cut(
         Part.makeCylinder(
             RETAINER_NOSE_CLEAR_D / 2.0,
-            RETAINER_NOSE_LEN + 0.60,
-            App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_Z1 - 0.20),
+            RETAINER_NOSE_LEN + 0.40,
+            App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_Z1),
             App.Vector(0, 0, 1),
         )
     ).removeSplitter()
