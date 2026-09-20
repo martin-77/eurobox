@@ -45,12 +45,12 @@
     "cage_reinforcement_checks": [
       {
         "name": "holm_left",
-        "material_fraction": 0.991169,
+        "material_fraction": 0.991132,
         "volume_mm3": 17365.335
       },
       {
         "name": "holm_right",
-        "material_fraction": 0.990853,
+        "material_fraction": 0.990736,
         "volume_mm3": 17365.335
       },
       {
@@ -207,7 +207,7 @@
     "lead_nut_pin_wall_checks": [
       {
         "spindle_x_mm": -28.65,
-        "mode": "top-open U-cradle",
+        "mode": "support-free 90deg V-cradle",
         "samples": [
           {
             "wall_x_offset_mm": -9.775,
@@ -273,7 +273,7 @@
       },
       {
         "spindle_x_mm": 128.65,
-        "mode": "top-open U-cradle",
+        "mode": "support-free 90deg V-cradle",
         "samples": [
           {
             "wall_x_offset_mm": -9.775,
@@ -2199,6 +2199,20 @@
         }
       ]
     },
+    "lead_nut_printability": {
+      "body_profile": "smooth 45deg-limited bow",
+      "body_bottom_width_mm": 4.0,
+      "body_full_width_mm": 16.0,
+      "body_rise_mm": 7.0,
+      "body_run_each_side_mm": 6.0,
+      "profile_start_slope_dx_dz": 0.714286,
+      "profile_end_slope_dx_dz": 1.0,
+      "base_pocket_tip_bridge_mm": 4.4,
+      "pin_cradle": "90deg V, top-open",
+      "pin_v_apex_local_z_mm": 7.596,
+      "pin_v_shoulder_local_z_mm": 9.496,
+      "preferred_print_orientation": "rotate -90deg about X; RH8x2 axis vertical"
+    },
     "lead_nut_thread": {
       "standard": "RH8x2 true radial/axial printable matched pair",
       "pitch_mm": 2.0,
@@ -2338,11 +2352,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3181018
+    "file_bytes": 3171722
   },
   "handed_stl_export": {
-    "right_sha256": "4b62a6aa6e96e0152bb964a13c6d65c568a62ac60ef7129080832d3314575b1c",
-    "left_sha256": "6e5a6d77f0875a71b96a587bf6f6062d16db19ec6fd367337c6080b73275bd8f",
+    "right_sha256": "8df4ea5110240ee6705e3f36602cb0d17dd2ec15e4795add6c79ff55353fa77d",
+    "left_sha256": "a8e017c82689f7bf3167ecc6360dab45536bf7a6178626db8c122000405ff618",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -2365,13 +2379,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 38186,
-    "left_facets": 38186,
-    "right_volume_mm3": 702990.019619,
-    "left_volume_mm3": 702990.019619,
+    "right_facets": 37788,
+    "left_facets": 37788,
+    "right_volume_mm3": 704245.771637,
+    "left_volume_mm3": 704245.771637,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 195950.573118,
-    "left_area_mm2": 195950.573118,
+    "right_area_mm2": 195559.720621,
+    "left_area_mm2": 195559.720621,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
