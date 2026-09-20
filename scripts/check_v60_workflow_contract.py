@@ -281,6 +281,13 @@ for q in ltw:
     assert all(not s['inner_probe_solid'] for s in q['samples']), q
     assert all(s['outer_probe_solid'] for s in q['samples']), q
 
+nhw = closure['nut_hex_capture_witness']
+assert len(nhw) == 2, nhw
+for q in nhw:
+    assert len(q['samples']) == 3, q
+    assert all(s['inner_hex_point_void'] for s in q['samples']), q
+    assert all(s['outer_flat_wall_solid'] for s in q['samples']), q
+
 p = closure['thread_printability']
 assert p['pitch_mm'] == 3.0, p
 assert p['male_crest_width_mm'] >= 0.70, p
