@@ -162,8 +162,20 @@ MALE_THREAD = make_true_thread_solid(
 # result after subtraction from the complex BASE.  Sequential subtraction is
 # both more robust and more explicit: first open the crest bore, then cut the
 # connected radial/axial helical groove into that bore wall.
-FEMALE_RIDGE_CUTTER = B.import_scad_shape(female_scad)
-C.require_single(FEMALE_RIDGE_CUTTER, 'final female true helical ridge')
+FEMALE_RIDGE_RAW = B.import_scad_shape(female_scad)
+C.require_single(FEMALE_RIDGE_RAW, 'raw final female true helical ridge')
+# The SCAD helix carries one pitch of negative overrun for robust thread
+# generation.  Clip that overrun at the start of the 2 mm retainer nose zone:
+# no helical cutter is ever allowed below the metal-nut pocket top.
+female_ridge_clip = Part.makeCylinder(
+    FEMALE_MAJOR_R + 0.20,
+    THREAD_LEN + TOP_OVERRUN + R.RETAINER_NOSE_LEN + 0.20,
+    App.Vector(0,0,-R.RETAINER_NOSE_LEN),
+)
+FEMALE_RIDGE_CUTTER = FEMALE_RIDGE_RAW.common(
+    female_ridge_clip
+).removeSplitter()
+C.require_single(FEMALE_RIDGE_CUTTER, 'clipped final female true helical ridge')
 FEMALE_CORE_CUTTER = Part.makeCylinder(
     FEMALE_CORE_R,
     THREAD_LEN + TOP_OVERRUN - FEMALE_CORE_LOCAL_Z0 + PITCH,
@@ -417,6 +429,31 @@ for xc in C.CLAMP_X:
         'samples':samples,
     })
 
+# Prove that the final retainer machining preserves the COMPLETE metal-nut
+# hex below Z=9.0.  Along +X the AF6.90 pocket flat is at X=3.45 mm:
+# 3.20 mm must remain air while 3.65 mm must remain structural PETG.
+nut_hex_capture_witness=[]
+for xc in C.CLAMP_X:
+    samples=[]
+    for z in (R.RACK_NUT_Z0+0.40, (R.RACK_NUT_Z0+R.RACK_NUT_Z1)/2.0, R.RACK_NUT_Z1-0.20):
+        inner_void = not inside(
+            RIGHT, xc+3.20, C.RACK_CLOSURE_Y, z
+        )
+        outer_solid = inside(
+            RIGHT, xc+3.65, C.RACK_CLOSURE_Y, z
+        )
+        rec={
+            'z_mm':round(z,3),
+            'inner_hex_point_void':inner_void,
+            'outer_flat_wall_solid':outer_solid,
+        }
+        samples.append(rec)
+        if not inner_void:
+            fail(f'M4 nut hex pocket blocked X={xc} Z={z:.3f}')
+        if not outer_solid:
+            fail(f'M4 nut hex flat wall overcut by retainer X={xc} Z={z:.3f}')
+    nut_hex_capture_witness.append({'x_mm':xc,'samples':samples})
+
 # The M4 overrun bore through the printed retainer must remain open.
 if inside(RACK_NUT_RETAINER, 0.0, 0.0, THREAD_LEN/2.0):
     fail('retainer M4 overrun bore is blocked')
@@ -503,6 +540,7 @@ validation['rack']['m4_closure']['female_helical_witness']=female_witness
 validation['rack']['m4_closure']['female_thread_point_samples']=female_thread_point_samples
 validation['rack']['m4_closure']['male_thread_point_samples']=male_thread_point_samples
 validation['rack']['m4_closure']['lower_transition_witness']=lower_transition_witness
+validation['rack']['m4_closure']['nut_hex_capture_witness']=nut_hex_capture_witness
 validation['rack']['m4_closure']['lower_transition_shape']='shallow_conical_flare'
 validation['rack']['m4_closure']['lower_transition_z_mm']=[
     round(LOWER_TRANSITION_Z0,3),round(LOWER_TRANSITION_Z1,3)
