@@ -101,6 +101,25 @@ LEAD_NUT_POCKET_FREE_Y = 0.35
 # printable solid rather than face-touching bodies.
 LEAD_NUT_CAP_Z0 = 10.80
 LEAD_NUT_CAP_Z1 = C.BOX_SUPPORT_Z - SPINDLE_Z  # 15.00 -> installed top Z=39.54
+
+# Support-free lower cartridge / matching BASE pocket profile.
+# The BASE prints upside-down, so a rectangular pocket floor became a 16.4 mm
+# bridge.  The removable cartridge now uses a shallow bow in X/Z whose local
+# slope never exceeds 1:1 (45 deg from vertical).  The matching pocket is the
+# same profile plus the existing X clearance.  Only a 4.4 mm closing bridge
+# remains at the tip of the pocket.
+LEAD_NUT_LOWER_TRANSITION_Z = 0.0
+LEAD_NUT_BOTTOM_HALF_X = 2.0
+LEAD_NUT_FULL_HALF_X = 8.0
+LEAD_NUT_PROFILE_STEPS = 12
+LEAD_NUT_PROFILE_RISE = LEAD_NUT_LOWER_TRANSITION_Z - LEAD_NUT_BODY_Z0
+LEAD_NUT_PROFILE_RUN = LEAD_NUT_FULL_HALF_X - LEAD_NUT_BOTTOM_HALF_X
+LEAD_NUT_PROFILE_END_SLOPE = 1.0
+LEAD_NUT_PROFILE_START_SLOPE = (
+    2.0 * LEAD_NUT_PROFILE_RUN / LEAD_NUT_PROFILE_RISE
+    - LEAD_NUT_PROFILE_END_SLOPE
+)
+
 FINAL_DECK_Z0 = C.ARM_BOTTOM_Z
 FINAL_DECK_Z1 = LOW_DECK_Z1
 
@@ -160,6 +179,52 @@ def hex_z(af, height, z0=0.0):
     r = af / math.sqrt(3.0)
     pts = [App.Vector(r*math.cos(math.radians(30+60*i)), r*math.sin(math.radians(30+60*i)), z0) for i in range(6)]
     return Part.Face(Part.makePolygon(pts + [pts[0]])).extrude(App.Vector(0,0,height))
+
+
+def prism_xz_y(points, y0, y1, label):
+    pts = [App.Vector(x, y0, z) for x, z in points]
+    face = Part.Face(Part.makePolygon(pts + [pts[0]]))
+    q = face.extrude(App.Vector(0, y1-y0, 0)).removeSplitter()
+    C.require_single(q, label)
+    return q
+
+
+def prism_yz_x(points, x0, x1, label):
+    pts = [App.Vector(x0, y, z) for y, z in points]
+    face = Part.Face(Part.makePolygon(pts + [pts[0]]))
+    q = face.extrude(App.Vector(x1-x0, 0, 0)).removeSplitter()
+    C.require_single(q, label)
+    return q
+
+
+def lead_nut_half_x(z, clearance=0.0):
+    if z <= LEAD_NUT_BODY_Z0:
+        return LEAD_NUT_BOTTOM_HALF_X + clearance
+    if z >= LEAD_NUT_LOWER_TRANSITION_Z:
+        return LEAD_NUT_FULL_HALF_X + clearance
+    t = (z-LEAD_NUT_BODY_Z0) / LEAD_NUT_PROFILE_RISE
+    # Integral of a linearly increasing slope.  m0=5/7 and m1=1 for the
+    # current 6 mm run over 7 mm rise, giving a gentle bow rather than a
+    # straight chamfer while remaining <=45 deg everywhere.
+    return (
+        LEAD_NUT_BOTTOM_HALF_X
+        + LEAD_NUT_PROFILE_RISE * (
+            LEAD_NUT_PROFILE_START_SLOPE*t
+            + 0.5*(LEAD_NUT_PROFILE_END_SLOPE-LEAD_NUT_PROFILE_START_SLOPE)*t*t
+        )
+        + clearance
+    )
+
+
+def lead_nut_xz_profile(z1, clearance=0.0):
+    lower = []
+    for i in range(LEAD_NUT_PROFILE_STEPS+1):
+        t = i / float(LEAD_NUT_PROFILE_STEPS)
+        z = LEAD_NUT_BODY_Z0 + LEAD_NUT_PROFILE_RISE*t
+        lower.append((lead_nut_half_x(z, clearance), z))
+    right = lower + [(LEAD_NUT_FULL_HALF_X+clearance, z1)]
+    left = [(-x, z) for x, z in reversed(right)]
+    return right + left
 
 
 def z_to_y(shape, x=0.0, y=0.0, z=0.0):
@@ -660,6 +725,17 @@ LEAD_NUT_PIN_LOCAL_Y = -7.0
 LEAD_NUT_PIN_LOCAL_Z = 10.0
 LEAD_NUT_PIN_HOLE_D = 3.4
 LEAD_NUT_PIN_DROP_SLOT_W = 3.8
+# Support-free pin seat.  A 90 deg V is tangent to the Ø3.4 clearance circle
+# at the nominal pin centre; above that, straight side walls continue to the
+# top service opening.  This remains support-free both in installed-Z and in
+# the preferred print orientation with the lead-screw axis vertical.
+LEAD_NUT_PIN_V_HALF_W = LEAD_NUT_PIN_DROP_SLOT_W / 2.0
+LEAD_NUT_PIN_V_APEX_Z = (
+    LEAD_NUT_PIN_LOCAL_Z - (LEAD_NUT_PIN_HOLE_D/2.0)*math.sqrt(2.0)
+)
+LEAD_NUT_PIN_V_SHOULDER_Z = (
+    LEAD_NUT_PIN_V_APEX_Z + LEAD_NUT_PIN_V_HALF_W
+)
 NUT_PIN_SHAFT_D = 3.0
 NUT_PIN_GROOVE_D = 2.4
 NUT_PIN_GROOVE_X0 = 11.4
@@ -676,9 +752,14 @@ NUT_PIN_HEAD_POCKET_LEN = NUT_PIN_HEAD_T + 2.0*NUT_PIN_SERVICE_CLEAR
 NUT_PIN_CLIP_POCKET_R = NUT_PIN_CLIP_OUTER_R + NUT_PIN_SERVICE_CLEAR
 NUT_PIN_CLIP_POCKET_X0 = NUT_PIN_CLIP_X - NUT_PIN_SERVICE_CLEAR
 NUT_PIN_CLIP_POCKET_LEN = NUT_PIN_CLIP_T + 2.0*NUT_PIN_SERVICE_CLEAR
-LEAD_NUT = C.box(
-    -8.0,-NUT_THREAD_LEN,LEAD_NUT_BODY_Z0,
-    16.0,NUT_THREAD_LEN,LEAD_NUT_BODY_Z1-LEAD_NUT_BODY_Z0,
+# The wear-cartridge body follows the same self-supporting bow as its BASE
+# pocket.  In installed orientation the lower 7 mm taper from a 16 mm body to
+# a 4 mm foot.  In the BASE's upside-down print this makes the pocket close
+# progressively instead of bridging its former 16.4 mm rectangular floor.
+LEAD_NUT = prism_xz_y(
+    lead_nut_xz_profile(LEAD_NUT_BODY_Z1),
+    -NUT_THREAD_LEN, 0.0,
+    'support-free bowed lead-nut body',
 )
 LEAD_NUT = LEAD_NUT.fuse(C.box(
     -6.0,-11.0,LEAD_NUT_UPPER_LUG_Z0,
@@ -693,22 +774,20 @@ LEAD_NUT = LEAD_NUT.fuse(C.box(
     16.0,NUT_THREAD_LEN,LEAD_NUT_CAP_Z1-LEAD_NUT_CAP_Z0,
 )).removeSplitter()
 LEAD_NUT = LEAD_NUT.cut(FEMALE_NEGY).removeSplitter()
-lead_nut_pin_cradle = C.cyl_x(
-    LEAD_NUT_PIN_HOLE_D/2.0,20.0,-10.0,
-    LEAD_NUT_PIN_LOCAL_Y,LEAD_NUT_PIN_LOCAL_Z,
-)
-lead_nut_pin_drop = C.box(
-    -10.0,
-    LEAD_NUT_PIN_LOCAL_Y-LEAD_NUT_PIN_DROP_SLOT_W/2.0,
-    LEAD_NUT_PIN_LOCAL_Z,
-    20.0,
-    LEAD_NUT_PIN_DROP_SLOT_W,
-    LEAD_NUT_CAP_Z1-LEAD_NUT_PIN_LOCAL_Z+0.50,
-)
-LEAD_NUT = LEAD_NUT.cut(
-    lead_nut_pin_cradle.fuse(lead_nut_pin_drop).removeSplitter()
-).removeSplitter()
-C.require_single(LEAD_NUT,'top-loaded RH8x2 lead-nut carrier with top-open pin cradle')
+
+# Replace the former semicircular U-bottom by a printable 45 deg V cradle.
+# The Ø3 mm retaining pin still sits at the same nominal centre; the V faces
+# are tangent to the Ø3.4 clearance envelope, then continue as vertical walls
+# to the top opening.  No horizontal roof remains.
+lead_nut_pin_slot = prism_yz_x([
+    (LEAD_NUT_PIN_LOCAL_Y, LEAD_NUT_PIN_V_APEX_Z),
+    (LEAD_NUT_PIN_LOCAL_Y + LEAD_NUT_PIN_V_HALF_W, LEAD_NUT_PIN_V_SHOULDER_Z),
+    (LEAD_NUT_PIN_LOCAL_Y + LEAD_NUT_PIN_V_HALF_W, LEAD_NUT_CAP_Z1 + 0.50),
+    (LEAD_NUT_PIN_LOCAL_Y - LEAD_NUT_PIN_V_HALF_W, LEAD_NUT_CAP_Z1 + 0.50),
+    (LEAD_NUT_PIN_LOCAL_Y - LEAD_NUT_PIN_V_HALF_W, LEAD_NUT_PIN_V_SHOULDER_Z),
+], -10.0, 10.0, 'support-free lead-nut pin V-slot')
+LEAD_NUT = LEAD_NUT.cut(lead_nut_pin_slot).removeSplitter()
+C.require_single(LEAD_NUT,'top-loaded RH8x2 lead-nut carrier with support-free pin V-cradle')
 
 NUT_PIN = C.fuse_seq([
     C.cyl_x(NUT_PIN_SHAFT_D/2.0,23.4,-12.0,0,0),
@@ -725,15 +804,19 @@ for sx in SPINDLE_X:
     # Top service opening for the removable carrier. The pocket has a real,
     # deterministic floor at the main-body datum; only its top is open. The
     # installed carrier's flush cap fills this opening to Z=39.54.
-    pocket_x0 = sx - 8.0 - LEAD_NUT_POCKET_X_CLEAR
     pocket_y0 = NUT_THREAD_Y0
-    pocket = C.box(
-        pocket_x0,
+    pocket_profile = [
+        (sx+x, SPINDLE_Z+z)
+        for x, z in lead_nut_xz_profile(
+            (PRINT_BASE_PLANE_Z + 0.50) - SPINDLE_Z,
+            LEAD_NUT_POCKET_X_CLEAR,
+        )
+    ]
+    pocket = prism_xz_y(
+        pocket_profile,
         pocket_y0,
-        LEAD_NUT_POCKET_FLOOR_Z,
-        16.0 + 2.0*LEAD_NUT_POCKET_X_CLEAR,
-        NUT_THREAD_LEN + LEAD_NUT_POCKET_FREE_Y,
-        (PRINT_BASE_PLANE_Z + 0.50) - LEAD_NUT_POCKET_FLOOR_Z,
+        pocket_y0 + NUT_THREAD_LEN + LEAD_NUT_POCKET_FREE_Y,
+        f'support-free bowed lead-nut pocket@{sx}',
     )
     RIGHT_FULL = RIGHT_FULL.cut(pocket).removeSplitter()
 
@@ -756,23 +839,15 @@ for sx in SPINDLE_X:
     # The pin is laid in from above. A cylindrical cradle defines the final
     # position and a straight vertical throat opens that cradle to the top.
     # Head and clip ends receive matching top-open service recesses.
-    shaft_cradle = C.cyl_x(
-        LEAD_NUT_PIN_HOLE_D/2.0,
-        NUT_PIN_SERVICE_XLEN,
-        sx+NUT_PIN_SERVICE_X0,
-        pin_y,pin_z,
-    )
-    shaft_drop = C.box(
-        sx+NUT_PIN_SERVICE_X0,
-        pin_y-LEAD_NUT_PIN_DROP_SLOT_W/2.0,
-        pin_z,
-        NUT_PIN_SERVICE_XLEN,
-        LEAD_NUT_PIN_DROP_SLOT_W,
-        PRINT_BASE_PLANE_Z-pin_z+0.50,
-    )
-    RIGHT_FULL = RIGHT_FULL.cut(
-        shaft_cradle.fuse(shaft_drop).removeSplitter()
-    ).removeSplitter()
+    shaft_v = prism_yz_x([
+        (pin_y, SPINDLE_Z + LEAD_NUT_PIN_V_APEX_Z),
+        (pin_y + LEAD_NUT_PIN_V_HALF_W, SPINDLE_Z + LEAD_NUT_PIN_V_SHOULDER_Z),
+        (pin_y + LEAD_NUT_PIN_V_HALF_W, PRINT_BASE_PLANE_Z + 0.50),
+        (pin_y - LEAD_NUT_PIN_V_HALF_W, PRINT_BASE_PLANE_Z + 0.50),
+        (pin_y - LEAD_NUT_PIN_V_HALF_W, SPINDLE_Z + LEAD_NUT_PIN_V_SHOULDER_Z),
+    ], sx+NUT_PIN_SERVICE_X0, sx+NUT_PIN_SERVICE_X1,
+       f'support-free BASE pin V-slot@{sx}')
+    RIGHT_FULL = RIGHT_FULL.cut(shaft_v).removeSplitter()
 
     head_cradle = C.cyl_x(
         NUT_PIN_HEAD_POCKET_R,NUT_PIN_HEAD_POCKET_LEN,
@@ -1064,6 +1139,37 @@ if RH8_MALE_CREST_W < 0.50:
 if RH8_FEMALE_CREST_MATERIAL_W < 0.45:
     failures.append('RH8x2 female crest material is too narrow for 0.4 mm FDM')
 def fail(msg): failures.append(msg)
+
+lead_nut_printability = {
+    'body_profile':'smooth 45deg-limited bow',
+    'body_bottom_width_mm':round(2.0*LEAD_NUT_BOTTOM_HALF_X,3),
+    'body_full_width_mm':round(2.0*LEAD_NUT_FULL_HALF_X,3),
+    'body_rise_mm':round(LEAD_NUT_PROFILE_RISE,3),
+    'body_run_each_side_mm':round(LEAD_NUT_PROFILE_RUN,3),
+    'profile_start_slope_dx_dz':round(LEAD_NUT_PROFILE_START_SLOPE,6),
+    'profile_end_slope_dx_dz':round(LEAD_NUT_PROFILE_END_SLOPE,6),
+    'base_pocket_tip_bridge_mm':round(
+        2.0*(LEAD_NUT_BOTTOM_HALF_X+LEAD_NUT_POCKET_X_CLEAR),3
+    ),
+    'pin_cradle':'90deg V, top-open',
+    'pin_v_apex_local_z_mm':round(LEAD_NUT_PIN_V_APEX_Z,3),
+    'pin_v_shoulder_local_z_mm':round(LEAD_NUT_PIN_V_SHOULDER_Z,3),
+    'preferred_print_orientation':'rotate -90deg about X; RH8x2 axis vertical',
+}
+if LEAD_NUT_PROFILE_START_SLOPE < 0.0:
+    fail('lead-nut lower bow reverses direction')
+if LEAD_NUT_PROFILE_END_SLOPE > 1.0 + 1e-9:
+    fail('lead-nut lower bow exceeds 45deg printable slope')
+if LEAD_NUT_PROFILE_START_SLOPE > 1.0 + 1e-9:
+    fail('lead-nut lower bow start exceeds 45deg printable slope')
+if lead_nut_printability['base_pocket_tip_bridge_mm'] > 5.0:
+    fail('lead-nut BASE pocket closing bridge exceeds 5 mm')
+if abs(
+    (LEAD_NUT_PIN_V_SHOULDER_Z-LEAD_NUT_PIN_V_APEX_Z)
+    - LEAD_NUT_PIN_V_HALF_W
+) > 1e-9:
+    fail('lead-nut pin V cradle is not 45deg')
+
 for side,sh in (('RIGHT',RIGHT_FULL),('LEFT',LEFT_FULL)):
     C.require_single(sh,side+' full')
     if sh.BoundBox.XLength>C.V60_X_TARGET_MAX+1e-6: fail(f'{side} full base exceeds 296 mm X target: {sh.BoundBox.XLength:.3f}')
@@ -1621,6 +1727,7 @@ V['box_clamp']['mounting_sequence']={
     'threaded_plate_approach':assembly_approach,
     'operating_knob_clearance':knob_motion,
 }
+V['box_clamp']['lead_nut_printability']=lead_nut_printability
 V['box_clamp']['lead_nut_thread']={
     'standard':'RH8x2 true radial/axial printable matched pair',
     'pitch_mm':THREAD_PITCH,
@@ -1659,7 +1766,18 @@ if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 FULL HARD CHECKS FAILED: '+' | '.join(failures))
 
 stage('exports')
-parts={'eurobox_v60_base_right':RIGHT_FULL,'eurobox_v60_base_left':LEFT_FULL,'eurobox_v60_rack_lower':LOWER,'eurobox_v60_rack_pin':PIN,'eurobox_v60_rack_pin_clip':PIN_CLIP,'eurobox_v60_clamp_plate':PLATE,'eurobox_v60_lead_nut':LEAD_NUT,'eurobox_v60_lead_nut_retaining_pin':NUT_PIN,'eurobox_v60_lead_nut_pin_clip':NUT_PIN_CLIP,'eurobox_v60_lead_screw':SPINDLE,'eurobox_v60_knob':KNOB,'eurobox_v60_knob_retainer_nut':CAP_NUT,'eurobox_v60_plate_retainer_clip':PLATE_CLIP}
+# The installed LEAD_NUT geometry is used for all kinematic/thread validation.
+# Export only the printable component rotated so the RH8x2 axis is vertical:
+# local -Y becomes +Z and the y=0 end face sits directly on the build plate.
+LEAD_NUT_PRINT = LEAD_NUT.copy()
+LEAD_NUT_PRINT.rotate(App.Vector(0,0,0),App.Vector(1,0,0),-90.0)
+C.require_single(LEAD_NUT_PRINT,'print-oriented lead nut')
+if abs(LEAD_NUT_PRINT.BoundBox.ZMin) > 1e-6:
+    raise RuntimeError(
+        f'print-oriented lead nut does not sit on Z=0: {LEAD_NUT_PRINT.BoundBox.ZMin:.6f}'
+    )
+
+parts={'eurobox_v60_base_right':RIGHT_FULL,'eurobox_v60_base_left':LEFT_FULL,'eurobox_v60_rack_lower':LOWER,'eurobox_v60_rack_pin':PIN,'eurobox_v60_rack_pin_clip':PIN_CLIP,'eurobox_v60_clamp_plate':PLATE,'eurobox_v60_lead_nut':LEAD_NUT_PRINT,'eurobox_v60_lead_nut_retaining_pin':NUT_PIN,'eurobox_v60_lead_nut_pin_clip':NUT_PIN_CLIP,'eurobox_v60_lead_screw':SPINDLE,'eurobox_v60_knob':KNOB,'eurobox_v60_knob_retainer_nut':CAP_NUT,'eurobox_v60_plate_retainer_clip':PLATE_CLIP}
 for name,sh in parts.items(): C.require_single(sh,name); C.export_shape(name,sh)
 # Preserve the exact closed CGAL mesh for the lead screw.  Re-tessellating the
 # reconstructed BRep was the source of the 272/273 open edges reported by Prusa.
@@ -1698,7 +1816,7 @@ with open(os.path.join(OUT,'README_BUILD_v60_full.txt'),'w',encoding='utf-8') as
     f.write('Eurobox v60 direct build with proven v50 mechanical solutions restored.\n')
     f.write('Broad fixed Upper pivot, relieved replaceable Lower fork, positive M4 closure with dedicated tightening tongue and side-loaded captive nut.\n')
     f.write('Rack closure is dimensioned for an M4x20 from below with full captive-nut engagement, blind-tip clearance and positive tightening travel.\n')
-    f.write('Outboard rear-stop contact wall, closed holm heads with DROPs; serviceable box-clamp cage uses full-area holm ties, a hollow transverse DROP beam and low station gussets while the lead-nut cartridges remain removable. Lead-nut retaining lugs point downward so their cross-pins are captured inside the structural cage, with deterministic -Y and Z seating datums.\n')
+    f.write('Outboard rear-stop contact wall, closed holm heads with DROPs; serviceable box-clamp cage uses full-area holm ties, a hollow transverse DROP beam and low station gussets while the lead-nut cartridges remain removable. Lead-nut cartridges use a matching support-free bowed lower seat; their cross-pin cradle is a 45-degree V and the exported lead nut is print-oriented with the RH8x2 axis vertical.\n')
     f.write(f'Final cage top is exactly the 39.54 mm box support plane; {PLATE_X:.1f} mm clamp plate with holm-referenced lead screws at {SPINDLE_X[0]:.2f}/{SPINDLE_X[1]:.2f} mm.\n')
     f.write('160 mm rack-clamp spacing; CORE One L INDX hard envelope 298 x 275 mm.\n')
 stage('complete'); print(json.dumps(V,indent=2),flush=True)
