@@ -857,6 +857,13 @@ LEAD_NUT = LEAD_NUT.fuse(C.box(
     -6.0,-11.0,LEAD_NUT_UPPER_LUG_Z0,
     12.0,8.0,LEAD_NUT_UPPER_LUG_Z1-LEAD_NUT_UPPER_LUG_Z0,
 )).removeSplitter()
+# Close the former upper gap completely. The pin bore and its narrow top-entry
+# throat are cut afterwards and remain the only intentional opening here.
+LEAD_NUT = LEAD_NUT.fuse(C.box(
+    -8.0,-NUT_THREAD_LEN,LEAD_NUT_BODY_Z1-0.10,
+    16.0,NUT_THREAD_LEN,
+    LEAD_NUT_CAP_Z0-LEAD_NUT_BODY_Z1+0.20,
+)).removeSplitter()
 # Flush closure cap: full cartridge footprint, installed top exactly at the
 # base top Z=39.54. The pocket remains a top service opening in the bare BASE,
 # but the installed carrier closes it instead of leaving a visible rectangular
