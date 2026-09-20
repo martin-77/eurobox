@@ -87,14 +87,14 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 635202.936,
-    "left_volume_mm3": 635202.936,
+    "right_volume_mm3": 636974.267,
+    "left_volume_mm3": 636974.267,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 5874.76,
+    "front_support_crosshead_common_mm3": 6655.128,
     "rear_support_backstop_common_mm3": 5904.0,
-    "rear_support_crosshead_common_mm3": 5874.76,
+    "rear_support_crosshead_common_mm3": 6655.128,
     "inner_green_shelf_support": {
       "target": "central lower long-holm flange between twin webs",
       "print_orientation": "BASE upside-down; installed high-Z prints first",
@@ -172,7 +172,7 @@
       ]
     },
     "crosshead_print_support": {
-      "strategy": "continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP and closed X ends",
+      "strategy": "original front/Y0 web retained; missing rear/Y1 wall closed only in long-holm zones; rear continuation is straight and hollow",
       "crosshead_y_mm": [
         202.1,
         214.115
@@ -279,6 +279,34 @@
         }
       ]
     },
+    "crosshead_rear_holm_junctions": [
+      {
+        "holm": "front_holm",
+        "front_y0_web_material_fraction": 1.0,
+        "rear_y1_wall_material_fraction": 1.0,
+        "rear_hollow_sleeve_material_fraction": 1.0,
+        "rear_open_span_mm": 5.685,
+        "interior_remains_hollow": true,
+        "hollow_probe_xyz_mm": [
+          -80.0,
+          216.958,
+          24.54
+        ]
+      },
+      {
+        "holm": "rear_holm",
+        "front_y0_web_material_fraction": 1.0,
+        "rear_y1_wall_material_fraction": 1.0,
+        "rear_hollow_sleeve_material_fraction": 1.0,
+        "rear_open_span_mm": 5.685,
+        "interior_remains_hollow": true,
+        "hollow_probe_xyz_mm": [
+          180.0,
+          216.958,
+          24.54
+        ]
+      }
+    ],
     "holm_head_closures": [
       {
         "x_mm": -80.0,
@@ -362,26 +390,15 @@
       "rear_holm_common_mm3": 13591.635,
       "front_holm_root_tie": {
         "y_mm": [
-          -8.0,
+          18.0,
           34.0
         ],
-        "carrier_y_mm": [
-          -8.0,
-          26.0
-        ],
-        "carrier_depth_mm": 34.0,
-        "carrier_engagement_mm": 34.0,
+        "carrier_engagement_mm": 8.0,
         "holm_engagement_mm": 10.0,
-        "material_fraction": 0.998962,
-        "carrier_common_mm3": 16944.192,
+        "material_fraction": 1.0,
+        "carrier_common_mm3": 3656.338,
         "holm_common_mm3": 4623.012,
-        "section": "straight_hollow_root_sleeve_spanning_full_carrier_depth_and_long_holm_root",
-        "interior_remains_hollow": true,
-        "hollow_probe_xyz_mm": [
-          -80.0,
-          18.0,
-          24.54
-        ],
+        "section": "closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls",
         "x_z_envelope_growth_mm": [
           0.0,
           0.0
