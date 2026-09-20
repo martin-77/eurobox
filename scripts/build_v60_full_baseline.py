@@ -895,8 +895,27 @@ LEAD_NUT = LEAD_NUT.cut(
 ).removeSplitter()
 C.require_single(
     LEAD_NUT,
-    'top-loaded RH8x2 lead-nut carrier with round top-open pin cradle',
+    'closed-body top-loaded RH8x2 lead-nut carrier with round pin service opening',
 )
+
+lead_nut_gap_checks=[]
+for label,x,y,z,expect_solid in (
+    ('rear-wall',0.0,-12.5,9.0,True),
+    ('front-wall',0.0,-1.5,9.0,True),
+    ('pin-left-cheek',0.0,LEAD_NUT_PIN_LOCAL_Y-2.4,9.5,True),
+    ('pin-right-cheek',0.0,LEAD_NUT_PIN_LOCAL_Y+2.4,9.5,True),
+    ('pin-axis',0.0,LEAD_NUT_PIN_LOCAL_Y,LEAD_NUT_PIN_LOCAL_Z,False),
+    ('pin-top-entry',0.0,LEAD_NUT_PIN_LOCAL_Y,12.5,False),
+):
+    solid=bool(LEAD_NUT.isInside(App.Vector(x,y,z),1e-5,False))
+    lead_nut_gap_checks.append({
+        'sample':label,'solid':solid,'expected_solid':expect_solid,
+    })
+    if solid != expect_solid:
+        raise RuntimeError(
+            f'lead-nut closed upper body wrong at {label}: '
+            f'solid={solid} expected={expect_solid}'
+        )
 
 NUT_PIN = C.fuse_seq([
     C.cyl_x(NUT_PIN_SHAFT_D/2.0,23.4,-12.0,0,0),
@@ -1315,6 +1334,8 @@ lead_nut_printability = {
     'base_pocket_floor_bridge_mm':round(2.0*LEAD_NUT_POCKET_X_CLEAR,3),
     'closing_span_samples':lead_nut_span_samples,
     'pin_cradle':'round Ø3.4 top-open U-cradle',
+    'upper_body':'closed except functional cross-pin bore/top-entry throat',
+    'upper_gap_checks':lead_nut_gap_checks,
     'preferred_print_orientation':'rotate -90deg about X; RH8x2 axis vertical',
 }
 widths=[q['pocket_width_mm'] for q in lead_nut_span_samples]
