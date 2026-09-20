@@ -45,12 +45,12 @@
     "cage_reinforcement_checks": [
       {
         "name": "holm_left",
-        "material_fraction": 0.991132,
+        "material_fraction": 0.991169,
         "volume_mm3": 17365.335
       },
       {
         "name": "holm_right",
-        "material_fraction": 0.990736,
+        "material_fraction": 0.990853,
         "volume_mm3": 17365.335
       },
       {
@@ -85,13 +85,13 @@
       },
       {
         "name": "station_floor_left",
-        "material_fraction": 0.995588,
-        "volume_mm3": 3950.579
+        "material_fraction": 0.99644,
+        "volume_mm3": 3675.22
       },
       {
         "name": "station_floor_right",
-        "material_fraction": 0.995588,
-        "volume_mm3": 3950.579
+        "material_fraction": 0.99644,
+        "volume_mm3": 3675.22
       }
     ],
     "cage_struct_y_mm": [
@@ -176,8 +176,8 @@
       {
         "spindle_x_mm": -28.65,
         "thread_axis_z_mm": 24.54,
-        "nut_floor_z_mm": 17.54,
-        "pocket_floor_z_mm": 17.54,
+        "nut_floor_z_mm": 16.54,
+        "pocket_floor_z_mm": 16.54,
         "nut_top_z_mm": 39.54,
         "carrier_top_z_mm": 39.54,
         "flush_top_delta_mm": 0.0,
@@ -191,8 +191,8 @@
       {
         "spindle_x_mm": 128.65,
         "thread_axis_z_mm": 24.54,
-        "nut_floor_z_mm": 17.54,
-        "pocket_floor_z_mm": 17.54,
+        "nut_floor_z_mm": 16.54,
+        "pocket_floor_z_mm": 16.54,
         "nut_top_z_mm": 39.54,
         "carrier_top_z_mm": 39.54,
         "flush_top_delta_mm": 0.0,
@@ -207,7 +207,7 @@
     "lead_nut_pin_wall_checks": [
       {
         "spindle_x_mm": -28.65,
-        "mode": "support-free 90deg V-cradle",
+        "mode": "round top-open U-cradle",
         "samples": [
           {
             "wall_x_offset_mm": -9.775,
@@ -273,7 +273,7 @@
       },
       {
         "spindle_x_mm": 128.65,
-        "mode": "support-free 90deg V-cradle",
+        "mode": "round top-open U-cradle",
         "samples": [
           {
             "wall_x_offset_mm": -9.775,
@@ -590,43 +590,6 @@
   "rack": {
     "clamp_spacing_mm": 160.0,
     "joint": "integral fixed Upper in common carrier envelope + hinged replaceable Lower + raised top-retained metal M4 closure nut",
-    "lower_printability": {
-      "print_orientation": "installed Z-up; shell bottom on build plate",
-      "final_tongue_bottom_x_mm": 14.0,
-      "final_tongue_bottom_y_mm": [
-        4.0,
-        16.0
-      ],
-      "final_tongue_top_x_mm": 20.0,
-      "final_tongue_top_y_mm": [
-        4.0,
-        18.0
-      ],
-      "x_growth_slope_each_side": 0.428571,
-      "front_growth_slope": 0.285714,
-      "thrust_boss_radius_mm": 5.0,
-      "flat_thrust_land_preserved": true,
-      "remaining_flat_land_cantilever_from_shell_mm": 10.0,
-      "pivot_web_and_pin_profile": {
-        "print_orientation": "installed Z-up; shell bottom on build plate",
-        "web_rear_growth_slope_dy_dz": 1.0,
-        "pivot_outboard_growth_slope_dy_dz": 0.955556,
-        "pivot_pin_bore": "full circular clearance + 45deg tangent teardrop roof",
-        "closure_bottom_x_mm": 14.0,
-        "closure_bottom_y_mm": [
-          4.0,
-          16.0
-        ],
-        "closure_top_x_mm": 20.0,
-        "closure_top_y_mm": [
-          4.0,
-          18.0
-        ],
-        "closure_x_growth_slope_each_side": 0.666667,
-        "closure_front_growth_slope": 0.444444,
-        "remaining_flat_thrust_land_cantilever_mm": 10.0
-      }
-    },
     "upper_pivot_width_mm": 18.0,
     "lower_fork_outer_width_mm": 28.0,
     "lower_fork_ear_thickness_mm": 4.6,
@@ -1255,6 +1218,14 @@
       "entry_clear_depth_mm": 0.45,
       "female_thread_start_recess_mm": 0.45,
       "witness_strategy": "actual final BASE/retainer sampled directly with isInside at helical centres and half-pitch crest positions; no full-body validation booleans"
+    },
+    "lower_printability": {
+      "mechanical_geometry": "restored proven circular-pivot rectangular-tongue Lower",
+      "print_orientation": "rotate +90deg about Y; broad X side on build plate",
+      "rack_saddle_axis_vertical": true,
+      "pivot_pin_bore_axis_vertical": true,
+      "m4_clearance_horizontal_d_mm": 5.0,
+      "functional_round_pivot_bore_preserved": true
     }
   },
   "box_clamp": {
@@ -2259,17 +2230,33 @@
       ]
     },
     "lead_nut_printability": {
-      "body_profile": "smooth 45deg-limited bow",
-      "body_bottom_width_mm": 4.0,
+      "body_profile": "true R8 lower semicircle",
+      "semicircle_radius_mm": 8.0,
       "body_full_width_mm": 16.0,
-      "body_rise_mm": 7.0,
-      "body_run_each_side_mm": 6.0,
-      "profile_start_slope_dx_dz": 0.714286,
-      "profile_end_slope_dx_dz": 1.0,
-      "base_pocket_tip_bridge_mm": 4.4,
-      "pin_cradle": "90deg V, top-open",
-      "pin_v_apex_local_z_mm": 7.596,
-      "pin_v_shoulder_local_z_mm": 9.496,
+      "base_pocket_floor_bridge_mm": 0.4,
+      "closing_span_samples": [
+        {
+          "local_z_mm": 0.0,
+          "pocket_width_mm": 16.4
+        },
+        {
+          "local_z_mm": -2.0,
+          "pocket_width_mm": 15.892
+        },
+        {
+          "local_z_mm": -4.0,
+          "pocket_width_mm": 14.256
+        },
+        {
+          "local_z_mm": -6.0,
+          "pocket_width_mm": 10.983
+        },
+        {
+          "local_z_mm": -8.0,
+          "pocket_width_mm": 0.4
+        }
+      ],
+      "pin_cradle": "round \u00d83.4 top-open U-cradle",
       "preferred_print_orientation": "rotate -90deg about X; RH8x2 axis vertical"
     },
     "lead_nut_thread": {
@@ -2411,11 +2398,11 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3173777
+    "file_bytes": 3221348
   },
   "handed_stl_export": {
-    "right_sha256": "8df4ea5110240ee6705e3f36602cb0d17dd2ec15e4795add6c79ff55353fa77d",
-    "left_sha256": "a8e017c82689f7bf3167ecc6360dab45536bf7a6178626db8c122000405ff618",
+    "right_sha256": "f8f9867ce6acc5ac3dedef316eea8f0c0871a4bdff73432efaf38f28c69a0b44",
+    "left_sha256": "e1d9afd59ceed3382deb699f8a0e9cfa2ccf43bdf42ed50a5627f8fbbf3a4cf6",
     "byte_distinct": true,
     "mirror_geometry_ok": true,
     "mirror_bounds_ok": true,
@@ -2438,13 +2425,13 @@
       -42.0,
       39.54
     ],
-    "right_facets": 37788,
-    "left_facets": 37788,
-    "right_volume_mm3": 704245.771637,
-    "left_volume_mm3": 704245.771637,
+    "right_facets": 38826,
+    "left_facets": 38826,
+    "right_volume_mm3": 703311.492731,
+    "left_volume_mm3": 703311.492731,
     "volume_delta_mm3": 0.0,
-    "right_area_mm2": 195559.720621,
-    "left_area_mm2": 195559.720621,
+    "right_area_mm2": 195766.536224,
+    "left_area_mm2": 195766.536224,
     "area_delta_mm2": 0.0
   },
   "installed_support_orientation": {
