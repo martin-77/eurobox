@@ -381,21 +381,23 @@ for q in gh['checks']:
     assert q['centre_overlap_each_side_mm'] == 0.2, q
     assert q['rise_mm'] == 10.0, q
 
-fills = core['geometry']['crosshead_holm_transition_fills']
-assert len(fills) == 2, fills
-assert {q['holm'] for q in fills} == {'front_holm','rear_holm'}, fills
-for q in fills:
-    assert abs(q['nominal_cavity_span_mm'] - 5.685) <= 1e-3, q
-    assert q['fill_length_mm'] >= 6.0, q
-    assert q['material_fraction'] >= 0.999, q
+junctions = core['geometry']['crosshead_holm_straight_junctions']
+assert len(junctions) == 2, junctions
+assert {q['holm'] for q in junctions} == {'front_holm','rear_holm'}, junctions
+for q in junctions:
+    assert q['profile'] == 'straight crosshead front web + straight hollow long-holm tail', q
+    assert q['crosshead_front_web_fraction'] >= 0.999, q
+    assert q['straight_holm_tail_fraction'] >= 0.999, q
+    assert q['interface_common_mm3'] >= 50.0, q
     assert q['plate_sweep_common_mm3'] <= 0.000001, q
+    assert q['interior_remains_hollow'] is True, q
 
 ch = core['geometry']['crosshead_print_support']
-assert ch['strategy'] == 'continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP and closed X ends', ch
+assert ch['strategy'] == 'central smooth lower-flange DROP with straight vertical front webs in both 32 mm long-holm junction zones', ch
 assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
-assert ch['full_drop_material_fraction'] >= 0.995, ch
+assert ch['central_drop_material_fraction'] >= 0.995, ch
 assert abs(ch['end_wall_thickness_mm'] - 3.2) <= 1e-9, ch
 assert len(ch['end_wall_checks']) == 2, ch
 assert {q['end'] for q in ch['end_wall_checks']} == {'x0','x1'}, ch
