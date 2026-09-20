@@ -87,8 +87,8 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 635548.135,
-    "left_volume_mm3": 635548.135,
+    "right_volume_mm3": 635484.62,
+    "left_volume_mm3": 635484.62,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
@@ -406,6 +406,14 @@
         "print_orientation": "BASE upside-down; high installed Z prints first",
         "root_side": "internal saddle web at Y=7",
         "tip_side": "outer +Y side wall inner face at Y=22.8",
+        "x_mm": [
+          -64.0,
+          196.0
+        ],
+        "excluded_front_root_x_mm": [
+          -96.0,
+          -64.0
+        ],
         "y_mm": [
           7.0,
           22.8
@@ -418,21 +426,51 @@
         "rack_closure_strategy": "later closure machining re-opens only the local screw/nut/retainer service volume"
       },
       "saddle_radius_mm": 6.31,
-      "material_fraction": 0.999813,
+      "material_fraction": 0.99981,
       "rack_tube_common_mm3": 0.0,
-      "front_holm_common_mm3": 1231.36,
+      "front_holm_direct_carrier_common_mm3": 0.0,
       "rear_holm_common_mm3": 13591.635,
       "front_holm_root_tie": {
-        "y_mm": [
-          18.0,
-          34.0
+        "x_mm": [
+          -96.0,
+          -64.0
         ],
-        "carrier_engagement_mm": 8.0,
-        "holm_engagement_mm": 10.0,
-        "material_fraction": 1.0,
-        "carrier_common_mm3": 3656.338,
-        "holm_common_mm3": 4623.012,
-        "section": "closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls",
+        "y_mm": [
+          -8.0,
+          36.0
+        ],
+        "carrier_y_mm": [
+          -8.0,
+          26.0
+        ],
+        "carrier_depth_mm": 34.0,
+        "carrier_engagement_mm": 34.0,
+        "straight_after_carrier_mm": 10.0,
+        "normal_holm_start_y_mm": 35.6,
+        "holm_splice_common_mm3": 188.119,
+        "material_fraction": 0.999116,
+        "carrier_common_mm3": 16968.96,
+        "section": "full_carrier_depth_straight_hollow_root_with_side_twin_and_center_webs",
+        "green_drop_excluded_from_root_zone": true,
+        "green_drop_x_min_mm": -64.0,
+        "hollow_cell_checks": [
+          {
+            "x_offset_mm": -12.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": -4.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": 4.0,
+            "solid": false
+          },
+          {
+            "x_offset_mm": 12.0,
+            "solid": false
+          }
+        ],
         "x_z_envelope_growth_mm": [
           0.0,
           0.0
@@ -441,7 +479,7 @@
       "clamp_overlaps": [
         {
           "station": "front",
-          "carrier_common_mm3": 10159.469
+          "carrier_common_mm3": 8904.941
         },
         {
           "station": "rear",
