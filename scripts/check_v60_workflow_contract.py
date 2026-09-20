@@ -122,15 +122,28 @@ assert all(q['base_common_mm3'] <= 0.0001 for q in box['thread_motion']), box['t
 assert box['thread_brep_common_tolerance_mm3'] == 1.20, box
 assert all(q['cartridge_common_mm3'] <= box['thread_brep_common_tolerance_mm3'] for q in box['thread_motion']), box['thread_motion']
 
-# Lead screw must be the exact closed printable CGAL mesh, with a full 7 mm
-# knob hex and true RH8x2 on both male thread sections.
+# Lead screw must be the exact closed printable CGAL mesh. The 7 mm knob
+# drive now starts with a support-free hex frustum and retains 5 mm full AF10.
 ls = box['lead_screw']
 assert ls['knob_hex_length_mm'] == ls['knob_thickness_mm'] == 7.0, ls
+assert ls['full_hex_drive_length_mm'] >= 5.0, ls
+assert abs(ls['hex_taper_length_mm'] - 2.0) <= 1e-9, ls
 assert ls['mesh_topology']['boundary_edges'] == 0, ls
 assert ls['mesh_topology']['nonmanifold_edges'] == 0, ls
 assert len(ls['main_thread_samples']) == 8, ls
 assert all(q['ridge_center_solid'] for q in ls['main_thread_samples']), ls
 assert all(not q['between_turns_solid'] for q in ls['main_thread_samples']), ls
+
+lsp = box['lead_screw_printability']
+assert lsp['preferred_print_orientation'] == 'vertical on outer-stud pilot; screw axis +Z', lsp
+assert abs(lsp['flat_pilot_d_mm'] - 6.5) <= 1e-9, lsp
+assert abs(lsp['flat_pilot_h_mm'] - 0.8) <= 1e-9, lsp
+assert lsp['outer_thread_usable_mm'] >= 6.0, lsp
+assert abs(lsp['hex_taper_h_mm'] - 2.0) <= 1e-9, lsp
+assert lsp['full_hex_drive_h_mm'] >= 5.0, lsp
+assert lsp['shoulder_taper_max_slope_dr_dz'] <= 1.0, lsp
+assert lsp['plate_matching_conical_seat'] is True, lsp
+assert lsp['knob_matching_hex_frustum'] is True, lsp
 
 pr = box['plate_spindle_retention']
 assert pr['clip_count_final_assembly'] == 4, pr
@@ -150,7 +163,7 @@ assert ms['order'] == [
     'lead_screw_through_plate',
     'plate_retainer_clip_via_bottom_service_channel',
     'plate_spindle_subassembly_threaded_into_fixed_lead_nut',
-    'knob_on_full_7mm_hex',
+    'knob_on_tapered_7mm_hex_with_5mm_full_drive',
     'knob_retainer_nut_on_outer_RH8x2_stud',
 ], ms
 assert len(ms['lead_nut_top_insertion']) == 10, ms
@@ -205,6 +218,20 @@ assert kr['validated_export_part'] == 'eurobox_v60_knob_retainer_nut', kr
 # Rack retainer: one final printable 12x3 pair only.  The contract checks the
 # actual radial/axial profile dimensions and direct point samples from the final
 # BASE/retainer, rather than expensive whole-body phase booleans.
+rlp = full['rack']['lower_printability']
+assert rlp['print_orientation'] == 'installed Z-up; shell bottom on build plate', rlp
+assert rlp['x_growth_slope_each_side'] <= 1.0, rlp
+assert rlp['front_growth_slope'] <= 1.0, rlp
+assert rlp['flat_thrust_land_preserved'] is True, rlp
+assert abs(rlp['thrust_boss_radius_mm'] - 5.0) <= 1e-9, rlp
+assert rlp['remaining_flat_land_cantilever_from_shell_mm'] <= 10.0, rlp
+pivot_print = rlp['pivot_web_and_pin_profile']
+assert pivot_print['web_rear_growth_slope_dy_dz'] <= 1.0, pivot_print
+assert pivot_print['pivot_outboard_growth_slope_dy_dz'] <= 1.0, pivot_print
+assert pivot_print['pivot_pin_bore'] == 'full circular clearance + 45deg tangent teardrop roof', pivot_print
+assert pivot_print['closure_x_growth_slope_each_side'] <= 1.0, pivot_print
+assert pivot_print['closure_front_growth_slope'] <= 1.0, pivot_print
+
 closure = full['rack']['m4_closure']
 assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
 assert closure['carrier_top_plane_z_mm'] == 39.54, closure
