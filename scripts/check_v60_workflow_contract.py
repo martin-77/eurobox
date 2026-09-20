@@ -381,24 +381,22 @@ for q in gh['checks']:
     assert q['centre_overlap_each_side_mm'] == 0.2, q
     assert q['rise_mm'] == 10.0, q
 
-junctions = core['geometry']['crosshead_holm_straight_junctions']
-assert len(junctions) == 2, junctions
-assert {q['holm'] for q in junctions} == {'front_holm','rear_holm'}, junctions
-for q in junctions:
-    assert q['profile'] == 'full-depth straight hollow crosshead end + straight hollow long-holm tail', q
-    assert abs(q['crosshead_depth_mm'] - 12.015) <= 1e-3, q
-    assert q['crosshead_end_section_fraction'] >= 0.999, q
-    assert q['straight_holm_tail_fraction'] >= 0.999, q
-    assert q['interface_common_mm3'] >= 50.0, q
-    assert q['plate_sweep_common_mm3'] <= 0.000001, q
+rear_junctions = core['geometry']['crosshead_rear_holm_junctions']
+assert len(rear_junctions) == 2, rear_junctions
+assert {q['holm'] for q in rear_junctions} == {'front_holm','rear_holm'}, rear_junctions
+for q in rear_junctions:
+    assert q['front_y0_web_material_fraction'] >= 0.999, q
+    assert q['rear_y1_wall_material_fraction'] >= 0.999, q
+    assert q['rear_hollow_sleeve_material_fraction'] >= 0.999, q
+    assert abs(q['rear_open_span_mm'] - 5.685) <= 1e-3, q
     assert q['interior_remains_hollow'] is True, q
 
 ch = core['geometry']['crosshead_print_support']
-assert ch['strategy'] == 'central smooth lower-flange DROP with full-depth straight hollow box sections in both 32 mm long-holm junction zones', ch
+assert ch['strategy'] == 'original front/Y0 web retained; missing rear/Y1 wall closed only in long-holm zones; rear continuation is straight and hollow', ch
 assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
-assert ch['central_drop_material_fraction'] >= 0.995, ch
+assert ch['full_drop_material_fraction'] >= 0.995, ch
 assert abs(ch['end_wall_thickness_mm'] - 3.2) <= 1e-9, ch
 assert len(ch['end_wall_checks']) == 2, ch
 assert {q['end'] for q in ch['end_wall_checks']} == {'x0','x1'}, ch
