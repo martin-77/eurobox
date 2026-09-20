@@ -37,14 +37,18 @@ CARRIER_SIDE_T = C.WEB_T
 CARRIER_SIDE_Z0 = CARRIER_BOTTOM_Z1
 CARRIER_SIDE_Z1 = CARRIER_TOP_Z0
 
-# Front long-holm root reinforcement.  The original direct carrier/holm
-# intersection was only Y=24..26 (2 mm).  Continue the actual I-beam load paths
-# through a local closed root sleeve from Y=18..34: 8 mm embedded in the carrier
-# and 10 mm embedded in the long holm, with no X/Z envelope growth.
-FRONT_ROOT_Y0 = 18.0
-FRONT_ROOT_Y1 = 34.0
-FRONT_ROOT_CARRIER_ENGAGEMENT = CARRIER_Y1 - FRONT_ROOT_Y0
-FRONT_ROOT_HOLM_ENGAGEMENT = FRONT_ROOT_Y1 - C.ARM_Y0
+# Front long-holm / rack-carrier junction.
+# The straight root section must span the COMPLETE 34 mm carrier depth, not just
+# its rear 8 mm.  It then continues another 10 mm behind the carrier before the
+# normal haunched long-holm profile begins.  This prevents the old carrier DROP
+# and old holm haunches from surviving underneath a merely overlaid sleeve.
+FRONT_ROOT_X0 = C.FRONT_CLAMP_X - C.ARM_W/2.0
+FRONT_ROOT_X1 = C.FRONT_CLAMP_X + C.ARM_W/2.0
+FRONT_ROOT_Y0 = CARRIER_Y0
+FRONT_ROOT_Y1 = CARRIER_Y1 + 10.0
+FRONT_ROOT_HOLM_OVERLAP = 0.40
+FRONT_ROOT_CARRIER_ENGAGEMENT = CARRIER_Y1 - CARRIER_Y0
+FRONT_ROOT_STRAIGHT_AFTER_CARRIER = FRONT_ROOT_Y1 - CARRIER_Y1
 FRONT_ROOT_SIDE_T = C.WEB_T
 
 # Close both X ends of the hollow carrier. The former "closed box" only had
@@ -112,9 +116,15 @@ def make_green_shelf_drop():
     ] + curve[1:] + [App.Vector(0.0, y_root, z_floor)]
 
     face = Part.Face(Part.makePolygon(yz))
-    q = face.extrude(App.Vector(CARRIER_X1 - CARRIER_X0, 0, 0))
-    q.translate(App.Vector(CARRIER_X0, 0, 0))
-    C.require_single(q, 'green-shelf-drop')
+
+    # Do NOT run this curved carrier DROP through the front long-holm/root
+    # junction.  That was the rounded inner shape still visible in the slicer
+    # even after the outside had been straightened.  The straight hollow root
+    # section owns X=-96..-64; the DROP starts exactly at its inner X face.
+    drop_x0 = FRONT_ROOT_X1
+    q = face.extrude(App.Vector(CARRIER_X1 - drop_x0, 0, 0))
+    q.translate(App.Vector(drop_x0, 0, 0))
+    C.require_single(q, 'green-shelf-drop-excluding-front-root-zone')
     return q
 
 
@@ -134,6 +144,10 @@ def make_front_holm_root_tie():
               C.WEB_T, length, web_h),
         C.box(xc+8.0-C.WEB_T/2.0, FRONT_ROOT_Y0, web_z,
               C.WEB_T, length, web_h),
+        # Centre web divides the 12.8 mm inner bridge into two ~4.8 mm cells
+        # in the prescribed upside-down BASE print orientation.
+        C.box(xc-C.WEB_T/2.0, FRONT_ROOT_Y0, web_z,
+              C.WEB_T, length, web_h),
         # Close the root laterally so torsion is carried as a local box instead
         # of being dumped into the first 2 mm of I-beam overlap.
         C.box(xc-C.ARM_W/2.0, FRONT_ROOT_Y0, web_z,
@@ -141,7 +155,7 @@ def make_front_holm_root_tie():
         C.box(xc+C.ARM_W/2.0-FRONT_ROOT_SIDE_T, FRONT_ROOT_Y0, web_z,
               FRONT_ROOT_SIDE_T, length, web_h),
     ]
-    q = C.fuse_seq(parts, 'front-holm-closed-root-tie')
+    q = C.fuse_seq(parts, 'front-holm-full-depth-straight-hollow-root')
     C.require_single(q, 'front-holm-closed-root-tie')
     return q
 
@@ -342,7 +356,10 @@ def make_hanging_backstop():
 
 def build_clean_right():
     carrier = make_continuous_carrier()
-    front_long = C.make_long_support(C.FRONT_CLAMP_X, C.ARM_Y0)
+    front_long = C.make_long_support(
+        C.FRONT_CLAMP_X,
+        FRONT_ROOT_Y1 - FRONT_ROOT_HOLM_OVERLAP,
+    )
     rear_long = C.make_long_support(C.REAR_SUPPORT_X, 0.0)
     front_clamp = make_hanging_upper_station(C.FRONT_CLAMP_X)
     rear_clamp = make_hanging_upper_station(C.REAR_CLAMP_X)
@@ -511,26 +528,63 @@ if drop_tube_common > 1e-4:
 
 front_holm_overlap = CARRIER.common(FRONT_LONG).Volume
 rear_holm_overlap = CARRIER.common(REAR_LONG).Volume
-if front_holm_overlap < 100.0:
-    failures.append(f'front long holm not fused into continuous carrier: {front_holm_overlap:.3f}')
 if rear_holm_overlap < 100.0:
     failures.append(f'rear long holm not fused into continuous carrier: {rear_holm_overlap:.3f}')
 
-# Structural regression gate for the front-root load path.  Validate the actual
-# reinforcing member and both sides of the load transfer separately.
+# Structural regression gate for the NEW front load path:
+# carrier -> full-depth straight root -> normal long holm.
 front_root_fraction = RIGHT.common(FRONT_HOLM_ROOT_TIE).Volume / FRONT_HOLM_ROOT_TIE.Volume
 front_root_carrier_common = FRONT_HOLM_ROOT_TIE.common(CARRIER).Volume
 front_root_holm_common = FRONT_HOLM_ROOT_TIE.common(FRONT_LONG).Volume
 if front_root_fraction < 0.995:
-    failures.append(f'front holm root tie missing from final core: {front_root_fraction:.6f}')
-if FRONT_ROOT_CARRIER_ENGAGEMENT < 8.0 - 1e-9:
-    failures.append(f'front root carrier engagement too short: {FRONT_ROOT_CARRIER_ENGAGEMENT:.3f} mm')
-if FRONT_ROOT_HOLM_ENGAGEMENT < 10.0 - 1e-9:
-    failures.append(f'front root holm engagement too short: {FRONT_ROOT_HOLM_ENGAGEMENT:.3f} mm')
-if front_root_carrier_common < 2500.0:
-    failures.append(f'front root tie/carrier overlap too small: {front_root_carrier_common:.3f} mm3')
-if front_root_holm_common < 4000.0:
-    failures.append(f'front root tie/holm overlap too small: {front_root_holm_common:.3f} mm3')
+    failures.append(f'front full-depth root missing from final core: {front_root_fraction:.6f}')
+if abs(FRONT_ROOT_CARRIER_ENGAGEMENT-(CARRIER_Y1-CARRIER_Y0))>1e-9:
+    failures.append(
+        f'front straight root does not span complete carrier depth: '
+        f'{FRONT_ROOT_CARRIER_ENGAGEMENT:.3f} mm'
+    )
+if FRONT_ROOT_STRAIGHT_AFTER_CARRIER < 10.0 - 1e-9:
+    failures.append(
+        f'front straight root continuation too short: '
+        f'{FRONT_ROOT_STRAIGHT_AFTER_CARRIER:.3f} mm'
+    )
+if front_root_carrier_common < 8000.0:
+    failures.append(
+        f'front root/carrier full-depth overlap too small: '
+        f'{front_root_carrier_common:.3f} mm3'
+    )
+if front_root_holm_common < 150.0:
+    failures.append(
+        f'front straight root/normal holm splice too small: '
+        f'{front_root_holm_common:.3f} mm3'
+    )
+
+# The old curved carrier DROP must not exist inside the 32 mm front-root X zone.
+# The generated DROP now starts exactly at FRONT_ROOT_X1.
+if GREEN_SHELF_DROP.BoundBox.XMin < FRONT_ROOT_X1 - 1e-6:
+    failures.append(
+        f'green carrier DROP intrudes into straight front-root zone: '
+        f'Xmin={GREEN_SHELF_DROP.BoundBox.XMin:.3f}'
+    )
+
+# Prove the 10 mm section behind the carrier is genuinely hollow and straight.
+front_root_hollow_checks=[]
+probe_y=CARRIER_Y1+5.0
+for xoff in (-12.0,-4.0,4.0,12.0):
+    pt=App.Vector(
+        C.FRONT_CLAMP_X+xoff,
+        probe_y,
+        (C.ARM_BOTTOM_Z+C.ARM_TOP_Z)/2.0,
+    )
+    solid=bool(RIGHT.isInside(pt,1e-5,False))
+    front_root_hollow_checks.append({
+        'x_offset_mm':xoff,
+        'solid':solid,
+    })
+    if solid:
+        failures.append(
+            f'front straight root cell obstructed at X offset {xoff:.1f}'
+        )
 
 # The measured rack tube must remain free; the carrier uses the same v50 saddle.
 tube = C.cyl_x(C.RACK_R, 400.0, -200.0, 0.0, 0.0)
@@ -573,6 +627,8 @@ report['geometry']['continuous_carrier'] = {
         'print_orientation': 'BASE upside-down; high installed Z prints first',
         'root_side': 'internal saddle web at Y=7',
         'tip_side': 'outer +Y side wall inner face at Y=22.8',
+        'x_mm': [round(GREEN_SHELF_DROP.BoundBox.XMin,3),round(GREEN_SHELF_DROP.BoundBox.XMax,3)],
+        'excluded_front_root_x_mm': [FRONT_ROOT_X0,FRONT_ROOT_X1],
         'y_mm': [round(CARRIER_GREEN_SHELF_Y0,3), round(CARRIER_GREEN_SHELF_Y1,3)],
         'shelf_z_mm': round(CARRIER_GREEN_SHELF_Z,3),
         'root_z_mm': round(CARRIER_GREEN_DROP_ROOT_Z,3),
@@ -584,16 +640,23 @@ report['geometry']['continuous_carrier'] = {
     'saddle_radius_mm': CARRIER_SADDLE_R,
     'material_fraction': round(carrier_fraction,6),
     'rack_tube_common_mm3': round(tube_common,9),
-    'front_holm_common_mm3': round(front_holm_overlap,3),
+    'front_holm_direct_carrier_common_mm3': round(front_holm_overlap,3),
     'rear_holm_common_mm3': round(rear_holm_overlap,3),
     'front_holm_root_tie': {
+        'x_mm': [FRONT_ROOT_X0,FRONT_ROOT_X1],
         'y_mm': [FRONT_ROOT_Y0, FRONT_ROOT_Y1],
+        'carrier_y_mm': [CARRIER_Y0,CARRIER_Y1],
+        'carrier_depth_mm': round(CARRIER_Y1-CARRIER_Y0,3),
         'carrier_engagement_mm': round(FRONT_ROOT_CARRIER_ENGAGEMENT,3),
-        'holm_engagement_mm': round(FRONT_ROOT_HOLM_ENGAGEMENT,3),
+        'straight_after_carrier_mm': round(FRONT_ROOT_STRAIGHT_AFTER_CARRIER,3),
+        'normal_holm_start_y_mm': round(FRONT_ROOT_Y1-FRONT_ROOT_HOLM_OVERLAP,3),
+        'holm_splice_common_mm3': round(front_root_holm_common,3),
         'material_fraction': round(front_root_fraction,6),
         'carrier_common_mm3': round(front_root_carrier_common,3),
-        'holm_common_mm3': round(front_root_holm_common,3),
-        'section': 'closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls',
+        'section': 'full_carrier_depth_straight_hollow_root_with_side_twin_and_center_webs',
+        'green_drop_excluded_from_root_zone': True,
+        'green_drop_x_min_mm': round(GREEN_SHELF_DROP.BoundBox.XMin,3),
+        'hollow_cell_checks': front_root_hollow_checks,
         'x_z_envelope_growth_mm': [0.0,0.0],
     },
     'clamp_overlaps': station_overlaps,
