@@ -97,6 +97,11 @@ assert abs(printability['semicircle_radius_mm'] - 8.0) <= 1e-9, printability
 assert abs(printability['body_full_width_mm'] - 16.0) <= 1e-9, printability
 assert printability['base_pocket_floor_bridge_mm'] <= 0.5, printability
 assert printability['pin_cradle'] == 'round Ø3.4 top-open U-cradle', printability
+assert printability['upper_body'] == 'closed except functional cross-pin bore/top-entry throat', printability
+gap = printability['upper_gap_checks']
+assert len(gap) == 6, gap
+assert all(q['solid'] == q['expected_solid'] for q in gap), gap
+assert {q['sample'] for q in gap if not q['solid']} == {'pin-axis','pin-top-entry'}, gap
 assert printability['preferred_print_orientation'] == 'rotate -90deg about X; RH8x2 axis vertical', printability
 span = printability['closing_span_samples']
 assert [q['local_z_mm'] for q in span] == [0.0,-2.0,-4.0,-6.0,-8.0], span
@@ -221,25 +226,38 @@ assert kr['validated_export_part'] == 'eurobox_v60_knob_retainer_nut', kr
 # actual radial/axial profile dimensions and direct point samples from the final
 # BASE/retainer, rather than expensive whole-body phase booleans.
 rlp = full['rack']['lower_printability']
-assert rlp['mechanical_geometry'] == 'restored proven circular-pivot rectangular-tongue Lower', rlp
-assert rlp['print_orientation'] == 'rotate +90deg about Y; broad X side on build plate', rlp
-assert rlp['rack_saddle_axis_vertical'] is True, rlp
-assert rlp['pivot_pin_bore_axis_vertical'] is True, rlp
-assert abs(rlp['m4_clearance_horizontal_d_mm'] - 5.0) <= 1e-9, rlp
+assert rlp['mechanical_geometry'] == 'proven Lower shell unchanged; closure tongue extended downward only', rlp
+assert rlp['print_orientation'] == 'natural Z-up on common shell/tongue floor', rlp
+assert abs(rlp['common_floor_z_mm'] + 14.5) <= 1e-9, rlp
+assert rlp['common_floor_material_fraction'] >= 0.995, rlp
+assert rlp['saddle_under_material_mm'] >= 8.3, rlp
+assert rlp['rack_saddle'] == 'upward-open semicircular seat', rlp
+assert rlp['pivot_pin_bore'] == 'small horizontal round self-closing opening', rlp
+assert rlp['m4_clearance'] == 'vertical', rlp
+assert abs(rlp['m4_clearance_d_mm'] - 5.0) <= 1e-9, rlp
 assert rlp['functional_round_pivot_bore_preserved'] is True, rlp
 
 closure = full['rack']['m4_closure']
 assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
 assert closure['carrier_top_plane_z_mm'] == 39.54, closure
-assert closure['lower_closure_thickness_mm'] == 7.0, closure
+assert closure['lower_closure_thickness_mm'] == 13.0, closure
+assert closure['lower_closure_z_mm'] == [-14.5,-1.5], closure
+assert closure['lower_shell_floor_z_mm'] == -14.5, closure
+assert closure['lower_saddle_under_material_mm'] >= 8.3, closure
 assert closure['upper_nut_pocket_af_mm'] == 6.9, closure
+assert closure['upper_nut_pocket_z_mm'] == [5.4,9.0], closure
+assert closure['upper_nut_floor_z_mm'] == 3.4, closure
 assert closure['upper_nut_floor_thickness_mm'] >= 2.0, closure
 assert closure['upper_nut_floor_screw_clear_d_mm'] <= 4.6, closure
 assert closure['upper_nut_floor_radial_ligament_mm'] >= 1.15, closure
 assert closure['upper_nut_floor_material_fraction'] >= 0.985, closure
-assert closure['full_nut_screw_overrun_margin_mm'] >= 0.30, closure
+assert closure['knob_plastic_web_mm'] == 3.2, closure
+assert closure['usable_screw_length_above_knob_mm'] == 23.6, closure
+assert closure['calculated_screw_tip_z_mm'] == 9.1, closure
+assert closure['full_nut_screw_overrun_margin_mm'] >= 0.49, closure
 assert closure['screw_length_mm'] == 30.0, closure
 assert closure['retainer_pitch_mm'] == 3.0, closure
+assert closure['retainer_length_mm'] >= 28.0, closure
 assert closure['retainer_male_major_d_mm'] == 12.0, closure
 assert closure['retainer_female_major_d_mm'] >= 12.5, closure
 assert closure['retainer_thread_profile_generator'] == 'true_radial_axial_OCC_fused', closure
@@ -248,9 +266,9 @@ assert 0.35 <= closure['entry_clear_depth_mm'] <= 0.60, closure
 assert closure['female_thread_start_recess_mm'] <= 0.60, closure
 assert len(closure['female_thread_removed_mm3']) == 2, closure
 assert all(v >= 8.0 for v in closure['female_thread_removed_mm3']), closure
-assert closure['lower_transition_shape'] == '45deg_conical_frustum', closure
-assert closure['lower_transition_z_mm'] == [11.54, 13.34], closure
-assert closure['lower_transition_d_mm'] == [6.9, 10.5], closure
+assert closure['lower_transition_shape'] == 'shallow_conical_flare', closure
+assert closure['lower_transition_z_mm'] == [9.0,11.0], closure
+assert closure['lower_transition_d_mm'] == [8.1,10.5], closure
 
 ltw = closure['lower_transition_witness']
 assert len(ltw) == 2, ltw
@@ -263,19 +281,19 @@ p = closure['thread_printability']
 assert p['pitch_mm'] == 3.0, p
 assert p['male_crest_width_mm'] >= 0.70, p
 assert p['female_crest_material_between_turns_mm'] >= 0.80, p
-assert 7.5 <= p['approx_full_turns'] <= 8.5, p
+assert 9.0 <= p['approx_full_turns'] <= 10.0, p
 assert p['radial_core_clearance_mm'] >= 0.20, p
 assert p['radial_major_clearance_mm'] >= 0.20, p
 assert p['axial_root_clearance_mm'] >= 0.25, p
 assert p['axial_crest_clearance_mm'] >= 0.25, p
 assert p['target_nozzle_mm'] == 0.4, p
 lt = p['lower_transition']
-assert lt['shape'] == '45deg_conical_frustum', lt
-assert lt['z_mm'] == [11.54, 13.34], lt
-assert lt['diameter_mm'] == [6.9, 10.5], lt
-assert abs(lt['height_mm'] - 1.8) <= 1e-9, lt
-assert abs(lt['radial_per_vertical_slope'] - 1.0) <= 1e-9, lt
-assert abs(lt['female_cylindrical_bore_starts_z_mm'] - 13.34) <= 1e-9, lt
+assert lt['shape'] == 'shallow_conical_flare', lt
+assert lt['z_mm'] == [9.0,11.0], lt
+assert lt['diameter_mm'] == [8.1,10.5], lt
+assert abs(lt['height_mm'] - 2.0) <= 1e-9, lt
+assert abs(lt['radial_per_vertical_slope'] - 0.6) <= 1e-9, lt
+assert abs(lt['female_cylindrical_bore_starts_z_mm'] - 11.0) <= 1e-9, lt
 
 mouth = closure['female_helical_witness']
 assert len(mouth) == 2, mouth
