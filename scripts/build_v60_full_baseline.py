@@ -809,6 +809,37 @@ def make_cage_structure():
 stage('cage fusion')
 CAGE=make_cage_structure(); RIGHT_FULL=C.RIGHT.fuse(CAGE).removeSplitter(); C.require_single(RIGHT_FULL,'RIGHT full before rack-closure machining')
 
+# Remote crosshead rear wall.
+#
+# This is the confirmed geometry from the local STL test: extend the BACK wall
+# of the far/box-side transverse crosshead toward the previously open gap,
+# without touching the opposite DROP/front side.  The 0.10 mm overlaps in X/Z
+# and wall thickness are deliberate boolean-fusion margins from that test.
+#
+# IMPORTANT: fuse this wall BEFORE the spindle corridors are re-machined below.
+# That way both functional spindle holes remain open automatically instead of
+# being patched/re-created after the fact.
+REMOTE_CROSSHEAD_REAR_WALL_X0 = C.FRONT_CLAMP_X - C.ARM_W/2.0 - 0.10
+REMOTE_CROSSHEAD_REAR_WALL_X1 = C.REAR_SUPPORT_X + C.ARM_W/2.0
+REMOTE_CROSSHEAD_REAR_WALL_Y0 = CAGE_Y0
+REMOTE_CROSSHEAD_REAR_WALL_T = C.WEB_T + 0.10
+REMOTE_CROSSHEAD_REAR_WALL_Z0 = C.ARM_BOTTOM_Z + C.FLANGE_T - 0.10
+REMOTE_CROSSHEAD_REAR_WALL_Z1 = C.ARM_TOP_Z - C.FLANGE_T + 0.10
+
+REMOTE_CROSSHEAD_REAR_WALL = C.box(
+    REMOTE_CROSSHEAD_REAR_WALL_X0,
+    REMOTE_CROSSHEAD_REAR_WALL_Y0,
+    REMOTE_CROSSHEAD_REAR_WALL_Z0,
+    REMOTE_CROSSHEAD_REAR_WALL_X1 - REMOTE_CROSSHEAD_REAR_WALL_X0,
+    REMOTE_CROSSHEAD_REAR_WALL_T,
+    REMOTE_CROSSHEAD_REAR_WALL_Z1 - REMOTE_CROSSHEAD_REAR_WALL_Z0,
+)
+RIGHT_FULL = RIGHT_FULL.fuse(REMOTE_CROSSHEAD_REAR_WALL).removeSplitter()
+C.require_single(
+    RIGHT_FULL,
+    'RIGHT full with extended remote-crosshead rear wall',
+)
+
 # Re-machine the complete blind M4 path after all structural fusions.  The core
 # station originally only needed a short closure guide; the final M4x20 needs a
 # deeper blind clearance above the captive nut so its tip cannot bottom out.
@@ -1049,6 +1080,38 @@ for sx in SPINDLE_X:
     ).removeSplitter()
 
 C.require_single(RIGHT_FULL,'RIGHT full with v50 cartridge pockets and smooth spindle corridors')
+
+# Regression gate for the exact remote-crosshead fix.  The wall must exist
+# across both outer holm regions and the centre span, while the two spindle
+# corridors must still be void after the normal machining pass above.
+remote_crosshead_rear_wall_checks=[]
+_remote_wall_y = REMOTE_CROSSHEAD_REAR_WALL_Y0 + REMOTE_CROSSHEAD_REAR_WALL_T/2.0
+_remote_wall_z = (REMOTE_CROSSHEAD_REAR_WALL_Z0 + REMOTE_CROSSHEAD_REAR_WALL_Z1)/2.0
+for label,x in (
+    ('left-outer',-95.0),
+    ('centre',50.0),
+    ('right-outer',195.0),
+):
+    solid=bool(RIGHT_FULL.isInside(App.Vector(x,_remote_wall_y,_remote_wall_z),1e-5,False))
+    remote_crosshead_rear_wall_checks.append({
+        'sample':label,'x_mm':x,'solid':solid,
+    })
+    if not solid:
+        raise RuntimeError(
+            f'remote crosshead rear wall missing at {label} x={x:.3f}'
+        )
+
+for sx in SPINDLE_X:
+    solid=bool(RIGHT_FULL.isInside(
+        App.Vector(sx,_remote_wall_y,SPINDLE_Z),1e-5,False
+    ))
+    remote_crosshead_rear_wall_checks.append({
+        'sample':'spindle-tunnel','x_mm':sx,'solid':solid,
+    })
+    if solid:
+        raise RuntimeError(
+            f'remote crosshead rear wall closes spindle tunnel at X={sx:.3f}'
+        )
 
 pin_bore_clearance=[]
 for xc in C.CLAMP_X:
