@@ -158,6 +158,13 @@ LOWER_FORK_W = 2.0 * LOWER_FORK_OUTER_HALF_X
 LOWER_PIVOT_R = 5.0
 LOWER_WEB_Z0 = -10.5
 LOWER_WEB_TOP_Z = -1.5
+# Natural Z-up print feet under both thin fork ears.  They span only the
+# pivot-circle Y projection and ear thickness, from the common shell floor to
+# 0.2 mm into the existing web/circle root.
+LOWER_PIVOT_FOOT_Z0 = -14.5
+LOWER_PIVOT_FOOT_Z1 = LOWER_WEB_Z0 + 0.20
+LOWER_PIVOT_FOOT_Y0 = C.PIN_Y - LOWER_PIVOT_R
+LOWER_PIVOT_FOOT_Y1 = C.PIN_Y + LOWER_PIVOT_R
 RACK_M4_LOWER_CLEAR_D = 5.0
 
 # Rack clamp closure.  Keep the proven M4 screw + side-loaded captive nut, but
@@ -565,6 +572,22 @@ lower_web_r = C.box(
     LOWER_FORK_INNER_HALF_X,C.PIN_Y,LOWER_WEB_Z0,
     LOWER_FORK_EAR_T,8.0,LOWER_WEB_TOP_Z-LOWER_WEB_Z0,
 )
+lower_pivot_foot_l = C.box(
+    -LOWER_FORK_OUTER_HALF_X,
+    LOWER_PIVOT_FOOT_Y0,
+    LOWER_PIVOT_FOOT_Z0,
+    LOWER_FORK_EAR_T,
+    LOWER_PIVOT_FOOT_Y1-LOWER_PIVOT_FOOT_Y0,
+    LOWER_PIVOT_FOOT_Z1-LOWER_PIVOT_FOOT_Z0,
+)
+lower_pivot_foot_r = C.box(
+    LOWER_FORK_INNER_HALF_X,
+    LOWER_PIVOT_FOOT_Y0,
+    LOWER_PIVOT_FOOT_Z0,
+    LOWER_FORK_EAR_T,
+    LOWER_PIVOT_FOOT_Y1-LOWER_PIVOT_FOOT_Y0,
+    LOWER_PIVOT_FOOT_Z1-LOWER_PIVOT_FOOT_Z0,
+)
 closure_pad = C.box(
     -RACK_CLOSURE_PAD_X/2.0,
     RACK_CLOSURE_PAD_Y0,
@@ -574,8 +597,14 @@ closure_pad = C.box(
     RACK_CLOSURE_PAD_Z1-RACK_CLOSURE_PAD_Z0,
 )
 LOWER = C.fuse_seq(
-    [lower_shell,lower_pivot_l,lower_pivot_r,lower_web_l,lower_web_r,closure_pad],
-    'lower-rack-fork-with-m4-closure-tongue',
+    [
+        lower_shell,
+        lower_pivot_l,lower_pivot_r,
+        lower_web_l,lower_web_r,
+        lower_pivot_foot_l,lower_pivot_foot_r,
+        closure_pad,
+    ],
+    'lower-rack-fork-with-supported-pivot-and-m4-closure-tongue',
 )
 lower_fork_slot = C.box(
     -LOWER_FORK_INNER_HALF_X,-20.0,-13.0,
@@ -1937,6 +1966,11 @@ V['rack']['lower_printability']={
     'print_orientation':'natural Z-up on common Lower/tongue floor',
     'rack_saddle':'upward-open semicircular seat',
     'pivot_pin_bore':'small horizontal round self-closing opening',
+    'pivot_print_feet':{
+        'z_mm':[LOWER_PIVOT_FOOT_Z0,LOWER_PIVOT_FOOT_Z1],
+        'y_mm':[LOWER_PIVOT_FOOT_Y0,LOWER_PIVOT_FOOT_Y1],
+        'ear_thickness_mm':LOWER_FORK_EAR_T,
+    },
     'm4_clearance':'vertical',
     'm4_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,
     'functional_round_pivot_bore_preserved':True,
