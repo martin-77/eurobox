@@ -328,7 +328,9 @@ assert all(not q['between_turns_solid'] for q in male_samples), male_samples
 cc = core['geometry']['continuous_carrier']
 assert cc['material_fraction'] >= 0.995, cc
 assert cc['rack_tube_common_mm3'] <= 0.0001, cc
-assert cc['front_holm_common_mm3'] >= 100.0, cc
+# Front holm no longer overlaps the carrier directly; the intentional load
+# path is carrier -> full-depth straight root -> holm.
+assert cc['front_holm_direct_carrier_common_mm3'] <= 0.000001, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
 fr = cc['front_holm_root_tie']
