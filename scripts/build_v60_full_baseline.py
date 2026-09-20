@@ -1933,11 +1933,12 @@ V['box_clamp']['mounting_sequence']={
     'operating_knob_clearance':knob_motion,
 }
 V['rack']['lower_printability']={
-    'mechanical_geometry':'restored proven circular-pivot rectangular-tongue Lower',
-    'print_orientation':'rotate +90deg about Y; broad X side on build plate',
-    'rack_saddle_axis_vertical':True,
-    'pivot_pin_bore_axis_vertical':True,
-    'm4_clearance_horizontal_d_mm':RACK_M4_LOWER_CLEAR_D,
+    'mechanical_geometry':'proven circular-pivot Lower; final tongue extends to existing shell floor',
+    'print_orientation':'natural Z-up on common Lower/tongue floor',
+    'rack_saddle':'upward-open semicircular seat',
+    'pivot_pin_bore':'small horizontal round self-closing opening',
+    'm4_clearance':'vertical',
+    'm4_clearance_d_mm':RACK_M4_LOWER_CLEAR_D,
     'functional_round_pivot_bore_preserved':True,
 }
 V['box_clamp']['lead_nut_printability']=lead_nut_printability
@@ -1990,15 +1991,15 @@ if abs(LEAD_NUT_PRINT.BoundBox.ZMin) > 1e-6:
         f'print-oriented lead nut does not sit on Z=0: {LEAD_NUT_PRINT.BoundBox.ZMin:.6f}'
     )
 
-# Keep the proven installed Lower geometry untouched and export it on its
-# broad X side.  This turns both the rack saddle and pivot bore axes vertical;
-# only the small Ø5 M4 clearance remains horizontal and self-closing.
+# The final rack-closure stage extends the tongue down to the shell's existing
+# Z=-14.5 floor. Keep the functional Lower in its natural Z-up orientation:
+# the saddle is open upward, the M4 bore is vertical and only the small round
+# pivot bore remains horizontal/self-closing.
 LOWER_PRINT = LOWER.copy()
-LOWER_PRINT.rotate(App.Vector(0,0,0),App.Vector(0,1,0),90.0)
 LOWER_PRINT.translate(App.Vector(0,0,-LOWER_PRINT.BoundBox.ZMin))
-C.require_single(LOWER_PRINT,'side-print-oriented functional rack Lower')
+C.require_single(LOWER_PRINT,'natural-print-oriented functional rack Lower')
 if abs(LOWER_PRINT.BoundBox.ZMin)>1e-6:
-    raise RuntimeError('side-print rack Lower does not sit on build plane')
+    raise RuntimeError('natural-print rack Lower does not sit on build plane')
 
 parts={'eurobox_v60_base_right':RIGHT_FULL,'eurobox_v60_base_left':LEFT_FULL,'eurobox_v60_rack_lower':LOWER_PRINT,'eurobox_v60_rack_pin':PIN,'eurobox_v60_rack_pin_clip':PIN_CLIP,'eurobox_v60_clamp_plate':PLATE,'eurobox_v60_lead_nut':LEAD_NUT_PRINT,'eurobox_v60_lead_nut_retaining_pin':NUT_PIN,'eurobox_v60_lead_nut_pin_clip':NUT_PIN_CLIP,'eurobox_v60_lead_screw':SPINDLE_PRINT_Z,'eurobox_v60_knob':KNOB,'eurobox_v60_knob_retainer_nut':CAP_NUT,'eurobox_v60_plate_retainer_clip':PLATE_CLIP}
 for name,sh in parts.items(): C.require_single(sh,name); C.export_shape(name,sh)
