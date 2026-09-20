@@ -86,20 +86,22 @@ for q in guide_clear:
 pin_cradles = full['base']['lead_nut_pin_wall_checks']
 assert len(pin_cradles) == 2, pin_cradles
 for q in pin_cradles:
-    assert q['mode'] == 'support-free 90deg V-cradle', q
+    assert q['mode'] == 'round top-open U-cradle', q
     assert len(q['samples']) == 10, q
     for p in q['samples']:
         assert p['solid'] == p['expected_solid'], p
 
 printability = box['lead_nut_printability']
-assert printability['body_profile'] == 'smooth 45deg-limited bow', printability
-assert abs(printability['body_bottom_width_mm'] - 4.0) <= 1e-9, printability
+assert printability['body_profile'] == 'true R8 lower semicircle', printability
+assert abs(printability['semicircle_radius_mm'] - 8.0) <= 1e-9, printability
 assert abs(printability['body_full_width_mm'] - 16.0) <= 1e-9, printability
-assert printability['profile_start_slope_dx_dz'] <= 1.0, printability
-assert printability['profile_end_slope_dx_dz'] <= 1.0, printability
-assert printability['base_pocket_tip_bridge_mm'] <= 5.0, printability
-assert printability['pin_cradle'] == '90deg V, top-open', printability
+assert printability['base_pocket_floor_bridge_mm'] <= 0.5, printability
+assert printability['pin_cradle'] == 'round Ø3.4 top-open U-cradle', printability
 assert printability['preferred_print_orientation'] == 'rotate -90deg about X; RH8x2 axis vertical', printability
+span = printability['closing_span_samples']
+assert [q['local_z_mm'] for q in span] == [0.0,-2.0,-4.0,-6.0,-8.0], span
+assert all(span[i]['pocket_width_mm'] > span[i+1]['pocket_width_mm'] for i in range(len(span)-1)), span
+assert span[-1]['pocket_width_mm'] <= 0.5, span
 
 pin_drop = full['base']['lead_nut_pin_top_insertion']
 assert len(pin_drop) == 2, pin_drop
@@ -219,18 +221,12 @@ assert kr['validated_export_part'] == 'eurobox_v60_knob_retainer_nut', kr
 # actual radial/axial profile dimensions and direct point samples from the final
 # BASE/retainer, rather than expensive whole-body phase booleans.
 rlp = full['rack']['lower_printability']
-assert rlp['print_orientation'] == 'installed Z-up; shell bottom on build plate', rlp
-assert rlp['x_growth_slope_each_side'] <= 1.0, rlp
-assert rlp['front_growth_slope'] <= 1.0, rlp
-assert rlp['flat_thrust_land_preserved'] is True, rlp
-assert abs(rlp['thrust_boss_radius_mm'] - 5.0) <= 1e-9, rlp
-assert rlp['remaining_flat_land_cantilever_from_shell_mm'] <= 10.0, rlp
-pivot_print = rlp['pivot_web_and_pin_profile']
-assert pivot_print['web_rear_growth_slope_dy_dz'] <= 1.0, pivot_print
-assert pivot_print['pivot_outboard_growth_slope_dy_dz'] <= 1.0, pivot_print
-assert pivot_print['pivot_pin_bore'] == 'full circular clearance + 45deg tangent teardrop roof', pivot_print
-assert pivot_print['closure_x_growth_slope_each_side'] <= 1.0, pivot_print
-assert pivot_print['closure_front_growth_slope'] <= 1.0, pivot_print
+assert rlp['mechanical_geometry'] == 'restored proven circular-pivot rectangular-tongue Lower', rlp
+assert rlp['print_orientation'] == 'rotate +90deg about Y; broad X side on build plate', rlp
+assert rlp['rack_saddle_axis_vertical'] is True, rlp
+assert rlp['pivot_pin_bore_axis_vertical'] is True, rlp
+assert abs(rlp['m4_clearance_horizontal_d_mm'] - 5.0) <= 1e-9, rlp
+assert rlp['functional_round_pivot_bore_preserved'] is True, rlp
 
 closure = full['rack']['m4_closure']
 assert closure['carrier_bottom_plane_z_mm'] == 9.54, closure
