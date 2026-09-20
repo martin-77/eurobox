@@ -590,6 +590,43 @@
   "rack": {
     "clamp_spacing_mm": 160.0,
     "joint": "integral fixed Upper in common carrier envelope + hinged replaceable Lower + raised top-retained metal M4 closure nut",
+    "lower_printability": {
+      "print_orientation": "installed Z-up; shell bottom on build plate",
+      "final_tongue_bottom_x_mm": 14.0,
+      "final_tongue_bottom_y_mm": [
+        4.0,
+        16.0
+      ],
+      "final_tongue_top_x_mm": 20.0,
+      "final_tongue_top_y_mm": [
+        4.0,
+        18.0
+      ],
+      "x_growth_slope_each_side": 0.428571,
+      "front_growth_slope": 0.285714,
+      "thrust_boss_radius_mm": 5.0,
+      "flat_thrust_land_preserved": true,
+      "remaining_flat_land_cantilever_from_shell_mm": 10.0,
+      "pivot_web_and_pin_profile": {
+        "print_orientation": "installed Z-up; shell bottom on build plate",
+        "web_rear_growth_slope_dy_dz": 1.0,
+        "pivot_outboard_growth_slope_dy_dz": 0.955556,
+        "pivot_pin_bore": "full circular clearance + 45deg tangent teardrop roof",
+        "closure_bottom_x_mm": 14.0,
+        "closure_bottom_y_mm": [
+          4.0,
+          16.0
+        ],
+        "closure_top_x_mm": 20.0,
+        "closure_top_y_mm": [
+          4.0,
+          18.0
+        ],
+        "closure_x_growth_slope_each_side": 0.666667,
+        "closure_front_growth_slope": 0.444444,
+        "remaining_flat_thrust_land_cantilever_mm": 10.0
+      }
+    },
     "upper_pivot_width_mm": 18.0,
     "lower_fork_outer_width_mm": 28.0,
     "lower_fork_ear_thickness_mm": 4.6,
@@ -1644,18 +1681,40 @@
     ],
     "thread_brep_common_tolerance_mm3": 1.2,
     "width_states_local_y_mm": {
-      "0.0": 242.815,
-      "5.5": 237.315
+      "0.0": 242.215,
+      "5.5": 236.715
     },
     "effective_total_width_mm": 600.0,
+    "lead_screw_printability": {
+      "preferred_print_orientation": "vertical on outer-stud pilot; screw axis +Z",
+      "flat_pilot_d_mm": 6.5,
+      "flat_pilot_h_mm": 0.8,
+      "outer_thread_usable_mm": 6.2,
+      "hex_taper_h_mm": 2.0,
+      "hex_taper_af_mm": [
+        6.928,
+        10.0
+      ],
+      "full_hex_drive_h_mm": 5.0,
+      "shoulder_taper_h_mm": 2.5,
+      "shoulder_taper_r_mm": [
+        3.0,
+        5.5
+      ],
+      "shoulder_taper_max_slope_dr_dz": 1.0,
+      "plate_matching_conical_seat": true,
+      "knob_matching_hex_frustum": true
+    },
     "lead_screw": {
-      "construction": "single OpenSCAD CGAL union; exact final printable STL retained",
+      "construction": "single OpenSCAD CGAL union; exact vertical support-free printable STL retained",
       "main_thread": "true radial/axial RH8x2",
       "outer_stud_thread": "true radial/axial RH8x2",
       "journal_length_mm": 8.0,
       "shoulder_length_mm": 1.8,
       "main_thread_length_mm": 22.2,
       "knob_hex_length_mm": 7.0,
+      "full_hex_drive_length_mm": 5.0,
+      "hex_taper_length_mm": 2.0,
       "knob_thickness_mm": 7.0,
       "outer_stud_length_mm": 7.0,
       "knob_side": "outboard of clamp plate",
@@ -1666,7 +1725,7 @@
         14.0
       ],
       "mesh_topology": {
-        "triangles": 14054,
+        "triangles": 13878,
         "boundary_edges": 0,
         "nonmanifold_edges": 0,
         "degenerate_edges": 0
@@ -1817,7 +1876,7 @@
         "lead_screw_through_plate",
         "plate_retainer_clip_via_bottom_service_channel",
         "plate_spindle_subassembly_threaded_into_fixed_lead_nut",
-        "knob_on_full_7mm_hex",
+        "knob_on_tapered_7mm_hex_with_5mm_full_drive",
         "knob_retainer_nut_on_outer_RH8x2_stud"
       ],
       "lead_nut_top_insertion": [
@@ -2352,7 +2411,7 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3171722
+    "file_bytes": 3173777
   },
   "handed_stl_export": {
     "right_sha256": "8df4ea5110240ee6705e3f36602cb0d17dd2ec15e4795add6c79ff55353fa77d",
