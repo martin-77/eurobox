@@ -183,10 +183,12 @@ C.require_single(MALE_THREAD, 'final retainer male 12x3')
 stop_timer('retainer.compile_matched_12x3_thread_pair', _t)
 
 _t = start_timer('retainer.build_threaded_service_retainer')
-retainer_nose = Part.makeCylinder(
+retainer_nose = Part.makeCone(
     R.RETAINER_NOSE_OD/2.0,
+    MALE_CORE_R,
     R.RETAINER_NOSE_LEN,
     App.Vector(0,0,-R.RETAINER_NOSE_LEN),
+    App.Vector(0,0,1),
 )
 RACK_NUT_RETAINER = MALE_THREAD.fuse(retainer_nose).removeSplitter()
 RACK_NUT_RETAINER = RACK_NUT_RETAINER.cut(
@@ -436,6 +438,14 @@ thread_printability = {
     'axial_crest_clearance_mm':round(FEMALE_CREST_W-MALE_CREST_W,3),
     'target_nozzle_mm':0.4,
     'approx_full_turns':round(THREAD_LEN/PITCH,3),
+    'male_nose_transition':{
+        'shape':'shallow_conical_flare',
+        'z_local_mm':[-R.RETAINER_NOSE_LEN,0.0],
+        'diameter_mm':[R.RETAINER_NOSE_OD,round(2.0*MALE_CORE_R,3)],
+        'radial_per_vertical_slope':round(
+            (MALE_CORE_R-R.RETAINER_NOSE_OD/2.0)/R.RETAINER_NOSE_LEN,6
+        ),
+    },
     'lower_transition':{
         'shape':'shallow_conical_flare',
         'z_mm':[round(LOWER_TRANSITION_Z0,3),round(LOWER_TRANSITION_Z1,3)],
