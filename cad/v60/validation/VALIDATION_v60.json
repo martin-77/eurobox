@@ -87,14 +87,14 @@
       -99.0,
       196.0
     ],
-    "right_volume_mm3": 634013.99,
-    "left_volume_mm3": 634013.99,
+    "right_volume_mm3": 636454.186,
+    "left_volume_mm3": 636454.186,
     "mirror_delta_mm3": 0.0,
     "rack_tube_common_mm3": 0.0,
     "plate_sweep_common_mm3": 0.0,
-    "front_support_crosshead_common_mm3": 5874.76,
+    "front_support_crosshead_common_mm3": 6690.385,
     "rear_support_backstop_common_mm3": 5904.0,
-    "rear_support_crosshead_common_mm3": 5874.76,
+    "rear_support_crosshead_common_mm3": 6690.385,
     "inner_green_shelf_support": {
       "target": "central lower long-holm flange between twin webs",
       "print_orientation": "BASE upside-down; installed high-Z prints first",
@@ -172,12 +172,12 @@
       ]
     },
     "crosshead_print_support": {
-      "strategy": "continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP and closed X ends",
+      "strategy": "central smooth lower-flange DROP with straight vertical front webs in both 32 mm long-holm junction zones",
       "crosshead_y_mm": [
         202.1,
         214.115
       ],
-      "full_drop_material_fraction": 1.0,
+      "central_drop_material_fraction": 1.0,
       "end_wall_thickness_mm": 3.2,
       "end_wall_checks": [
         {
@@ -279,30 +279,36 @@
         }
       ]
     },
-    "crosshead_holm_transition_fills": [
+    "crosshead_holm_straight_junctions": [
       {
         "holm": "front_holm",
         "center_x_mm": -80.0,
-        "y_mm": [
-          213.915,
-          220.0
+        "crosshead_front_web_fraction": 1.0,
+        "straight_holm_tail_fraction": 1.0,
+        "interface_common_mm3": 1569.6,
+        "plate_sweep_common_mm3": 0.0,
+        "hollow_probe_xyz_mm": [
+          -76.0,
+          216.958,
+          24.54
         ],
-        "nominal_cavity_span_mm": 5.685,
-        "fill_length_mm": 6.085,
-        "material_fraction": 1.0,
-        "plate_sweep_common_mm3": 0.0
+        "interior_remains_hollow": true,
+        "profile": "straight crosshead front web + straight hollow long-holm tail"
       },
       {
         "holm": "rear_holm",
         "center_x_mm": 180.0,
-        "y_mm": [
-          213.915,
-          220.0
+        "crosshead_front_web_fraction": 1.0,
+        "straight_holm_tail_fraction": 1.0,
+        "interface_common_mm3": 1569.6,
+        "plate_sweep_common_mm3": 0.0,
+        "hollow_probe_xyz_mm": [
+          184.0,
+          216.958,
+          24.54
         ],
-        "nominal_cavity_span_mm": 5.685,
-        "fill_length_mm": 6.085,
-        "material_fraction": 1.0,
-        "plate_sweep_common_mm3": 0.0
+        "interior_remains_hollow": true,
+        "profile": "straight crosshead front web + straight hollow long-holm tail"
       }
     ],
     "holm_head_closures": [
