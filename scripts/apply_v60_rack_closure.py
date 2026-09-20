@@ -207,7 +207,7 @@ LOWER = LOWER.cut(
     Part.makeCylinder(
         LOWER_CLEAR_D / 2.0,
         18.0,
-        App.Vector(0.0, C.RACK_CLOSURE_Y, -13.5),
+        App.Vector(0.0, C.RACK_CLOSURE_Y, LOWER_PAD_Z0 - 1.0),
         App.Vector(0, 0, 1),
     )
 ).removeSplitter()
