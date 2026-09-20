@@ -279,6 +279,32 @@
         }
       ]
     },
+    "crosshead_holm_transition_fills": [
+      {
+        "holm": "front_holm",
+        "center_x_mm": -80.0,
+        "y_mm": [
+          213.915,
+          220.0
+        ],
+        "nominal_cavity_span_mm": 5.685,
+        "fill_length_mm": 6.085,
+        "material_fraction": 1.0,
+        "plate_sweep_common_mm3": 0.0
+      },
+      {
+        "holm": "rear_holm",
+        "center_x_mm": 180.0,
+        "y_mm": [
+          213.915,
+          220.0
+        ],
+        "nominal_cavity_span_mm": 5.685,
+        "fill_length_mm": 6.085,
+        "material_fraction": 1.0,
+        "plate_sweep_common_mm3": 0.0
+      }
+    ],
     "holm_head_closures": [
       {
         "x_mm": -80.0,

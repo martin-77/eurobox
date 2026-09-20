@@ -2506,7 +2506,7 @@
     "linear_deflection_mm": 0.12,
     "angular_deflection_rad": 0.35,
     "mechanical_validation_uses_exact_brep": true,
-    "file_bytes": 3451782
+    "file_bytes": 3451696
   },
   "handed_stl_export": {
     "right_sha256": "6633de89218e38798da5a34d9efcda66170c51b138d1ef560c1e76495f25aea3",
