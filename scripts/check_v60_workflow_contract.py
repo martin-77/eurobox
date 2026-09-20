@@ -235,7 +235,7 @@ assert rlp['rack_saddle'] == 'upward-open semicircular seat', rlp
 assert rlp['pivot_pin_bore'] == 'small horizontal round self-closing opening', rlp
 pf = rlp['pivot_print_feet']
 assert pf['z_mm'] == [-14.5,-10.3], pf
-assert pf['y_mm'] == [-17.0,-7.0], pf
+assert pf['y_mm'] == [-17.0,-4.0], pf
 assert abs(pf['ear_thickness_mm'] - 4.6) <= 1e-9, pf
 assert rlp['m4_clearance'] == 'vertical', rlp
 assert abs(rlp['m4_clearance_d_mm'] - 5.0) <= 1e-9, rlp
@@ -291,6 +291,11 @@ assert p['radial_major_clearance_mm'] >= 0.20, p
 assert p['axial_root_clearance_mm'] >= 0.25, p
 assert p['axial_crest_clearance_mm'] >= 0.25, p
 assert p['target_nozzle_mm'] == 0.4, p
+mn = p['male_nose_transition']
+assert mn['shape'] == 'shallow_conical_flare', mn
+assert mn['z_local_mm'] == [-2.0,0.0], mn
+assert mn['diameter_mm'] == [7.6,10.0], mn
+assert abs(mn['radial_per_vertical_slope'] - 0.6) <= 1e-9, mn
 lt = p['lower_transition']
 assert lt['shape'] == 'shallow_conical_flare', lt
 assert lt['z_mm'] == [9.0,11.0], lt
