@@ -122,12 +122,15 @@ CROSSHEAD_DROP_WEB_OVERLAP = 0.20
 CROSSHEAD_DROP_FLANGE_OVERLAP = 0.20
 CROSSHEAD_DROP_TIP_OVERLAP = 0.20
 
-# Only the +Y/rear side of the crosshead-to-long-holm junction is open.
-# The -Y/front side already has the original full vertical crosshead web and
-# must remain unchanged. Close the missing +Y side with a straight wall in the
-# two 32 mm holm zones, then continue a hollow straight sleeve to the existing
-# solid holm-head closure at Y=219.8.
-CROSSHEAD_REAR_JUNCTION_OVERLAP = 0.20
+# T-junction print/profile correction.
+# Y0/front already has the original continuous vertical crosshead web and stays
+# untouched.  The actual bug was INSIDE the junction: make_i_beam_y() kept its
+# curved side/inner haunches all the way to Y=220, underneath the added rear
+# sleeve.  Stop that profiled I-beam before the crosshead and use one straight
+# hollow multi-web holm section from there through the crosshead to the closed
+# head.  In the holm X-zones the crosshead DROP is also omitted; only its
+# existing Y0 web plus a new straight Y1 wall remain.
+CROSSHEAD_STRAIGHT_JUNCTION_OVERLAP = 0.20
 CROSSHEAD_REAR_WALL_T = WEB_T
 
 # Preserve the original crosshead depth, but move the whole beam rearward from
@@ -265,29 +268,29 @@ def make_i_beam_y(xc, y0, y1):
     return q
 
 
-def make_rear_holm_junction_sleeve(xc):
-    y0 = CROSSHEAD_Y1 - CROSSHEAD_REAR_JUNCTION_OVERLAP
-    y1 = ARM_HEAD_DROP_Y0 + CROSSHEAD_REAR_JUNCTION_OVERLAP
+def make_straight_holm_tail(xc, y0, y1):
     length = y1-y0
     if length <= 0:
-        raise RuntimeError(
-            f'invalid rear holm junction sleeve: {y0:.3f}..{y1:.3f}'
-        )
+        raise RuntimeError(f'invalid straight holm tail length: {length:.3f}')
     web_h = ARM_H - 2.0*FLANGE_T
     web_z = ARM_BOTTOM_Z + FLANGE_T
 
-    # Hollow straight box sleeve: full top/bottom flanges and only the two
-    # outer X walls. The existing twin I-beam webs remain inside it. Nothing
-    # fills the cavity; this just gives the missing straight outside connection.
-    q=fuse_seq([
+    # True straight hollow continuation. No _side_haunch() and no
+    # _inner_bottom_haunch() are allowed in this section.  The original twin
+    # webs continue, outer walls close the box locally, and a centre web keeps
+    # inverted-print bridge spans short while leaving four real hollow cells.
+    parts=[
         box(xc-ARM_W/2.0,y0,ARM_TOP_Z-FLANGE_T,ARM_W,length,FLANGE_T),
         box(xc-ARM_W/2.0,y0,ARM_BOTTOM_Z,ARM_W,length,FLANGE_T),
-        box(xc-ARM_W/2.0,y0,web_z,WEB_T,length,web_h),
-        box(xc+ARM_W/2.0-WEB_T,y0,web_z,WEB_T,length,web_h),
-    ],f'rear-holm-junction-sleeve@{xc}')
-    require_single(q,f'rear-holm-junction-sleeve@{xc}')
+        box(xc-ARM_W/2.0,y0,ARM_BOTTOM_Z,WEB_T,length,ARM_H),
+        box(xc+ARM_W/2.0-WEB_T,y0,ARM_BOTTOM_Z,WEB_T,length,ARM_H),
+        box(xc-8.0-WEB_T/2.0,y0,web_z,WEB_T,length,web_h),
+        box(xc+8.0-WEB_T/2.0,y0,web_z,WEB_T,length,web_h),
+        box(xc-WEB_T/2.0,y0,web_z,WEB_T,length,web_h),
+    ]
+    q=fuse_seq(parts,f'straight-hollow-holm-tail@{xc}')
+    require_single(q,f'straight-hollow-holm-tail@{xc}')
     return q
-
 
 def make_crosshead_rear_junction_wall(xc):
     # Missing opposite wall only. The front/Y0 web remains the original
@@ -347,12 +350,24 @@ def make_holm_head_closure(xc):
 
 
 def make_long_support(xc, y0):
-    holm = make_i_beam_y(xc, y0, ARM_Y1)
-    rear_sleeve = make_rear_holm_junction_sleeve(xc)
+    straight_y0 = CROSSHEAD_Y0 - CROSSHEAD_STRAIGHT_JUNCTION_OVERLAP
+    if straight_y0 <= y0:
+        raise RuntimeError(
+            f'long support has no room before straight junction: '
+            f'{y0:.3f}..{straight_y0:.3f}'
+        )
+
+    # End the curved/haunched print profile BEFORE the transverse beam.
+    profiled = make_i_beam_y(
+        xc,
+        y0,
+        straight_y0 + CROSSHEAD_STRAIGHT_JUNCTION_OVERLAP,
+    )
+    straight = make_straight_holm_tail(xc,straight_y0,ARM_Y1)
     cap, drops = make_holm_head_closure(xc)
     return fuse_seq(
-        [holm,rear_sleeve,cap]+drops,
-        f'closed-long-support-with-straight-rear-crosshead-junction@{xc}',
+        [profiled,straight,cap]+drops,
+        f'closed-long-support-with-fully-straight-crosshead-junction@{xc}',
     )
 
 
@@ -437,10 +452,16 @@ def make_crosshead():
     bottom = box(x0,y0,ARM_BOTTOM_Z,x1-x0,y1-y0,FLANGE_T)
     top = box(x0,y0,ARM_TOP_Z-FLANGE_T,x1-x0,y1-y0,FLANGE_T)
     web = box(x0,y0,ARM_BOTTOM_Z+FLANGE_T,x1-x0,CROSSHEAD_WEB_Y,web_h)
-    drop = _crosshead_outer_front_drop(x0,x1,y0,y1)
+    # The curved DROP remains only in the central crosshead span.  In both
+    # long-holm zones the straight holm tail supplies the internal multi-web
+    # section, so keeping this DROP there would recreate the rounded "half
+    # built" geometry underneath the straight shell.
+    drop_x0 = x0 + ARM_W - CROSSHEAD_STRAIGHT_JUNCTION_OVERLAP
+    drop_x1 = x1 - ARM_W + CROSSHEAD_STRAIGHT_JUNCTION_OVERLAP
+    drop = _crosshead_outer_front_drop(drop_x0,drop_x1,y0,y1)
 
-    # Y0/front is already the original continuous vertical web. Add only the
-    # missing opposite Y1/rear wall where the two long holms intersect.
+    # Y0/front remains the ORIGINAL continuous web. Add only the missing
+    # opposite Y1/rear wall in the two holm zones.
     rear_wall_front_holm = make_crosshead_rear_junction_wall(FRONT_CLAMP_X)
     rear_wall_rear_holm = make_crosshead_rear_junction_wall(REAR_SUPPORT_X)
 
@@ -546,11 +567,12 @@ if rear_support.common(backstop).Volume<500.0: failures.append('Moved rear suppo
 if rear_support.common(crosshead).Volume<300.0: failures.append('Moved rear support lacks substantial crosshead overlap')
 if front_support.common(crosshead).Volume<300.0: failures.append('Front support is not continuously tied into crosshead')
 
-# Target the actual asymmetry from the slicer: Y0/front was already connected;
-# Y1/rear was open. Prove the original front web remains, the new rear wall is
-# complete, and the 5.685 mm continuation to the head is hollow rather than
-# solid-filled.
+# Validate the actual slicer defect. Y0/front was already connected and must
+# remain so. Y1/rear gets the missing wall, while the LONG HOLM itself must be
+# a fully straight hollow profile through and behind the crosshead; no legacy
+# curved haunch material may survive under that straight shell.
 crosshead_rear_junction_checks=[]
+straight_y0 = CROSSHEAD_Y0 - CROSSHEAD_STRAIGHT_JUNCTION_OVERLAP
 for label,xc in (
     ('front_holm',FRONT_CLAMP_X),
     ('rear_holm',REAR_SUPPORT_X),
@@ -558,8 +580,8 @@ for label,xc in (
     rear_wall=make_crosshead_rear_junction_wall(xc)
     rear_wall_fraction=RIGHT.common(rear_wall).Volume/rear_wall.Volume
 
-    sleeve=make_rear_holm_junction_sleeve(xc)
-    sleeve_fraction=RIGHT.common(sleeve).Volume/sleeve.Volume
+    straight_tail=make_straight_holm_tail(xc,straight_y0,ARM_Y1)
+    straight_tail_fraction=RIGHT.common(straight_tail).Volume/straight_tail.Volume
 
     front_web_probe=box(
         xc-ARM_W/2.0,
@@ -571,35 +593,67 @@ for label,xc in (
     )
     front_web_fraction=RIGHT.common(front_web_probe).Volume/front_web_probe.Volume
 
-    hollow_probe=App.Vector(
-        xc,
-        (CROSSHEAD_Y1+ARM_HEAD_DROP_Y0)/2.0,
-        (ARM_BOTTOM_Z+ARM_TOP_Z)/2.0,
+    # Probe a 2 mm interval behind the crosshead where only the straight holm
+    # profile should exist.  Generate the OLD haunch shapes for that interval,
+    # subtract the legitimate straight profile, and assert that no remainder is
+    # present in the final solid.
+    legacy_y0 = CROSSHEAD_Y1 + 1.0
+    legacy_len = min(2.0,ARM_HEAD_DROP_Y0-legacy_y0-0.40)
+    legacy_parts=[
+        _side_haunch(xc,legacy_y0,legacy_len,side,top)
+        for side in (-1,1) for top in (False,True)
+    ] + [
+        _inner_bottom_haunch(xc,legacy_y0,legacy_len,side)
+        for side in (-1,1)
+    ]
+    legacy_union=fuse_seq(legacy_parts,f'legacy-haunch-probe@{xc}')
+    expected_straight=make_straight_holm_tail(
+        xc,legacy_y0,legacy_y0+legacy_len
     )
-    interior_hollow=not bool(RIGHT.isInside(hollow_probe,1e-5,False))
+    legacy_only=legacy_union.cut(expected_straight).removeSplitter()
+    legacy_common=(
+        RIGHT.common(legacy_only).Volume
+        if not legacy_only.isNull() else 0.0
+    )
+
+    hollow_probes=[]
+    # Four hollow cells across the 32 mm straight holm section.
+    for xoff in (-12.0,-4.0,4.0,12.0):
+        pt=App.Vector(
+            xc+xoff,
+            CROSSHEAD_Y1+1.5,
+            (ARM_BOTTOM_Z+ARM_TOP_Z)/2.0,
+        )
+        solid=bool(RIGHT.isInside(pt,1e-5,False))
+        hollow_probes.append({
+            'x_offset_mm':xoff,
+            'solid':solid,
+        })
 
     rec={
         'holm':label,
         'front_y0_web_material_fraction':round(front_web_fraction,6),
         'rear_y1_wall_material_fraction':round(rear_wall_fraction,6),
-        'rear_hollow_sleeve_material_fraction':round(sleeve_fraction,6),
+        'straight_holm_tail_material_fraction':round(straight_tail_fraction,6),
+        'straight_tail_y_mm':[round(straight_y0,3),round(ARM_Y1,3)],
         'rear_open_span_mm':round(ARM_HEAD_DROP_Y0-CROSSHEAD_Y1,3),
-        'interior_remains_hollow':interior_hollow,
-        'hollow_probe_xyz_mm':[
-            round(hollow_probe.x,3),
-            round(hollow_probe.y,3),
-            round(hollow_probe.z,3),
-        ],
+        'legacy_haunch_residual_mm3':round(legacy_common,6),
+        'hollow_cell_probes':hollow_probes,
     }
     crosshead_rear_junction_checks.append(rec)
     if front_web_fraction<0.999:
         failures.append(f'{label} original front/Y0 crosshead web was damaged')
     if rear_wall_fraction<0.999:
         failures.append(f'{label} missing rear/Y1 crosshead wall: {rear_wall_fraction:.6f}')
-    if sleeve_fraction<0.999:
-        failures.append(f'{label} rear hollow sleeve incomplete: {sleeve_fraction:.6f}')
-    if not interior_hollow:
-        failures.append(f'{label} rear transition was solid-filled instead of hollow')
+    if straight_tail_fraction<0.999:
+        failures.append(f'{label} straight holm tail incomplete: {straight_tail_fraction:.6f}')
+    if legacy_common>1e-4:
+        failures.append(
+            f'{label} legacy curved haunch remains inside straight junction: '
+            f'{legacy_common:.6f} mm3'
+        )
+    if any(q['solid'] for q in hollow_probes):
+        failures.append(f'{label} straight junction hollow cells are obstructed')
 
 # Crosshead hard gate: the beam must stay continuous across the complete span
 # and must remain printable upside-down.  Probe real final-core material in the
@@ -750,7 +804,7 @@ for xc,support in ((FRONT_CLAMP_X,front_support),(REAR_SUPPORT_X,rear_support)):
 # The real final core must have the complete motion corridor free.
 plate_sweep_common = RIGHT.common(make_plate_sweep_clearance()).Volume
 if plate_sweep_common > 1e-4: failures.append(f'Final plate sweep corridor is blocked by {plate_sweep_common:.6f} mm3')
-V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'box_clamp_spindle_x_mm':[round(x,3) for x in BOX_CLAMP_SPINDLE_X],'box_clamp_plate_x_mm':[round(BOX_CLAMP_PLATE_X0,3),round(BOX_CLAMP_PLATE_X1,3)],'box_clamp_holm_clearance_mm':BOX_CLAMP_HOLM_CLEAR_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'inner_green_shelf_support':{'target':'central lower long-holm flange between twin webs','print_orientation':'BASE upside-down; installed high-Z prints first','checks':inner_green_shelf_checks},'crosshead_print_support':{'strategy':'original front/Y0 web retained; missing rear/Y1 wall closed only in long-holm zones; rear continuation is straight and hollow','crosshead_y_mm':[round(CROSSHEAD_Y0,3),round(CROSSHEAD_Y1,3)],'full_drop_material_fraction':round(full_drop_fraction,6),'end_wall_thickness_mm':CROSSHEAD_END_T,'end_wall_checks':crosshead_end_wall_checks,'checks':crosshead_print_checks},'crosshead_rear_holm_junctions':crosshead_rear_junction_checks,'holm_head_closures':drop_fractions},'failures':failures}
+V={'version':'v60','stage':'clean_structural_core_v50_mechanics_restored','freecad_version':'.'.join(App.Version()[:3]),'architecture':'direct geometry; proven v50 rack joint/backstop/drop/plate-corridor solutions, no source rewriting','datums':{'rack_tube_diameter_mm':RACK_D,'rack_center_distance_mm':RACK_CTC,'clamp_centres_local_x_mm':list(CLAMP_X),'clamp_spacing_mm':CLAMP_SPACING,'front_clamp_physical_x_mm':FRONT_CLAMP_PHYS_X,'rear_clamp_physical_x_mm':REAR_CLAMP_PHYS_X,'backstop_local_x_mm':[BACKSTOP_X0,BACKSTOP_X1],'backstop_physical_x_mm':[BACKSTOP_PHYS_X0,BACKSTOP_PHYS_X1],'backstop_panel_y_mm':[8.0,12.0],'backstop_panel_clearance_from_tube_crown_mm':round(panel_clearance,3),'rear_support_local_x_mm':REAR_SUPPORT_X,'rear_support_physical_x_mm':REAR_SUPPORT_PHYS_X,'box_clamp_spindle_x_mm':[round(x,3) for x in BOX_CLAMP_SPINDLE_X],'box_clamp_plate_x_mm':[round(BOX_CLAMP_PLATE_X0,3),round(BOX_CLAMP_PLATE_X1,3)],'box_clamp_holm_clearance_mm':BOX_CLAMP_HOLM_CLEAR_X,'pivot_yz_mm':[PIN_Y,PIN_Z],'upper_pivot_width_mm':UPPER_PIVOT_W,'upper_pivot_diameter_mm':2.0*UPPER_PIVOT_R,'holm_head_face_y_mm':ARM_HEAD_FACE_Y,'holm_head_drop_y_mm':[ARM_HEAD_DROP_Y0,ARM_HEAD_DROP_Y1],'plate_sweep_xyz_mm':[[PLATE_SWEEP_X0,PLATE_SWEEP_X1],[PLATE_SWEEP_Y0,PLATE_SWEEP_Y1],[PLATE_SWEEP_Z0,PLATE_SWEEP_Z1]],'indx_build_xy_mm':[INDX_X_MAX,INDX_Y_MAX],'v60_x_target_max_mm':V60_X_TARGET_MAX},'geometry':{'right_bbox_mm':[round(RIGHT.BoundBox.XLength,3),round(RIGHT.BoundBox.YLength,3),round(RIGHT.BoundBox.ZLength,3)],'left_bbox_mm':[round(LEFT.BoundBox.XLength,3),round(LEFT.BoundBox.YLength,3),round(LEFT.BoundBox.ZLength,3)],'right_bounds_x_mm':[round(RIGHT.BoundBox.XMin,3),round(RIGHT.BoundBox.XMax,3)],'left_bounds_x_mm':[round(LEFT.BoundBox.XMin,3),round(LEFT.BoundBox.XMax,3)],'right_volume_mm3':round(RIGHT.Volume,3),'left_volume_mm3':round(LEFT.Volume,3),'mirror_delta_mm3':round(mirror_delta,9),'rack_tube_common_mm3':round(tube_common,9),'plate_sweep_common_mm3':round(plate_sweep_common,9),'front_support_crosshead_common_mm3':round(front_support.common(crosshead).Volume,3),'rear_support_backstop_common_mm3':round(rear_support.common(backstop).Volume,3),'rear_support_crosshead_common_mm3':round(rear_support.common(crosshead).Volume,3),'inner_green_shelf_support':{'target':'central lower long-holm flange between twin webs','print_orientation':'BASE upside-down; installed high-Z prints first','checks':inner_green_shelf_checks},'crosshead_print_support':{'strategy':'original front/Y0 web retained; holm-zone DROP removed; missing rear/Y1 wall added; long holm is straight hollow multi-web from crosshead through head root','crosshead_y_mm':[round(CROSSHEAD_Y0,3),round(CROSSHEAD_Y1,3)],'full_drop_material_fraction':round(full_drop_fraction,6),'end_wall_thickness_mm':CROSSHEAD_END_T,'end_wall_checks':crosshead_end_wall_checks,'checks':crosshead_print_checks},'crosshead_rear_holm_junctions':crosshead_rear_junction_checks,'holm_head_closures':drop_fractions},'failures':failures}
 with open(os.path.join(OUT,'VALIDATION_v60.json'),'w',encoding='utf-8') as f: json.dump(V,f,indent=2)
 if failures:
     print(json.dumps(V,indent=2),flush=True); raise SystemExit('V60 HARD CHECKS FAILED: '+' | '.join(failures))
