@@ -86,10 +86,20 @@ for q in guide_clear:
 pin_cradles = full['base']['lead_nut_pin_wall_checks']
 assert len(pin_cradles) == 2, pin_cradles
 for q in pin_cradles:
-    assert q['mode'] == 'top-open U-cradle', q
+    assert q['mode'] == 'support-free 90deg V-cradle', q
     assert len(q['samples']) == 10, q
     for p in q['samples']:
         assert p['solid'] == p['expected_solid'], p
+
+printability = box['lead_nut_printability']
+assert printability['body_profile'] == 'smooth 45deg-limited bow', printability
+assert abs(printability['body_bottom_width_mm'] - 4.0) <= 1e-9, printability
+assert abs(printability['body_full_width_mm'] - 16.0) <= 1e-9, printability
+assert printability['profile_start_slope_dx_dz'] <= 1.0, printability
+assert printability['profile_end_slope_dx_dz'] <= 1.0, printability
+assert printability['base_pocket_tip_bridge_mm'] <= 5.0, printability
+assert printability['pin_cradle'] == '90deg V, top-open', printability
+assert printability['preferred_print_orientation'] == 'rotate -90deg about X; RH8x2 axis vertical', printability
 
 pin_drop = full['base']['lead_nut_pin_top_insertion']
 assert len(pin_drop) == 2, pin_drop
