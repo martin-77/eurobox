@@ -260,7 +260,8 @@ for xc in C.CLAMP_X:
                 f'X={xc} side={side}: {side_common:.6f} mm3'
             )
 
-    # The lower plane itself must be structural apart from the required M4 bore.
+    # The normal carrier lower plane must remain structural outside the intentional
+    # lowered retainer/nose service opening.
     bottom_probe = C.box(
         xc - 9.0,
         C.RACK_CLOSURE_Y - 8.0,
@@ -270,7 +271,7 @@ for xc in C.CLAMP_X:
         0.40,
     ).cut(
         Part.makeCylinder(
-            RACK_SCREW_CLEAR_D / 2.0 + 0.10,
+            RETAINER_FEMALE_CORE_R + 0.20,
             0.60,
             App.Vector(xc, C.RACK_CLOSURE_Y, CARRIER_BOTTOM_PLANE_Z - 0.10),
         )
