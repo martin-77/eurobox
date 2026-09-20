@@ -332,16 +332,12 @@ assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
 fr = cc['front_holm_root_tie']
-assert fr['section'] == 'straight_hollow_root_sleeve_spanning_full_carrier_depth_and_long_holm_root', fr
-assert fr['carrier_y_mm'] == [-8.0,26.0], fr
-assert abs(fr['carrier_depth_mm'] - 34.0) <= 1e-9, fr
-assert fr['y_mm'] == [-8.0,34.0], fr
-assert fr['carrier_engagement_mm'] >= 34.0, fr
+assert fr['section'] == 'closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls', fr
+assert fr['carrier_engagement_mm'] >= 8.0, fr
 assert fr['holm_engagement_mm'] >= 10.0, fr
 assert fr['material_fraction'] >= 0.995, fr
 assert fr['carrier_common_mm3'] >= 2500.0, fr
 assert fr['holm_common_mm3'] >= 4000.0, fr
-assert fr['interior_remains_hollow'] is True, fr
 assert fr['x_z_envelope_growth_mm'] == [0.0,0.0], fr
 bd = cc['backstop_base_drop']
 assert bd['profile'] == 'filled_quarter_ellipse_tapered_to_stop_bottom', bd
@@ -385,12 +381,24 @@ for q in gh['checks']:
     assert q['centre_overlap_each_side_mm'] == 0.2, q
     assert q['rise_mm'] == 10.0, q
 
+junctions = core['geometry']['crosshead_holm_straight_junctions']
+assert len(junctions) == 2, junctions
+assert {q['holm'] for q in junctions} == {'front_holm','rear_holm'}, junctions
+for q in junctions:
+    assert q['profile'] == 'full-depth straight hollow crosshead end + straight hollow long-holm tail', q
+    assert abs(q['crosshead_depth_mm'] - 12.015) <= 1e-3, q
+    assert q['crosshead_end_section_fraction'] >= 0.999, q
+    assert q['straight_holm_tail_fraction'] >= 0.999, q
+    assert q['interface_common_mm3'] >= 50.0, q
+    assert q['plate_sweep_common_mm3'] <= 0.000001, q
+    assert q['interior_remains_hollow'] is True, q
+
 ch = core['geometry']['crosshead_print_support']
-assert ch['strategy'] == 'continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP and closed X ends', ch
+assert ch['strategy'] == 'central smooth lower-flange DROP with full-depth straight hollow box sections in both 32 mm long-holm junction zones', ch
 assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
-assert ch['full_drop_material_fraction'] >= 0.995, ch
+assert ch['central_drop_material_fraction'] >= 0.995, ch
 assert abs(ch['end_wall_thickness_mm'] - 3.2) <= 1e-9, ch
 assert len(ch['end_wall_checks']) == 2, ch
 assert {q['end'] for q in ch['end_wall_checks']} == {'x0','x1'}, ch
