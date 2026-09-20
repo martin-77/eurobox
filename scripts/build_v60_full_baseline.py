@@ -1348,7 +1348,7 @@ for sx in SPINDLE_X:
                 fail(f'lead-nut top pin cradle wrong X={sx} wall={xoff:.3f} sample={label} solid={solid}')
     lead_nut_pin_wall_checks.append({
         'spindle_x_mm':round(sx,3),
-        'mode':'top-open U-cradle',
+        'mode':'support-free 90deg V-cradle',
         'samples':states,
     })
 
