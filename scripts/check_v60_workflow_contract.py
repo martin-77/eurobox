@@ -233,6 +233,10 @@ assert rlp['common_floor_material_fraction'] >= 0.995, rlp
 assert rlp['saddle_under_material_mm'] >= 8.3, rlp
 assert rlp['rack_saddle'] == 'upward-open semicircular seat', rlp
 assert rlp['pivot_pin_bore'] == 'small horizontal round self-closing opening', rlp
+pf = rlp['pivot_print_feet']
+assert pf['z_mm'] == [-14.5,-10.3], pf
+assert pf['y_mm'] == [-17.0,-7.0], pf
+assert abs(pf['ear_thickness_mm'] - 4.6) <= 1e-9, pf
 assert rlp['m4_clearance'] == 'vertical', rlp
 assert abs(rlp['m4_clearance_d_mm'] - 5.0) <= 1e-9, rlp
 assert rlp['functional_round_pivot_bore_preserved'] is True, rlp
