@@ -41,12 +41,13 @@ RACK_NUT_AF = 6.90
 RACK_NUT_NOMINAL_AF = 6.81
 RACK_NUT_MAX_CORNER = 7.80
 RACK_NUT_H = 3.60
-# 2.0 mm is the strongest floor that still preserves positive full-nut
-# engagement with the existing M4x30 hardware.  2.5 mm would move the nut too
-# high for the current screw-length budget.
+# Keep the full 2.0 mm PETG floor under the metal nut.  The M4x30 length budget
+# is recovered by moving this complete local nut station downward, not by
+# thinning either the Lower or the hand knob.
 RACK_NUT_FLOOR_T = 2.00
-RACK_NUT_Z0 = CARRIER_BOTTOM_PLANE_Z + RACK_NUT_FLOOR_T
+RACK_NUT_Z0 = 5.40
 RACK_NUT_Z1 = RACK_NUT_Z0 + RACK_NUT_H
+RACK_NUT_FLOOR_Z0 = RACK_NUT_Z0 - RACK_NUT_FLOOR_T
 
 # Coarse printed service thread for the hollow nut retainer.  This is not the
 # M4 load thread; it only traps the nut axially and is rarely cycled.  Its top
@@ -57,9 +58,10 @@ RETAINER_MALE_MAJOR_R = 6.00
 RETAINER_FEMALE_CORE_R = 5.25
 RETAINER_FEMALE_MAJOR_R = 6.25
 RETAINER_NOSE_OD = 7.60
-RETAINER_NOSE_LEN = 0.40
-# The retainer nose is a short anti-lift lip only. It terminates exactly on
-# the real metal nut top; the printed retainer is not allowed to overlap the nut.
+# Give the retainer a 2 mm smooth nose above the complete metal-nut pocket.
+# This creates enough axial room for a gradual printable female-bore transition
+# without cutting away the nut's hex flats.
+RETAINER_NOSE_LEN = 2.00
 RETAINER_THREAD_Z0 = RACK_NUT_Z1 + RETAINER_NOSE_LEN
 RETAINER_LEN = CARRIER_TOP_PLANE_Z - RETAINER_THREAD_Z0 - 0.20
 RETAINER_THREAD_LEN = CARRIER_TOP_PLANE_Z - RETAINER_THREAD_Z0 + 1.00
@@ -73,16 +75,16 @@ RETAINER_TOOL_HOLE_DEPTH = 3.00
 # rack-side carrier; there is no local 0..18 mm step any more.
 BOSS_X = 20.0
 BOSS_Y = 20.0
-BOSS_Z0 = CARRIER_BOTTOM_PLANE_Z
+BOSS_Z0 = RACK_NUT_FLOOR_Z0
 BOSS_Z1 = CARRIER_TOP_PLANE_Z
 
-# Lower closure tongue: still 7 mm structural thickness, but moved upward by
-# 2 mm.  Together with the slightly shallower knob web this preserves full M4x30
-# engagement after moving the fixed metal nut up into the carrier envelope.
+# Lower closure tongue keeps the proven upper face at Z=-1.5 but now extends
+# down to the existing Lower shell floor at Z=-14.5.  No saddle material is
+# removed; the tongue simply gains 6 mm and becomes part of one flat print bed.
 LOWER_PAD_X = F.LOWER_FORK_W
 LOWER_PAD_Y0 = F.RACK_CLOSURE_PAD_Y0
 LOWER_PAD_Y1 = F.RACK_CLOSURE_PAD_Y1
-LOWER_PAD_Z0 = -8.50
+LOWER_PAD_Z0 = -14.50
 LOWER_PAD_Z1 = -1.50
 LOWER_CLEAR_D = 5.0
 
@@ -160,8 +162,8 @@ for xc in C.CLAMP_X:
     RIGHT = RIGHT.cut(
         Part.makeCylinder(
             RACK_SCREW_CLEAR_D / 2.0,
-            CARRIER_TOP_PLANE_Z - (CARRIER_BOTTOM_PLANE_Z - 1.0) + 1.0,
-            App.Vector(xc, C.RACK_CLOSURE_Y, CARRIER_BOTTOM_PLANE_Z - 1.0),
+            CARRIER_TOP_PLANE_Z - (BOSS_Z0 - 1.0) + 1.0,
+            App.Vector(xc, C.RACK_CLOSURE_Y, BOSS_Z0 - 1.0),
             App.Vector(0, 0, 1),
         )
     ).removeSplitter()
@@ -176,8 +178,8 @@ for xc in C.CLAMP_X:
     RIGHT = RIGHT.cut(
         Part.makeCylinder(
             RETAINER_NOSE_CLEAR_D / 2.0,
-            1.60,
-            App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_Z1 - 0.40),
+            RETAINER_NOSE_LEN + 0.60,
+            App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_Z1 - 0.20),
             App.Vector(0, 0, 1),
         )
     ).removeSplitter()
@@ -186,7 +188,7 @@ C.require_single(RIGHT, 'RIGHT base with flush carrier closure stations')
 LEFT = C.mirror_x(RIGHT)
 C.require_single(LEFT, 'LEFT base with flush carrier closure stations')
 
-stage('raise and retain 7mm Lower closure tongue')
+stage('extend Lower closure tongue to common -14.5mm print floor')
 LOWER = F.LOWER.fuse(
     C.box(
         -LOWER_PAD_X / 2.0,
@@ -209,7 +211,7 @@ LOWER = LOWER.cut(
         App.Vector(0, 0, 1),
     )
 ).removeSplitter()
-C.require_single(LOWER, 'raised 7mm Lower rack closure tongue')
+C.require_single(LOWER, 'common-floor Lower rack closure tongue')
 
 stage('build rack hand knob')
 RACK_HAND_KNOB = K.build_rack_hand_knob()
@@ -235,20 +237,28 @@ tube_common = RIGHT.common(tube).Volume
 if tube_common > 1e-4:
     fail(f'flush rack-closure carrier intersects rack tube: {tube_common:.6f} mm3')
 
-# Verify the closure-side carrier really has one common lower plane.  Below Z
-# 9.54 there must be no fixed BASE material after Y clears the actual saddle.
+# The intentionally lowered nut station is local only.  Below the normal
+# carrier plane, material may exist inside the 20 mm closure boss but must not
+# regrow the old full-width bridge on either side.
 for xc in C.CLAMP_X:
-    below_probe = C.box(
-        xc - 9.5,
-        CLOSURE_RELIEF_Y0 + 0.20,
-        0.0,
-        19.0,
-        CLOSURE_RELIEF_Y1 - CLOSURE_RELIEF_Y0 - 0.40,
-        CARRIER_BOTTOM_PLANE_Z - 0.02,
-    )
-    below_common = RIGHT.common(below_probe).Volume
-    if below_common > 1e-4:
-        fail(f'closure-side carrier underside still stepped at X={xc}: {below_common:.6f} mm3')
+    for side in (-1.0,1.0):
+        x0 = xc + side*(BOSS_X/2.0 + 0.50)
+        if side < 0:
+            x0 -= 4.0
+        side_probe = C.box(
+            x0,
+            CLOSURE_RELIEF_Y0 + 0.20,
+            BOSS_Z0,
+            4.0,
+            min(BOSS_Y-0.40,CLOSURE_RELIEF_Y1-CLOSURE_RELIEF_Y0-0.40),
+            CARRIER_BOTTOM_PLANE_Z-BOSS_Z0-0.02,
+        )
+        side_common=RIGHT.common(side_probe).Volume
+        if side_common>1e-4:
+            fail(
+                f'lowered rack-nut boss spread outside local station '
+                f'X={xc} side={side}: {side_common:.6f} mm3'
+            )
 
     # The lower plane itself must be structural apart from the required M4 bore.
     bottom_probe = C.box(
@@ -304,17 +314,50 @@ for xc in C.CLAMP_X:
     floor_inner_r = RACK_SCREW_CLEAR_D / 2.0
     floor_ring = Part.makeCylinder(
         floor_outer_r, RACK_NUT_FLOOR_T,
-        App.Vector(xc, C.RACK_CLOSURE_Y, CARRIER_BOTTOM_PLANE_Z),
+        App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_FLOOR_Z0),
     ).cut(
         Part.makeCylinder(
             floor_inner_r, RACK_NUT_FLOOR_T,
-            App.Vector(xc, C.RACK_CLOSURE_Y, CARRIER_BOTTOM_PLANE_Z),
+            App.Vector(xc, C.RACK_CLOSURE_Y, RACK_NUT_FLOOR_Z0),
         )
     )
     floor_fraction = RIGHT.common(floor_ring).Volume / floor_ring.Volume
     if floor_fraction < 0.985:
         fail(f'M4 nut full support floor incomplete at X={xc}: {floor_fraction:.4f}')
 
+
+# The Lower must keep the original 8.35 mm material under the saddle while the
+# tongue now reaches exactly the same -14.5 mm floor.
+lower_shell_floor_z = F.LOWER.BoundBox.ZMin
+lower_saddle_under_material = abs(lower_shell_floor_z) - F.LOWER_SADDLE_R
+if abs(LOWER_PAD_Z0-lower_shell_floor_z)>1e-6:
+    fail(
+        f'Lower tongue does not share shell print floor: '
+        f'{LOWER_PAD_Z0:.3f} vs {lower_shell_floor_z:.3f}'
+    )
+if lower_saddle_under_material < 8.0:
+    fail(
+        f'Lower lost structural material below rack saddle: '
+        f'{lower_saddle_under_material:.3f} mm'
+    )
+
+tongue_floor_probe = C.box(
+    -LOWER_PAD_X/2.0,
+    LOWER_PAD_Y0,
+    LOWER_PAD_Z0,
+    LOWER_PAD_X,
+    LOWER_PAD_Y1-LOWER_PAD_Y0,
+    0.40,
+).cut(
+    Part.makeCylinder(
+        LOWER_CLEAR_D/2.0+0.05,
+        0.60,
+        App.Vector(0.0,C.RACK_CLOSURE_Y,LOWER_PAD_Z0-0.10),
+    )
+)
+tongue_floor_fraction = LOWER.common(tongue_floor_probe).Volume / tongue_floor_probe.Volume
+if tongue_floor_fraction < 0.995:
+    fail(f'Lower common print floor incomplete: {tongue_floor_fraction:.6f}')
 
 retainer_top_z = RETAINER_THREAD_Z0 + RETAINER_LEN
 if retainer_top_z > CARRIER_TOP_PLANE_Z + 1e-6:
@@ -372,9 +415,8 @@ F.LOWER = LOWER
 C.export_shape('eurobox_v60_base_right', RIGHT)
 C.export_shape('eurobox_v60_base_left', LEFT)
 LOWER_PRINT = LOWER.copy()
-LOWER_PRINT.rotate(App.Vector(0,0,0),App.Vector(0,1,0),90.0)
 LOWER_PRINT.translate(App.Vector(0,0,-LOWER_PRINT.BoundBox.ZMin))
-C.require_single(LOWER_PRINT,'side-print-oriented final rack Lower')
+C.require_single(LOWER_PRINT,'common-floor natural-print final rack Lower')
 C.export_shape('eurobox_v60_rack_lower', LOWER_PRINT)
 C.export_shape('eurobox_v60_rack_hand_knob', RACK_HAND_KNOB)
 
@@ -432,8 +474,8 @@ with open(validation_path, 'r', encoding='utf-8') as f:
     validation = json.load(f)
 validation['stage'] = 'full_direct_mechanism_flush_carrier_m4x30_rack_closure'
 validation['architecture'] = (
-    'continuous rack-side BASE top/bottom carrier planes + hinged replaceable Lower; '
-    'M4x30 hand screw into raised top-loaded metal M4 nut retained by tall hollow '
+    'continuous rack-side carrier + local lowered rack-nut boss + hinged replaceable Lower; '
+    'M4x30 hand screw into lowered top-service metal M4 nut retained by tall hollow '
     '12x3 printed service plug'
 )
 validation['base']['right_bbox_mm'] = [round(RIGHT.BoundBox.XLength, 3), round(RIGHT.BoundBox.YLength, 3), round(RIGHT.BoundBox.ZLength, 3)]
@@ -443,11 +485,15 @@ validation['rack']['joint'] = 'integral fixed Upper in common carrier envelope +
 validation['rack']['lower_fork_outer_width_mm'] = round(F.LOWER_FORK_W, 3)
 validation['rack']['m4_closure_checks'] = lower_sweep
 validation['rack']['lower_printability'] = {
-    'mechanical_geometry': 'restored proven circular-pivot rectangular-tongue Lower',
-    'print_orientation': 'rotate +90deg about Y; broad X side on build plate',
-    'rack_saddle_axis_vertical': True,
-    'pivot_pin_bore_axis_vertical': True,
-    'm4_clearance_horizontal_d_mm': LOWER_CLEAR_D,
+    'mechanical_geometry': 'proven Lower shell unchanged; closure tongue extended downward only',
+    'print_orientation': 'natural Z-up on common shell/tongue floor',
+    'common_floor_z_mm': round(LOWER_PAD_Z0,3),
+    'common_floor_material_fraction': round(tongue_floor_fraction,6),
+    'saddle_under_material_mm': round(lower_saddle_under_material,3),
+    'rack_saddle': 'upward-open semicircular seat',
+    'pivot_pin_bore': 'small horizontal round self-closing opening',
+    'm4_clearance': 'vertical',
+    'm4_clearance_d_mm': LOWER_CLEAR_D,
     'functional_round_pivot_bore_preserved': True,
 }
 validation['rack']['m4_closure'] = {
@@ -457,12 +503,15 @@ validation['rack']['m4_closure'] = {
     'carrier_top_plane_z_mm': round(CARRIER_TOP_PLANE_Z, 3),
     'lower_clearance_d_mm': LOWER_CLEAR_D,
     'lower_closure_thickness_mm': LOWER_PAD_Z1 - LOWER_PAD_Z0,
+    'lower_shell_floor_z_mm': round(lower_shell_floor_z,3),
+    'lower_saddle_under_material_mm': round(lower_saddle_under_material,3),
     'lower_closure_z_mm': [LOWER_PAD_Z0, LOWER_PAD_Z1],
     'upper_nut_pocket_af_mm': RACK_NUT_AF,
     'measured_nut_af_mm': RACK_NUT_NOMINAL_AF,
     'measured_nut_max_corner_mm': RACK_NUT_MAX_CORNER,
     'upper_nut_pocket_height_mm': RACK_NUT_H,
-    'upper_nut_floor_z_mm': RACK_NUT_Z0,
+    'upper_nut_pocket_z_mm': [round(RACK_NUT_Z0,3),round(RACK_NUT_Z1,3)],
+    'upper_nut_floor_z_mm': round(RACK_NUT_FLOOR_Z0,3),
     'upper_nut_floor_thickness_mm': RACK_NUT_FLOOR_T,
     'upper_nut_floor_screw_clear_d_mm': RACK_SCREW_CLEAR_D,
     'upper_nut_floor_radial_ligament_mm': round(RACK_NUT_AF/2.0-RACK_SCREW_CLEAR_D/2.0,3),
