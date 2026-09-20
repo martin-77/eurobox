@@ -387,12 +387,16 @@ assert {q['holm'] for q in rear_junctions} == {'front_holm','rear_holm'}, rear_j
 for q in rear_junctions:
     assert q['front_y0_web_material_fraction'] >= 0.999, q
     assert q['rear_y1_wall_material_fraction'] >= 0.999, q
-    assert q['rear_hollow_sleeve_material_fraction'] >= 0.999, q
+    assert q['straight_holm_tail_material_fraction'] >= 0.999, q
+    assert q['straight_tail_y_mm'][0] < core['geometry']['crosshead_print_support']['crosshead_y_mm'][0], q
+    assert abs(q['straight_tail_y_mm'][1] - 220.0) <= 1e-9, q
     assert abs(q['rear_open_span_mm'] - 5.685) <= 1e-3, q
-    assert q['interior_remains_hollow'] is True, q
+    assert q['legacy_haunch_residual_mm3'] <= 0.0001, q
+    assert len(q['hollow_cell_probes']) == 4, q
+    assert all(not p['solid'] for p in q['hollow_cell_probes']), q
 
 ch = core['geometry']['crosshead_print_support']
-assert ch['strategy'] == 'original front/Y0 web retained; missing rear/Y1 wall closed only in long-holm zones; rear continuation is straight and hollow', ch
+assert ch['strategy'] == 'original front/Y0 web retained; holm-zone DROP removed; missing rear/Y1 wall added; long holm is straight hollow multi-web from crosshead through head root', ch
 assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
