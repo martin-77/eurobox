@@ -492,6 +492,11 @@ validation['rack']['lower_printability'] = {
     'saddle_under_material_mm': round(lower_saddle_under_material,3),
     'rack_saddle': 'upward-open semicircular seat',
     'pivot_pin_bore': 'small horizontal round self-closing opening',
+    'pivot_print_feet': {
+        'z_mm': [F.LOWER_PIVOT_FOOT_Z0,F.LOWER_PIVOT_FOOT_Z1],
+        'y_mm': [F.LOWER_PIVOT_FOOT_Y0,F.LOWER_PIVOT_FOOT_Y1],
+        'ear_thickness_mm': F.LOWER_FORK_EAR_T,
+    },
     'm4_clearance': 'vertical',
     'm4_clearance_d_mm': LOWER_CLEAR_D,
     'functional_round_pivot_bore_preserved': True,
