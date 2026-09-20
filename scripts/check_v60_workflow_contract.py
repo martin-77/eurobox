@@ -332,12 +332,21 @@ assert cc['front_holm_common_mm3'] >= 100.0, cc
 assert cc['rear_holm_common_mm3'] >= 100.0, cc
 assert cc['backstop_common_mm3'] >= 100.0, cc
 fr = cc['front_holm_root_tie']
-assert fr['section'] == 'closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls', fr
-assert fr['carrier_engagement_mm'] >= 8.0, fr
-assert fr['holm_engagement_mm'] >= 10.0, fr
+assert fr['section'] == 'full_carrier_depth_straight_hollow_root_with_side_twin_and_center_webs', fr
+assert fr['x_mm'] == [-96.0,-64.0], fr
+assert fr['carrier_y_mm'] == [-8.0,26.0], fr
+assert abs(fr['carrier_depth_mm'] - 34.0) <= 1e-9, fr
+assert fr['y_mm'] == [-8.0,36.0], fr
+assert abs(fr['carrier_engagement_mm'] - 34.0) <= 1e-9, fr
+assert abs(fr['straight_after_carrier_mm'] - 10.0) <= 1e-9, fr
+assert abs(fr['normal_holm_start_y_mm'] - 35.6) <= 1e-9, fr
+assert fr['holm_splice_common_mm3'] >= 150.0, fr
 assert fr['material_fraction'] >= 0.995, fr
-assert fr['carrier_common_mm3'] >= 2500.0, fr
-assert fr['holm_common_mm3'] >= 4000.0, fr
+assert fr['carrier_common_mm3'] >= 8000.0, fr
+assert fr['green_drop_excluded_from_root_zone'] is True, fr
+assert abs(fr['green_drop_x_min_mm'] + 64.0) <= 1e-9, fr
+assert len(fr['hollow_cell_checks']) == 4, fr
+assert all(not q['solid'] for q in fr['hollow_cell_checks']), fr
 assert fr['x_z_envelope_growth_mm'] == [0.0,0.0], fr
 bd = cc['backstop_base_drop']
 assert bd['profile'] == 'filled_quarter_ellipse_tapered_to_stop_bottom', bd
@@ -360,6 +369,8 @@ gd = cc['green_shelf_drop']
 assert gd['target'] == 'green lower carrier shelf between saddle web +Y face and outer +Y wall', gd
 assert gd['root_side'] == 'internal saddle web at Y=7', gd
 assert gd['tip_side'] == 'outer +Y side wall inner face at Y=22.8', gd
+assert gd['x_mm'][0] == -64.0, gd
+assert gd['excluded_front_root_x_mm'] == [-96.0,-64.0], gd
 assert gd['y_mm'] == [7.0, 22.8], gd
 assert abs(gd['span_mm'] - 15.8) <= 1e-6, gd
 assert abs(gd['shelf_z_mm'] - 14.04) <= 1e-6, gd
