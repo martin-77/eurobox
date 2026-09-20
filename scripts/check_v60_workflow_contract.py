@@ -381,6 +381,15 @@ for q in gh['checks']:
     assert q['centre_overlap_each_side_mm'] == 0.2, q
     assert q['rise_mm'] == 10.0, q
 
+fills = core['geometry']['crosshead_holm_transition_fills']
+assert len(fills) == 2, fills
+assert {q['holm'] for q in fills} == {'front_holm','rear_holm'}, fills
+for q in fills:
+    assert abs(q['nominal_cavity_span_mm'] - 5.685) <= 1e-3, q
+    assert q['fill_length_mm'] >= 6.0, q
+    assert q['material_fraction'] >= 0.999, q
+    assert q['plate_sweep_common_mm3'] <= 0.000001, q
+
 ch = core['geometry']['crosshead_print_support']
 assert ch['strategy'] == 'continuous full-width I-beam behind plate sweep with full-width smooth lower-flange DROP and closed X ends', ch
 assert len(ch['crosshead_y_mm']) == 2, ch
