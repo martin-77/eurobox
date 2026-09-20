@@ -164,7 +164,9 @@ LOWER_WEB_TOP_Z = -1.5
 LOWER_PIVOT_FOOT_Z0 = -14.5
 LOWER_PIVOT_FOOT_Z1 = LOWER_WEB_Z0 + 0.20
 LOWER_PIVOT_FOOT_Y0 = C.PIN_Y - LOWER_PIVOT_R
-LOWER_PIVOT_FOOT_Y1 = C.PIN_Y + LOWER_PIVOT_R
+# Continue to the existing web front edge (Y=-4), not merely the circle edge
+# (Y=-7), so each ear foot is already tied into the main shell on layer one.
+LOWER_PIVOT_FOOT_Y1 = C.PIN_Y + 8.0
 RACK_M4_LOWER_CLEAR_D = 5.0
 
 # Rack clamp closure.  Keep the proven M4 screw + side-loaded captive nut, but
