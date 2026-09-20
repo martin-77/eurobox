@@ -37,21 +37,15 @@ CARRIER_SIDE_T = C.WEB_T
 CARRIER_SIDE_Z0 = CARRIER_BOTTOM_Z1
 CARRIER_SIDE_Z1 = CARRIER_TOP_Z0
 
-# Front long-holm / rack-carrier T-junction.
-#
-# The rack-side transverse carrier is much deeper than the old local root tie:
-# Y=-8..26 = 34 mm.  Starting the straight sleeve only at Y=18 left the visible
-# front part of the carrier on its different internal profile and produced the
-# step/cavity seen in the slicer.  The straight HOLLOW sleeve therefore begins
-# at the carrier's real front face and continues to Y=34.  This makes the whole
-# transverse-beam depth and the first 10 mm of long holm one straight junction
-# without adding a solid filler or changing the X/Z envelope.
-FRONT_ROOT_Y0 = CARRIER_Y0
+# Front long-holm root reinforcement.  The original direct carrier/holm
+# intersection was only Y=24..26 (2 mm).  Continue the actual I-beam load paths
+# through a local closed root sleeve from Y=18..34: 8 mm embedded in the carrier
+# and 10 mm embedded in the long holm, with no X/Z envelope growth.
+FRONT_ROOT_Y0 = 18.0
 FRONT_ROOT_Y1 = 34.0
 FRONT_ROOT_CARRIER_ENGAGEMENT = CARRIER_Y1 - FRONT_ROOT_Y0
 FRONT_ROOT_HOLM_ENGAGEMENT = FRONT_ROOT_Y1 - C.ARM_Y0
 FRONT_ROOT_SIDE_T = C.WEB_T
-FRONT_ROOT_CARRIER_DEPTH = CARRIER_Y1 - CARRIER_Y0
 
 # Close both X ends of the hollow carrier. The former "closed box" only had
 # Y-side walls; its X end faces were still open and exposed the green-shelf
@@ -538,28 +532,6 @@ if front_root_carrier_common < 2500.0:
 if front_root_holm_common < 4000.0:
     failures.append(f'front root tie/holm overlap too small: {front_root_holm_common:.3f} mm3')
 
-# Prove this is a straight HOLLOW junction, not another solid fill.  The sample
-# sits inside the full-depth carrier part of the sleeve, between the twin webs
-# and above the green-shelf support profile.
-front_root_hollow_probe = App.Vector(
-    C.FRONT_CLAMP_X,
-    18.0,
-    (C.ARM_BOTTOM_Z + C.ARM_TOP_Z)/2.0,
-)
-front_root_interior_hollow = not bool(
-    RIGHT.isInside(front_root_hollow_probe,1e-5,False)
-)
-if not front_root_interior_hollow:
-    failures.append('front carrier/holm straight junction interior was solid-filled')
-
-if abs(FRONT_ROOT_CARRIER_DEPTH - 34.0) > 1e-9:
-    failures.append(
-        f'front straight root does not span complete 34 mm carrier depth: '
-        f'{FRONT_ROOT_CARRIER_DEPTH:.3f} mm'
-    )
-if abs(FRONT_ROOT_Y0 - CARRIER_Y0) > 1e-9:
-    failures.append('front straight root does not begin at carrier front face')
-
 # The measured rack tube must remain free; the carrier uses the same v50 saddle.
 tube = C.cyl_x(C.RACK_R, 400.0, -200.0, 0.0, 0.0)
 tube_common = RIGHT.common(tube).Volume
@@ -616,20 +588,12 @@ report['geometry']['continuous_carrier'] = {
     'rear_holm_common_mm3': round(rear_holm_overlap,3),
     'front_holm_root_tie': {
         'y_mm': [FRONT_ROOT_Y0, FRONT_ROOT_Y1],
-        'carrier_y_mm': [CARRIER_Y0,CARRIER_Y1],
-        'carrier_depth_mm': round(FRONT_ROOT_CARRIER_DEPTH,3),
         'carrier_engagement_mm': round(FRONT_ROOT_CARRIER_ENGAGEMENT,3),
         'holm_engagement_mm': round(FRONT_ROOT_HOLM_ENGAGEMENT,3),
         'material_fraction': round(front_root_fraction,6),
         'carrier_common_mm3': round(front_root_carrier_common,3),
         'holm_common_mm3': round(front_root_holm_common,3),
-        'section': 'straight_hollow_root_sleeve_spanning_full_carrier_depth_and_long_holm_root',
-        'interior_remains_hollow': front_root_interior_hollow,
-        'hollow_probe_xyz_mm': [
-            round(front_root_hollow_probe.x,3),
-            round(front_root_hollow_probe.y,3),
-            round(front_root_hollow_probe.z,3),
-        ],
+        'section': 'closed_root_sleeve_continuing_top_bottom_twin_webs_and_side_walls',
         'x_z_envelope_growth_mm': [0.0,0.0],
     },
     'clamp_overlaps': station_overlaps,
