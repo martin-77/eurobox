@@ -79,9 +79,11 @@ BOSS_Z1 = CARRIER_TOP_PLANE_Z
 # Lower closure tongue: still 7 mm structural thickness, but moved upward by
 # 2 mm.  Together with the slightly shallower knob web this preserves full M4x30
 # engagement after moving the fixed metal nut up into the carrier envelope.
-LOWER_PAD_X = F.LOWER_FORK_W
+LOWER_PAD_X = 20.0
+LOWER_PAD_BOTTOM_X = 14.0
 LOWER_PAD_Y0 = F.RACK_CLOSURE_PAD_Y0
 LOWER_PAD_Y1 = F.RACK_CLOSURE_PAD_Y1
+LOWER_PAD_BOTTOM_Y1 = 16.0
 LOWER_PAD_Z0 = -8.50
 LOWER_PAD_Z1 = -1.50
 LOWER_CLEAR_D = 5.0
@@ -115,6 +117,39 @@ def ngon_z(n, radius, height, z0=0.0):
 def translated(shape, x=0.0, y=0.0, z=0.0):
     q = shape.copy()
     q.translate(App.Vector(x, y, z))
+    return q
+
+
+def rect_wire_xy(x0, x1, y0, y1, z):
+    pts = [
+        App.Vector(x0,y0,z),
+        App.Vector(x1,y0,z),
+        App.Vector(x1,y1,z),
+        App.Vector(x0,y1,z),
+    ]
+    return Part.makePolygon(pts+[pts[0]])
+
+
+def make_print_optimized_lower_tongue():
+    # Bottom section is only as large as required for the real Ø10 thrust boss
+    # plus a structural rear neck into the jaw. The top expands to the complete
+    # M4 load section with slopes well below 45 degrees.
+    bottom = rect_wire_xy(
+        -LOWER_PAD_BOTTOM_X/2.0,
+        LOWER_PAD_BOTTOM_X/2.0,
+        LOWER_PAD_Y0,
+        LOWER_PAD_BOTTOM_Y1,
+        LOWER_PAD_Z0,
+    )
+    top = rect_wire_xy(
+        -LOWER_PAD_X/2.0,
+        LOWER_PAD_X/2.0,
+        LOWER_PAD_Y0,
+        LOWER_PAD_Y1,
+        LOWER_PAD_Z1,
+    )
+    q=Part.makeLoft([bottom,top],True,False).removeSplitter()
+    C.require_single(q,'print-optimized final Lower closure tongue')
     return q
 
 
@@ -188,14 +223,7 @@ C.require_single(LEFT, 'LEFT base with flush carrier closure stations')
 
 stage('raise and retain 7mm Lower closure tongue')
 LOWER = F.LOWER.fuse(
-    C.box(
-        -LOWER_PAD_X / 2.0,
-        LOWER_PAD_Y0,
-        LOWER_PAD_Z0,
-        LOWER_PAD_X,
-        LOWER_PAD_Y1 - LOWER_PAD_Y0,
-        LOWER_PAD_Z1 - LOWER_PAD_Z0,
-    )
+    make_print_optimized_lower_tongue()
 ).removeSplitter()
 # Re-cut features that the thickening operation may have refilled.
 LOWER = LOWER.cut(
@@ -221,6 +249,39 @@ failures = []
 
 def fail(msg):
     failures.append(msg)
+
+
+lower_printability={
+    'print_orientation':'installed Z-up; shell bottom on build plate',
+    'final_tongue_bottom_x_mm':LOWER_PAD_BOTTOM_X,
+    'final_tongue_bottom_y_mm':[LOWER_PAD_Y0,LOWER_PAD_BOTTOM_Y1],
+    'final_tongue_top_x_mm':LOWER_PAD_X,
+    'final_tongue_top_y_mm':[LOWER_PAD_Y0,LOWER_PAD_Y1],
+    'x_growth_slope_each_side':round(
+        (LOWER_PAD_X-LOWER_PAD_BOTTOM_X)/2.0
+        /(LOWER_PAD_Z1-LOWER_PAD_Z0),6
+    ),
+    'front_growth_slope':round(
+        (LOWER_PAD_Y1-LOWER_PAD_BOTTOM_Y1)
+        /(LOWER_PAD_Z1-LOWER_PAD_Z0),6
+    ),
+    'thrust_boss_radius_mm':K.THRUST_BOSS_R,
+    'flat_thrust_land_preserved':True,
+    'remaining_flat_land_cantilever_from_shell_mm':round(
+        LOWER_PAD_BOTTOM_Y1-F.RACK_CLOSURE_MAIN_Y1,3
+    ),
+    'pivot_web_and_pin_profile':F.rack_lower_printability,
+}
+if lower_printability['x_growth_slope_each_side'] > 1.0+1e-9:
+    fail('final rack Lower tongue X growth exceeds 45deg')
+if lower_printability['front_growth_slope'] > 1.0+1e-9:
+    fail('final rack Lower tongue Y growth exceeds 45deg')
+if LOWER_PAD_BOTTOM_X/2.0 < K.THRUST_BOSS_R+1.5:
+    fail('final rack Lower bottom land lacks side margin around thrust boss')
+if LOWER_PAD_BOTTOM_Y1 < C.RACK_CLOSURE_Y+K.THRUST_BOSS_R:
+    fail('final rack Lower bottom land does not contain complete thrust boss')
+if LOWER_PAD_Y0 > C.RACK_CLOSURE_Y-K.THRUST_BOSS_R-1.5:
+    fail('final rack Lower bottom land lacks rear structural neck')
 
 
 # Exact handed construction.
@@ -438,6 +499,7 @@ validation['base']['mirror_delta_mm3'] = round(mirror_delta, 9)
 validation['rack']['joint'] = 'integral fixed Upper in common carrier envelope + hinged replaceable Lower + raised top-retained metal M4 closure nut'
 validation['rack']['lower_fork_outer_width_mm'] = round(F.LOWER_FORK_W, 3)
 validation['rack']['m4_closure_checks'] = lower_sweep
+validation['rack']['lower_printability'] = lower_printability
 validation['rack']['m4_closure'] = {
     'mode': 'M4x30 hand screw from below into raised top-loaded captive metal M4 nut',
     'screw_length_mm': RACK_SCREW_LENGTH,
@@ -478,7 +540,7 @@ readme_path = os.path.join(C.OUT, 'README_BUILD_v60_full.txt')
 with open(readme_path, 'a', encoding='utf-8') as f:
     f.write(
         '\nRack closure revision: common carrier top/bottom planes, raised M4 nut, '
-        'M4x30 hand screw, raised 7 mm Lower tongue, 6.90 mm AF nut pocket, '
+        'M4x30 hand screw, tapered print-optimized 7 mm Lower tongue, 6.90 mm AF nut pocket, '
         'structural seat for the single final 12x3 service-retainer stage.\n'
     )
 
