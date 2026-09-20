@@ -609,22 +609,27 @@ def make_lower_pivot_outer(x0, x1):
 
 
 def make_teardrop_pin_bore(x0, x1):
-    # Full Ø4.6 circular clearance is retained. Above the 45deg tangent points
-    # the circular roof is replaced by two 45deg tangents meeting at an apex,
-    # so the horizontal X-axis pin hole closes without support.
+    # Keep the COMPLETE Ø4.6 circular clearance and add only the printable roof.
+    # Two 45deg tangents touch the circle at +/-45deg and meet at sqrt(2)*r.
+    # Unioning the roof with the real cylinder is safer than approximating the
+    # functional round pin clearance by a polygon.
     r=C.PIN_HOLE_D/2.0
     yc=C.PIN_Y
     zc=C.PIN_Z
     rt=r/math.sqrt(2.0)
-    pts=[
-        (yc+rt,zc+rt),
-        (yc,zc+r*math.sqrt(2.0)),
-        (yc-rt,zc+rt),
-    ]
-    for deg in (135,165,195,225,255,285,315,345,405):
-        a=math.radians(deg)
-        pts.append((yc+r*math.cos(a),zc+r*math.sin(a)))
-    return prism_yz_x(pts,x0,x1,'support-free teardrop rack-pin bore')
+    circle=C.cyl_x(r,x1-x0,x0,yc,zc)
+    roof=prism_yz_x(
+        [
+            (yc+rt,zc+rt),
+            (yc,zc+r*math.sqrt(2.0)),
+            (yc-rt,zc+rt),
+        ],
+        x0,x1,
+        'rack-pin teardrop tangent roof',
+    )
+    q=circle.fuse(roof).removeSplitter()
+    C.require_single(q,'support-free teardrop rack-pin bore')
+    return q
 
 
 stage('lower hardware')
