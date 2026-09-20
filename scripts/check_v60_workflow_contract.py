@@ -400,7 +400,7 @@ assert ch['strategy'] == 'original front/Y0 web retained; holm-zone DROP removed
 assert len(ch['crosshead_y_mm']) == 2, ch
 plate_sweep_y0 = core['datums']['plate_sweep_xyz_mm'][1][0]
 assert abs(ch['crosshead_y_mm'][1] - (plate_sweep_y0 - 0.2)) <= 1e-6, ch
-assert ch['full_drop_material_fraction'] >= 0.995, ch
+assert ch['central_drop_material_fraction'] >= 0.995, ch
 assert abs(ch['end_wall_thickness_mm'] - 3.2) <= 1e-9, ch
 assert len(ch['end_wall_checks']) == 2, ch
 assert {q['end'] for q in ch['end_wall_checks']} == {'x0','x1'}, ch
