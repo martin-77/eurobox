@@ -5,7 +5,7 @@ $fn=128;
 plate_w = 187.30;
 plate_h = 30.00;
 plate_t = 8.00;
-hole_d = 8.60;
+hole_d = 8.80;
 
 spindle_x = [15.00, 172.30];
 spindle_y = 15.00;
@@ -23,7 +23,8 @@ difference() {
             cube([plate_w,hook_h,hook_depth]);
     }
 
-    // The complete RH8x2 screw must pass through during assembly.
+    // Complete RH8x2 screw plus the Ø8.4 hard-stop collar must pass
+    // through during assembly.
     for(x=spindle_x)
         translate([x,spindle_y,-0.5])
             cylinder(d=hole_d,h=plate_t+1.0);
