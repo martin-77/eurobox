@@ -653,13 +653,14 @@ PIN = C.fuse_seq([
 # Physical reference: the former smallest clip (Ø6.4 / Ø2.5) securely snaps
 # onto the rack pin's Ø3.1 groove.  Use that measured working preload as the
 # reference instead of sizing printed C-clips with positive running clearance.
-# The mouth is opened by 0.2 mm versus the relaxed inner diameter to ease
-# installation without removing the 0.60 mm diametral snap preload.
-PIN_CLIP=make_c_clip(3.2,1.25,1.3,2.6)
+# The proven clip also has a mouth 0.10 mm NARROWER than its relaxed ID.
+# That is essential: it wraps beyond 180 degrees around the groove and cannot
+# simply fall off after installation.
+PIN_CLIP=make_c_clip(3.2,1.25,1.3,2.4)
 # The spindle groove is Ø5.0.  Preserve the same 0.60 mm diametral preload:
 # relaxed ID Ø4.4.  OD Ø8.4 still overlaps the Ø6.5 plate hole by 0.95 mm per
 # side while being far smaller than the old Ø10.8 clip.
-PLATE_CLIP=make_c_clip(4.2,2.2,1.3,4.6)
+PLATE_CLIP=make_c_clip(4.2,2.2,1.3,4.3)
 
 
 def make_station_floor_gusset(sx):
@@ -923,7 +924,7 @@ NUT_PIN_HEAD_R = 3.0
 NUT_PIN_HEAD_T = 2.0
 NUT_PIN_CLIP_OUTER_R = 3.2
 NUT_PIN_CLIP_INNER_R = 0.90
-NUT_PIN_CLIP_OPENING_W = 2.0
+NUT_PIN_CLIP_OPENING_W = 1.7
 NUT_PIN_SERVICE_CLEAR = 0.35
 
 # BASE is frozen.  These service-cut datums are intentionally kept at the
@@ -1047,17 +1048,23 @@ clip_snap_checks = {
     'lead_nut_pin': {
         'groove_d_mm': NUT_PIN_GROOVE_D,
         'relaxed_clip_id_mm': 2.0*NUT_PIN_CLIP_INNER_R,
+        'mouth_width_mm': NUT_PIN_CLIP_OPENING_W,
         'diametral_preload_mm': NUT_PIN_GROOVE_D-2.0*NUT_PIN_CLIP_INNER_R,
+        'mouth_under_id_mm': 2.0*NUT_PIN_CLIP_INNER_R-NUT_PIN_CLIP_OPENING_W,
     },
     'rack_pin': {
         'groove_d_mm': 3.10,
         'relaxed_clip_id_mm': 2.50,
+        'mouth_width_mm': 2.40,
         'diametral_preload_mm': 3.10-2.50,
+        'mouth_under_id_mm': 2.50-2.40,
     },
     'plate_spindle': {
         'groove_d_mm': 5.00,
         'relaxed_clip_id_mm': 4.40,
+        'mouth_width_mm': 4.30,
         'diametral_preload_mm': 5.00-4.40,
+        'mouth_under_id_mm': 4.40-4.30,
     },
 }
 for label, rec in clip_snap_checks.items():
@@ -1065,6 +1072,11 @@ for label, rec in clip_snap_checks.items():
         raise RuntimeError(
             f'{label} clip preload drifted from physical rack-pin reference: '
             f'{rec["diametral_preload_mm"]:.3f} mm'
+        )
+    if abs(rec['mouth_under_id_mm']-0.10) > 1e-9:
+        raise RuntimeError(
+            f'{label} clip mouth no longer wraps the groove like the proven '
+            f'rack-pin clip: {rec["mouth_under_id_mm"]:.3f} mm'
         )
 
 for sx in SPINDLE_X:
