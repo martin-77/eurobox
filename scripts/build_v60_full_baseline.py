@@ -40,6 +40,13 @@ UNDERHOOK_T = 4.0
 THREAD_MAJOR = 8.0
 THREAD_PITCH = 2.0
 THREAD_CORE_R = 3.25
+# The final lead-nut is frozen.  Give only the WORKING lead-screw thread
+# another 0.10 mm radial relief (0.20 mm on diameter) after the first printed
+# fit proved too tight.  The outboard knob-retainer stud stays on the proven
+# original RH8x2 male dimensions so its matching retainer nut is unchanged.
+LEAD_MALE_RADIAL_RELIEF_R = 0.10
+LEAD_THREAD_CORE_R = THREAD_CORE_R - LEAD_MALE_RADIAL_RELIEF_R
+LEAD_THREAD_MAJOR_R = THREAD_MAJOR/2.0 - LEAD_MALE_RADIAL_RELIEF_R
 # Real printable RH8x2 female geometry shared by BOTH printed female parts:
 # the removable lead-nut wear cartridge and the knob-retainer nut.
 THREAD_FEMALE_CORE_R = 3.50
@@ -365,9 +372,12 @@ def write_complete_spindle_scad(path):
 pitch={THREAD_PITCH};
 core_r={THREAD_CORE_R};
 major_r={THREAD_MAJOR/2.0};
+main_core_r={LEAD_THREAD_CORE_R};
+main_major_r={LEAD_THREAD_MAJOR_R};
 root_half={RH8_MALE_ROOT_W/2.0};
 crest_half={RH8_MALE_CREST_W/2.0};
-inner_r={THREAD_CORE_R-0.12};
+stud_inner_r={THREAD_CORE_R-0.12};
+main_inner_r={LEAD_THREAD_CORE_R-0.12};
 
 module ridge_rh(z0,len,steps){{
   a1=360*len/pitch;
@@ -375,10 +385,10 @@ module ridge_rh(z0,len,steps){{
   function zc(i)=pitch*ang(i)/360;
   function pt(r,a,z)=[r*cos(a),r*sin(a),z];
   pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
-         each [pt(inner_r,a,z-root_half),
-               pt(major_r,a,z-crest_half),
-               pt(major_r,a,z+crest_half),
-               pt(inner_r,a,z+root_half)]];
+         each [pt(main_inner_r,a,z-root_half),
+               pt(main_major_r,a,z-crest_half),
+               pt(main_major_r,a,z+crest_half),
+               pt(main_inner_r,a,z+root_half)]];
   side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
     [4*(i+1)+((j+1)%4),4*(i+1)+j,4*i+j],
     [4*i+((j+1)%4),4*(i+1)+((j+1)%4),4*i+j]
@@ -399,10 +409,10 @@ module ridge_lh(z0,len,steps,phase=0){{
   function zc(i)=len*i/steps;
   function pt(r,a,z)=[r*cos(a),r*sin(a),z];
   pts=[for(i=[0:steps]) let(a=ang(i),z=zc(i))
-         each [pt(inner_r,a,z-root_half),
+         each [pt(stud_inner_r,a,z-root_half),
                pt(major_r,a,z-crest_half),
                pt(major_r,a,z+crest_half),
-               pt(inner_r,a,z+root_half)]];
+               pt(stud_inner_r,a,z+root_half)]];
   side_faces=[for(i=[0:steps-1]) for(j=[0:3]) each [
     [4*(i+1)+((j+1)%4),4*(i+1)+j,4*i+j],
     [4*i+((j+1)%4),4*(i+1)+((j+1)%4),4*i+j]
@@ -463,7 +473,7 @@ module spindle_z(){{
 
     // INBOARD: full thrust ring is now completely supported by that cone.
     translate([0,0,{shoulder0}]) cylinder(r={SHOULDER_D/2.0},h={SPINDLE_LOCAL_SHOULDER});
-    translate([0,0,{main0-0.25}]) cylinder(r=core_r,h={LEAD_THREAD_LEN+0.25});
+    translate([0,0,{main0-0.25}]) cylinder(r=main_core_r,h={LEAD_THREAD_LEN+0.25});
     ridge_rh({main0},{LEAD_THREAD_LEN},{main_steps});
   }}
 }}
@@ -640,11 +650,16 @@ PIN = C.fuse_seq([
     C.cyl_x(2.0,29.8,-14.8,0,0), C.cyl_x(1.55,1.5,15.0,0,0),
     C.cyl_x(2.0,1.7,16.5,0,0), C.cyl_x(3.75,2.4,-17.2,0,0),
 ],'rack-pin')
-PIN_CLIP=make_c_clip(4.2,1.65,1.5,3.0)
-# Axial spindle retainer for the moving box-clamp plate.  The Ø5.0 shaft
-# groove gets 0.05 mm radial running clearance; the 3.8 mm C-opening still
-# snaps around the groove and cannot pass through the Ø6.5 plate hole.
-PLATE_CLIP=make_c_clip(5.4,2.55,1.4,3.8)
+# Physical reference: the former smallest clip (Ø6.4 / Ø2.5) securely snaps
+# onto the rack pin's Ø3.1 groove.  Use that measured working preload as the
+# reference instead of sizing printed C-clips with positive running clearance.
+# The mouth is opened by 0.2 mm versus the relaxed inner diameter to ease
+# installation without removing the 0.60 mm diametral snap preload.
+PIN_CLIP=make_c_clip(3.2,1.25,1.3,2.6)
+# The spindle groove is Ø5.0.  Preserve the same 0.60 mm diametral preload:
+# relaxed ID Ø4.4.  OD Ø8.4 still overlaps the Ø6.5 plate hole by 0.95 mm per
+# side while being far smaller than the old Ø10.8 clip.
+PLATE_CLIP=make_c_clip(4.2,2.2,1.3,4.6)
 
 
 def make_station_floor_gusset(sx):
@@ -893,20 +908,35 @@ LEAD_NUT_PIN_HOLE_D = 3.4
 LEAD_NUT_PIN_DROP_SLOT_W = 3.8
 NUT_PIN_SHAFT_D = 3.0
 NUT_PIN_GROOVE_D = 2.4
-NUT_PIN_GROOVE_X0 = 11.4
-NUT_PIN_GROOVE_W = 1.6
-NUT_PIN_CLIP_T = 1.3
+# The frozen lead-nut upper lug is X=-6..+6.  Keep just 0.10 mm axial stand-off
+# outside each lug face, then place the 1.30 mm clip centrally in a 1.40 mm
+# groove.  This removes the former needless pin overhang.
+NUT_PIN_HEAD_X0 = -8.10
+NUT_PIN_SHAFT_X0 = -6.10
+NUT_PIN_SHAFT_X1 = 6.10
+NUT_PIN_GROOVE_X0 = NUT_PIN_SHAFT_X1
+NUT_PIN_GROOVE_W = 1.40
+NUT_PIN_TIP_LEN = 0.70
+NUT_PIN_CLIP_T = 1.30
 NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
 NUT_PIN_HEAD_R = 3.0
 NUT_PIN_HEAD_T = 2.0
 NUT_PIN_CLIP_OUTER_R = 3.2
+NUT_PIN_CLIP_INNER_R = 0.90
+NUT_PIN_CLIP_OPENING_W = 2.0
 NUT_PIN_SERVICE_CLEAR = 0.35
-NUT_PIN_HEAD_POCKET_R = NUT_PIN_HEAD_R + NUT_PIN_SERVICE_CLEAR
-NUT_PIN_HEAD_POCKET_X0 = -14.0 - NUT_PIN_SERVICE_CLEAR
-NUT_PIN_HEAD_POCKET_LEN = NUT_PIN_HEAD_T + 2.0*NUT_PIN_SERVICE_CLEAR
-NUT_PIN_CLIP_POCKET_R = NUT_PIN_CLIP_OUTER_R + NUT_PIN_SERVICE_CLEAR
-NUT_PIN_CLIP_POCKET_X0 = NUT_PIN_CLIP_X - NUT_PIN_SERVICE_CLEAR
-NUT_PIN_CLIP_POCKET_LEN = NUT_PIN_CLIP_T + 2.0*NUT_PIN_SERVICE_CLEAR
+
+# BASE is frozen.  These service-cut datums are intentionally kept at the
+# exact former long-pin values even though the hardware is now shorter.
+NUT_PIN_SERVICE_X0 = -14.35
+NUT_PIN_SERVICE_X1 = 15.05
+NUT_PIN_SERVICE_XLEN = NUT_PIN_SERVICE_X1 - NUT_PIN_SERVICE_X0
+NUT_PIN_HEAD_POCKET_R = 3.35
+NUT_PIN_HEAD_POCKET_X0 = -14.35
+NUT_PIN_HEAD_POCKET_LEN = 2.70
+NUT_PIN_CLIP_POCKET_R = 3.55
+NUT_PIN_CLIP_POCKET_X0 = 11.20
+NUT_PIN_CLIP_POCKET_LEN = 2.00
 # The wear-cartridge body and BASE pocket share a true R8 lower semicircle.
 # The inverted BASE print therefore closes the pocket progressively, exactly
 # like a small horizontal round opening, instead of producing a flat roof.
@@ -980,15 +1010,62 @@ for label,x,y,z,expect_solid in (
         )
 
 NUT_PIN = C.fuse_seq([
-    C.cyl_x(NUT_PIN_SHAFT_D/2.0,23.4,-12.0,0,0),
-    C.cyl_x(NUT_PIN_GROOVE_D/2.0,NUT_PIN_GROOVE_W,NUT_PIN_GROOVE_X0,0,0),
-    C.cyl_x(NUT_PIN_SHAFT_D/2.0,1.7,NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,0,0),
-    C.cyl_x(NUT_PIN_HEAD_R,NUT_PIN_HEAD_T,-14.0,0,0),
+    C.cyl_x(
+        NUT_PIN_SHAFT_D/2.0,
+        NUT_PIN_SHAFT_X1-NUT_PIN_SHAFT_X0,
+        NUT_PIN_SHAFT_X0,0,0,
+    ),
+    C.cyl_x(
+        NUT_PIN_GROOVE_D/2.0,
+        NUT_PIN_GROOVE_W,
+        NUT_PIN_GROOVE_X0,0,0,
+    ),
+    C.cyl_x(
+        NUT_PIN_SHAFT_D/2.0,
+        NUT_PIN_TIP_LEN,
+        NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,0,0,
+    ),
+    C.cyl_x(NUT_PIN_HEAD_R,NUT_PIN_HEAD_T,NUT_PIN_HEAD_X0,0,0),
 ],'lead-nut-retaining-pin')
-NUT_PIN_SERVICE_X0 = NUT_PIN.BoundBox.XMin - 0.35
-NUT_PIN_SERVICE_X1 = NUT_PIN.BoundBox.XMax + 0.35
-NUT_PIN_SERVICE_XLEN = NUT_PIN_SERVICE_X1 - NUT_PIN_SERVICE_X0
-NUT_PIN_CLIP = make_c_clip(NUT_PIN_CLIP_OUTER_R,1.25,NUT_PIN_CLIP_T,2.4)
+NUT_PIN_CLIP = make_c_clip(
+    NUT_PIN_CLIP_OUTER_R,
+    NUT_PIN_CLIP_INNER_R,
+    NUT_PIN_CLIP_T,
+    NUT_PIN_CLIP_OPENING_W,
+)
+
+# Semantic hardware checks: collision-free is not enough.
+LEAD_NUT_LUG_HALF_X = 6.0
+if NUT_PIN_SHAFT_X0 > -LEAD_NUT_LUG_HALF_X-0.05:
+    raise RuntimeError('lead-nut pin shaft does not project beyond left lug face')
+if NUT_PIN_SHAFT_X1 < LEAD_NUT_LUG_HALF_X+0.05:
+    raise RuntimeError('lead-nut pin shaft does not project beyond right lug face')
+if abs((NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)-0.10) > 1e-9:
+    raise RuntimeError('lead-nut pin clip axial groove clearance is not 0.10 mm')
+
+clip_snap_checks = {
+    'lead_nut_pin': {
+        'groove_d_mm': NUT_PIN_GROOVE_D,
+        'relaxed_clip_id_mm': 2.0*NUT_PIN_CLIP_INNER_R,
+        'diametral_preload_mm': NUT_PIN_GROOVE_D-2.0*NUT_PIN_CLIP_INNER_R,
+    },
+    'rack_pin': {
+        'groove_d_mm': 3.10,
+        'relaxed_clip_id_mm': 2.50,
+        'diametral_preload_mm': 3.10-2.50,
+    },
+    'plate_spindle': {
+        'groove_d_mm': 5.00,
+        'relaxed_clip_id_mm': 4.40,
+        'diametral_preload_mm': 5.00-4.40,
+    },
+}
+for label, rec in clip_snap_checks.items():
+    if abs(rec['diametral_preload_mm']-0.60) > 1e-9:
+        raise RuntimeError(
+            f'{label} clip preload drifted from physical rack-pin reference: '
+            f'{rec["diametral_preload_mm"]:.3f} mm'
+        )
 
 for sx in SPINDLE_X:
     # Top service opening for the removable carrier. The pocket has a real,
@@ -1247,8 +1324,8 @@ for sx in SPINDLE_X:
         'counterbore_depth_mm':PLATE_RETAINER_COUNTERBORE_DEPTH,
         'service_channel_width_mm':PLATE_RETAINER_CHANNEL_W,
         'service_channel_depth_mm':PLATE_RETAINER_COUNTERBORE_DEPTH,
-        'clip_outer_d_mm':10.8,
-        'clip_inner_d_mm':5.1,
+        'clip_outer_d_mm':8.4,
+        'clip_inner_d_mm':4.4,
         'shaft_groove_d_mm':5.0,
         'shaft_groove_width_mm':1.4,
     })
@@ -1334,7 +1411,8 @@ for turn in (2,5):
 
 main_spindle_thread_samples=[]
 knob_retainer_thread_samples=[]
-male_sample_r=(THREAD_CORE_R+THREAD_MAJOR/2.0)/2.0
+main_male_sample_r=(LEAD_THREAD_CORE_R+LEAD_THREAD_MAJOR_R)/2.0
+stud_male_sample_r=(THREAD_CORE_R+THREAD_MAJOR/2.0)/2.0
 female_sample_r=(CAP_THREAD_FEMALE_CORE_R+CAP_THREAD_FEMALE_MAJOR_R)/2.0
 main_start=SPINDLE_LOCAL_JOURNAL+SPINDLE_LOCAL_SHOULDER
 # Outboard stud spans +Y = HEX_LEN .. HEX_LEN+OUTER_STUD_LEN after the final
@@ -1347,9 +1425,9 @@ for turn in (2,7):
     for angle_deg in (0.0,90.0,180.0,270.0):
         a=math.radians(angle_deg)
         zc=THREAD_PITCH*(turn+angle_deg/360.0)
-        x=-male_sample_r*math.cos(a)
+        x=-main_male_sample_r*math.cos(a)
         y=-(main_start+zc)
-        z=-male_sample_r*math.sin(a)
+        z=-main_male_sample_r*math.sin(a)
         ridge=_inside(SPINDLE,x,y,z)
         between=_inside(
             SPINDLE,x,-(main_start+zc+THREAD_PITCH/2.0),z
@@ -1377,11 +1455,11 @@ for angle_deg in (0.0,90.0,180.0,270.0):
     am=-a
     zc=THREAD_PITCH*(1.0+angle_deg/360.0)
 
-    mx=-male_sample_r*math.cos(am)
+    mx=-stud_male_sample_r*math.cos(am)
     # ridge_lh starts at the outer tip in master Z and progresses toward the
     # knob.  After the rigid transform this maps from +Y tip toward +Y root.
     my=stud_tip_y-zc
-    mz=-male_sample_r*math.sin(am)
+    mz=-stud_male_sample_r*math.sin(am)
     male_ridge=_inside(SPINDLE,mx,my,mz)
     male_between=_inside(
         SPINDLE,mx,stud_tip_y-(zc+THREAD_PITCH/2.0),mz
@@ -1910,7 +1988,7 @@ if lead_screw_printability['full_hex_drive_h_mm'] < 4.8:
 if lead_screw_printability['shoulder_taper_max_slope_dr_dz'] > 1.0+1e-9:
     fail('lead-screw thrust shoulder support taper exceeds 45deg')
 
-lead_thread_radial_engagement=THREAD_MAJOR/2.0-THREAD_FEMALE_CORE_R
+lead_thread_radial_engagement=LEAD_THREAD_MAJOR_R-THREAD_FEMALE_CORE_R
 if lead_thread_radial_engagement < 0.40:
     fail(
         f'RH8x2 spindle/lead-nut radial engagement too small: '
@@ -2009,6 +2087,15 @@ V['box_clamp']['plate_spindle_retention']={
     'clip_insertion_path':plate_retainer_clip_insertion,
     'checks':plate_retainer_checks,
 }
+V['box_clamp']['clip_snap_checks']=clip_snap_checks
+V['box_clamp']['lead_nut_pin']={
+    'overall_length_mm':round(NUT_PIN.BoundBox.XLength,3),
+    'head_x_mm':[round(NUT_PIN_HEAD_X0,3),round(NUT_PIN_HEAD_X0+NUT_PIN_HEAD_T,3)],
+    'shaft_x_mm':[round(NUT_PIN_SHAFT_X0,3),round(NUT_PIN_SHAFT_X1,3)],
+    'groove_x_mm':[round(NUT_PIN_GROOVE_X0,3),round(NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W,3)],
+    'tip_end_x_mm':round(NUT_PIN_GROOVE_X0+NUT_PIN_GROOVE_W+NUT_PIN_TIP_LEN,3),
+    'base_service_cut_frozen':True,
+}
 V['box_clamp']['mounting_sequence']={
     'order':[
         'lead_nut_insert_from_top',
@@ -2044,8 +2131,8 @@ V['box_clamp']['lead_nut_printability']=lead_nut_printability
 V['box_clamp']['lead_nut_thread']={
     'standard':'RH8x2 true radial/axial printable matched pair',
     'pitch_mm':THREAD_PITCH,
-    'male_core_d_mm':round(2.0*THREAD_CORE_R,3),
-    'male_major_d_mm':round(THREAD_MAJOR,3),
+    'male_core_d_mm':round(2.0*LEAD_THREAD_CORE_R,3),
+    'male_major_d_mm':round(2.0*LEAD_THREAD_MAJOR_R,3),
     'male_root_width_mm':RH8_MALE_ROOT_W,
     'male_crest_width_mm':RH8_MALE_CREST_W,
     'female_crest_bore_d_mm':round(2.0*THREAD_FEMALE_CORE_R,3),
