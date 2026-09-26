@@ -68,12 +68,15 @@ knob_h = 7.0;
 flange_h = 2.0;
 flange_r = 6.5;
 journal_r = 4.0;
-journal_h = 8.15;
+journal_h = 7.35;
+stop_h = 0.80;
+stop_r = 4.20;
 thread_len = 22.2;
 
 z_flange = knob_h;
 z_journal = z_flange + flange_h;
-z_thread = z_journal + journal_h;
+z_stop = z_journal + journal_h;
+z_thread = z_stop + stop_h;
 
 union() {
     scalloped_knob(knob_h);
@@ -84,5 +87,11 @@ union() {
     translate([0,0,z_journal])
         cylinder(r=journal_r,h=journal_h+0.20);
 
+    // Ø8.4 hard stop passes through the Ø8.8 clamp bore but the
+    // RH8x2 female retainer cannot pass over it.
+    translate([0,0,z_stop])
+        cylinder(r=stop_r,h=stop_h);
+
+    // Proven RH8x2 working thread, unchanged from the fitting pair.
     male_thread(thread_len,z_thread);
 }
