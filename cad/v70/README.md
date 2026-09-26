@@ -45,3 +45,22 @@ proven dimensions.
 
 The old separate `knob`, `knob_retainer_nut` and `plate_retainer_clip`
 are not used by the V70 box-clamp mechanism.
+
+
+## Clamp v2 prototype
+
+`eurobox_v70_clamp_v2` is the first full-width stepped clamp proposal based
+on the measured underside geometry of the box:
+
+- width: 187.30 mm
+- total height: 88.57 mm
+- screw axis: 15.00 mm above clamp bottom
+- box underside: 30.00 mm above clamp bottom
+- top of box protrusion: 63.57 mm above clamp bottom
+- upper wall press height: 25.00 mm
+- press-plane offset between protrusion and upper box wall: 18.50 mm
+- V70 screw bores remain Ø8.80 mm at X=15.00 / 172.30 mm
+
+The v2 STL is deliberately a robust fit prototype: the upper stepped block is
+solid. Once the real box contact on both press planes is confirmed, the upper
+section can be lightened without changing the contact geometry.
