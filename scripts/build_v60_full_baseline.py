@@ -686,19 +686,25 @@ PIN = C.fuse_seq([
 # simply fall off after installation.
 RACK_CLIP_GROOVE_D = 3.10
 RACK_CLIP_RELAXED_ID = 2.50
-RACK_CLIP_THROAT_W = 2.40
 RACK_CLIP_ID_RATIO = RACK_CLIP_RELAXED_ID / RACK_CLIP_GROOVE_D
+
+# The first snap-clip revision still left too much of the groove exposed.
+# Define retention from a target wrap angle instead of an arbitrary mouth
+# width.  250 degrees of relaxed wrap leaves only a 110 degree throat sector.
+CLIP_TARGET_WRAP_DEG = 250.0
+CLIP_OPEN_ANGLE_DEG = 360.0 - CLIP_TARGET_WRAP_DEG
+CLIP_THROAT_TO_ID = math.sin(math.radians(CLIP_OPEN_ANGLE_DEG/2.0))
+RACK_CLIP_THROAT_W = RACK_CLIP_RELAXED_ID * CLIP_THROAT_TO_ID
 RACK_CLIP_THROAT_RATIO = RACK_CLIP_THROAT_W / RACK_CLIP_GROOVE_D
 
-# Keep the physically proven rack clip's retaining geometry exactly, but give
-# it a modest flared lead-in instead of a parallel U-slot.
+# Keep the measured rack-clip preload but increase geometric capture to the
+# common 250 degree wrap target.  The outer flare remains only an assembly aid.
 PIN_CLIP=make_c_clip(3.2,1.25,1.3,RACK_CLIP_THROAT_W,3.20)
 
-# Scale the same measured wrap/preload ratios to the Ø5.0 spindle groove.
-# This is substantially more closed than the former ID4.4 / mouth4.3 washer.
+# Scale the same preload and 250 degree wrap to the Ø5.0 spindle groove.
 PLATE_CLIP_GROOVE_D = 5.00
 PLATE_CLIP_ID = PLATE_CLIP_GROOVE_D * RACK_CLIP_ID_RATIO
-PLATE_CLIP_THROAT_W = PLATE_CLIP_GROOVE_D * RACK_CLIP_THROAT_RATIO
+PLATE_CLIP_THROAT_W = PLATE_CLIP_ID * CLIP_THROAT_TO_ID
 PLATE_CLIP=make_c_clip(
     4.2,
     PLATE_CLIP_ID/2.0,
@@ -968,11 +974,10 @@ NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
 NUT_PIN_HEAD_R = 3.0
 NUT_PIN_HEAD_T = 2.0
 NUT_PIN_CLIP_OUTER_R = 3.2
-# Scale the proven rack-clip ID/throat ratios to the Ø2.4 lead-nut pin groove.
-# The previous absolute 0.1 mm rule left too little wrap on differently sized
-# grooves.
+# Scale the proven rack-clip preload and the common 250 degree wrap target to
+# the Ø2.4 lead-nut pin groove.
 NUT_PIN_CLIP_INNER_R = (NUT_PIN_GROOVE_D * RACK_CLIP_ID_RATIO) / 2.0
-NUT_PIN_CLIP_OPENING_W = NUT_PIN_GROOVE_D * RACK_CLIP_THROAT_RATIO
+NUT_PIN_CLIP_OPENING_W = (2.0*NUT_PIN_CLIP_INNER_R) * CLIP_THROAT_TO_ID
 NUT_PIN_CLIP_ENTRY_W = 2.65
 NUT_PIN_SERVICE_CLEAR = 0.35
 
@@ -1100,18 +1105,21 @@ clip_snap_checks = {
         'relaxed_clip_id_mm': 2.0*NUT_PIN_CLIP_INNER_R,
         'throat_width_mm': NUT_PIN_CLIP_OPENING_W,
         'entry_width_mm': NUT_PIN_CLIP_ENTRY_W,
+        'target_wrap_deg': CLIP_TARGET_WRAP_DEG,
     },
     'rack_pin': {
         'groove_d_mm': RACK_CLIP_GROOVE_D,
         'relaxed_clip_id_mm': RACK_CLIP_RELAXED_ID,
         'throat_width_mm': RACK_CLIP_THROAT_W,
         'entry_width_mm': 3.20,
+        'target_wrap_deg': CLIP_TARGET_WRAP_DEG,
     },
     'plate_spindle': {
         'groove_d_mm': PLATE_CLIP_GROOVE_D,
         'relaxed_clip_id_mm': PLATE_CLIP_ID,
         'throat_width_mm': PLATE_CLIP_THROAT_W,
         'entry_width_mm': 5.20,
+        'target_wrap_deg': CLIP_TARGET_WRAP_DEG,
     },
 }
 for label, rec in clip_snap_checks.items():
