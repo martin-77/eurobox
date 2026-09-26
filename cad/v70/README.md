@@ -10,7 +10,7 @@ with one integrated lead screw plus one conical RH8x2 retainer nut.
   - Ø13 x 2 mm outer thrust flange
   - Ø8.0 smooth journal
   - Ø8.4 x 0.8 mm pass-through hard-stop collar
-  - unchanged RH8x2 working thread: core Ø6.5, major Ø8.0, pitch 2.0, length 22.2 mm
+  - unchanged RH8x2 working thread: core Ø6.5, major Ø8.0, pitch 2.0, length 24.0 mm
 
 - `eurobox_v70_conical_retainer_nut`
   - same RH8x2 female geometry as the proven lead nut
@@ -34,6 +34,8 @@ with one integrated lead screw plus one conical RH8x2 retainer nut.
 - inner clamp face to lead-nut front face: 7.8 mm
 - retainer height: 5.4 mm
 - nominal remaining gap before lead nut: 2.4 mm
+- working-thread end from the outer clamp face: 32.15 mm
+- former V60 working-thread end from the outer clamp face: 32.0 mm
 
 ## Frozen / reused V60 parts
 
