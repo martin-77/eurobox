@@ -71,7 +71,7 @@ journal_r = 4.0;
 journal_h = 7.35;
 stop_h = 0.80;
 stop_r = 4.20;
-thread_len = 22.2;
+thread_len = 24.0;
 
 z_flange = knob_h;
 z_journal = z_flange + flange_h;
