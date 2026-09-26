@@ -550,10 +550,38 @@ def import_scad_shape(path):
     sh=sh.removeSplitter(); C.require_single(sh,'compiled thread '+os.path.basename(path)); return sh
 
 
-def make_c_clip(outer_r, inner_r, thickness, opening_w):
-    ring=Part.makeCylinder(outer_r,thickness).cut(Part.makeCylinder(inner_r,thickness))
-    opening=C.box(-opening_w/2,0,-0.2,opening_w,outer_r+1,thickness+0.4)
-    q=ring.cut(opening).removeSplitter(); C.require_single(q,'c-clip'); return q
+def make_c_clip(outer_r, inner_r, thickness, throat_w, entry_w=None):
+    """Printable snap clip with a narrow retaining throat and flared lead-in.
+
+    The former implementation subtracted one parallel rectangular slot and
+    produced a U-washer.  A real snap clip needs to wrap past the groove centre:
+    the throat stays narrower than the groove while two sloped entry faces open
+    toward the outside so the pin can spread the arms and then snap behind them.
+    """
+    if entry_w is None:
+        entry_w = throat_w
+    if not (0.0 < throat_w < 2.0*inner_r):
+        raise RuntimeError('c-clip throat must be narrower than relaxed ID')
+    if entry_w < throat_w:
+        raise RuntimeError('c-clip entry must not be narrower than throat')
+
+    ring=Part.makeCylinder(outer_r,thickness).cut(
+        Part.makeCylinder(inner_r,thickness)
+    )
+    # Narrow throat at Y=0; flare only outward.  The throat therefore defines
+    # the actual wrap angle around the retained groove, while the wider outer
+    # mouth is only an assembly lead-in.
+    pts=[
+        App.Vector(-throat_w/2.0,0.0,-0.2),
+        App.Vector( throat_w/2.0,0.0,-0.2),
+        App.Vector( entry_w/2.0,outer_r+1.0,-0.2),
+        App.Vector(-entry_w/2.0,outer_r+1.0,-0.2),
+    ]
+    face=Part.Face(Part.makePolygon(pts+[pts[0]]))
+    opening=face.extrude(App.Vector(0,0,thickness+0.4))
+    q=ring.cut(opening).removeSplitter()
+    C.require_single(q,'snap-c-clip')
+    return q
 
 
 stage('lower hardware')
@@ -656,11 +684,28 @@ PIN = C.fuse_seq([
 # The proven clip also has a mouth 0.10 mm NARROWER than its relaxed ID.
 # That is essential: it wraps beyond 180 degrees around the groove and cannot
 # simply fall off after installation.
-PIN_CLIP=make_c_clip(3.2,1.25,1.3,2.4)
-# The spindle groove is Ø5.0.  Preserve the same 0.60 mm diametral preload:
-# relaxed ID Ø4.4.  OD Ø8.4 still overlaps the Ø6.5 plate hole by 0.95 mm per
-# side while being far smaller than the old Ø10.8 clip.
-PLATE_CLIP=make_c_clip(4.2,2.2,1.3,4.3)
+RACK_CLIP_GROOVE_D = 3.10
+RACK_CLIP_RELAXED_ID = 2.50
+RACK_CLIP_THROAT_W = 2.40
+RACK_CLIP_ID_RATIO = RACK_CLIP_RELAXED_ID / RACK_CLIP_GROOVE_D
+RACK_CLIP_THROAT_RATIO = RACK_CLIP_THROAT_W / RACK_CLIP_GROOVE_D
+
+# Keep the physically proven rack clip's retaining geometry exactly, but give
+# it a modest flared lead-in instead of a parallel U-slot.
+PIN_CLIP=make_c_clip(3.2,1.25,1.3,RACK_CLIP_THROAT_W,3.20)
+
+# Scale the same measured wrap/preload ratios to the Ø5.0 spindle groove.
+# This is substantially more closed than the former ID4.4 / mouth4.3 washer.
+PLATE_CLIP_GROOVE_D = 5.00
+PLATE_CLIP_ID = PLATE_CLIP_GROOVE_D * RACK_CLIP_ID_RATIO
+PLATE_CLIP_THROAT_W = PLATE_CLIP_GROOVE_D * RACK_CLIP_THROAT_RATIO
+PLATE_CLIP=make_c_clip(
+    4.2,
+    PLATE_CLIP_ID/2.0,
+    1.3,
+    PLATE_CLIP_THROAT_W,
+    5.20,
+)
 
 
 def make_station_floor_gusset(sx):
@@ -923,8 +968,12 @@ NUT_PIN_CLIP_X = NUT_PIN_GROOVE_X0 + (NUT_PIN_GROOVE_W-NUT_PIN_CLIP_T)/2.0
 NUT_PIN_HEAD_R = 3.0
 NUT_PIN_HEAD_T = 2.0
 NUT_PIN_CLIP_OUTER_R = 3.2
-NUT_PIN_CLIP_INNER_R = 0.90
-NUT_PIN_CLIP_OPENING_W = 1.7
+# Scale the proven rack-clip ID/throat ratios to the Ø2.4 lead-nut pin groove.
+# The previous absolute 0.1 mm rule left too little wrap on differently sized
+# grooves.
+NUT_PIN_CLIP_INNER_R = (NUT_PIN_GROOVE_D * RACK_CLIP_ID_RATIO) / 2.0
+NUT_PIN_CLIP_OPENING_W = NUT_PIN_GROOVE_D * RACK_CLIP_THROAT_RATIO
+NUT_PIN_CLIP_ENTRY_W = 2.65
 NUT_PIN_SERVICE_CLEAR = 0.35
 
 # BASE is frozen.  These service-cut datums are intentionally kept at the
@@ -1033,6 +1082,7 @@ NUT_PIN_CLIP = make_c_clip(
     NUT_PIN_CLIP_INNER_R,
     NUT_PIN_CLIP_T,
     NUT_PIN_CLIP_OPENING_W,
+    NUT_PIN_CLIP_ENTRY_W,
 )
 
 # Semantic hardware checks: collision-free is not enough.
@@ -1048,36 +1098,31 @@ clip_snap_checks = {
     'lead_nut_pin': {
         'groove_d_mm': NUT_PIN_GROOVE_D,
         'relaxed_clip_id_mm': 2.0*NUT_PIN_CLIP_INNER_R,
-        'mouth_width_mm': NUT_PIN_CLIP_OPENING_W,
-        'diametral_preload_mm': NUT_PIN_GROOVE_D-2.0*NUT_PIN_CLIP_INNER_R,
-        'mouth_under_id_mm': 2.0*NUT_PIN_CLIP_INNER_R-NUT_PIN_CLIP_OPENING_W,
+        'throat_width_mm': NUT_PIN_CLIP_OPENING_W,
+        'entry_width_mm': NUT_PIN_CLIP_ENTRY_W,
     },
     'rack_pin': {
-        'groove_d_mm': 3.10,
-        'relaxed_clip_id_mm': 2.50,
-        'mouth_width_mm': 2.40,
-        'diametral_preload_mm': 3.10-2.50,
-        'mouth_under_id_mm': 2.50-2.40,
+        'groove_d_mm': RACK_CLIP_GROOVE_D,
+        'relaxed_clip_id_mm': RACK_CLIP_RELAXED_ID,
+        'throat_width_mm': RACK_CLIP_THROAT_W,
+        'entry_width_mm': 3.20,
     },
     'plate_spindle': {
-        'groove_d_mm': 5.00,
-        'relaxed_clip_id_mm': 4.40,
-        'mouth_width_mm': 4.30,
-        'diametral_preload_mm': 5.00-4.40,
-        'mouth_under_id_mm': 4.40-4.30,
+        'groove_d_mm': PLATE_CLIP_GROOVE_D,
+        'relaxed_clip_id_mm': PLATE_CLIP_ID,
+        'throat_width_mm': PLATE_CLIP_THROAT_W,
+        'entry_width_mm': 5.20,
     },
 }
 for label, rec in clip_snap_checks.items():
-    if abs(rec['diametral_preload_mm']-0.60) > 1e-9:
-        raise RuntimeError(
-            f'{label} clip preload drifted from physical rack-pin reference: '
-            f'{rec["diametral_preload_mm"]:.3f} mm'
-        )
-    if abs(rec['mouth_under_id_mm']-0.10) > 1e-9:
-        raise RuntimeError(
-            f'{label} clip mouth no longer wraps the groove like the proven '
-            f'rack-pin clip: {rec["mouth_under_id_mm"]:.3f} mm'
-        )
+    rec['id_to_groove_ratio'] = rec['relaxed_clip_id_mm']/rec['groove_d_mm']
+    rec['throat_to_groove_ratio'] = rec['throat_width_mm']/rec['groove_d_mm']
+    if abs(rec['id_to_groove_ratio']-RACK_CLIP_ID_RATIO) > 1e-9:
+        raise RuntimeError(f'{label} clip ID/groove ratio drifted')
+    if abs(rec['throat_to_groove_ratio']-RACK_CLIP_THROAT_RATIO) > 1e-9:
+        raise RuntimeError(f'{label} clip throat/groove ratio drifted')
+    if rec['entry_width_mm'] <= rec['throat_width_mm']:
+        raise RuntimeError(f'{label} clip has no flared lead-in')
 
 for sx in SPINDLE_X:
     # Top service opening for the removable carrier. The pocket has a real,
@@ -1337,7 +1382,7 @@ for sx in SPINDLE_X:
         'service_channel_width_mm':PLATE_RETAINER_CHANNEL_W,
         'service_channel_depth_mm':PLATE_RETAINER_COUNTERBORE_DEPTH,
         'clip_outer_d_mm':8.4,
-        'clip_inner_d_mm':4.4,
+        'clip_inner_d_mm':round(PLATE_CLIP_ID,3),
         'shaft_groove_d_mm':5.0,
         'shaft_groove_width_mm':1.4,
     })
