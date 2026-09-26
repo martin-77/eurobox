@@ -1,11 +1,6 @@
 $fn=128;
 
 pitch = 2.0;
-male_core_r = 3.25;
-male_major_r = 4.0;
-male_root_w = 1.20;
-male_crest_w = 0.60;
-
 female_core_r = 3.50;
 female_major_r = 4.25;
 female_root_w = 1.50;
@@ -56,8 +51,11 @@ flat_half = 5.30;
 
 difference() {
     union() {
+        // Ø10 tip gives 0.6 mm radial capture around the Ø8.8 clamp bore.
         cylinder(r1=tip_r,r2=body_r,h=nose_h);
 
+        // Max Ø11.0 preserves 0.40 mm radial clearance in the frozen
+        // Ø11.8 BASE spindle corridor. Two flats allow tightening.
         translate([0,0,nose_h])
             intersection() {
                 cylinder(r=body_r,h=nut_h-nose_h);
@@ -66,5 +64,6 @@ difference() {
             }
     }
 
+    // Same female RH8x2 geometry as the proven lead nut.
     female_thread_cutter(nut_h,0,2.0);
 }
