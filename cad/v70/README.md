@@ -219,3 +219,43 @@ Validated binary commit:
 - knob: 227684 bytes, blob `e36c2ef022403b15d6af545b301b2013d89910e9`
 
 All four GitHub blob SHAs and byte counts match their local validated binaries.
+
+
+## Clamp / spindle v5 prototype
+
+V5 refines v4 in three areas:
+
+- the visible outer face of the screw-on knob is closed; its RH8x2 female
+  thread is blind
+- the upper secondary box-contact zone is reduced to 16.20 mm, exactly the
+  same actual height as the lower primary-contact zone; total clamp height is
+  reduced from 88.57 mm to 80.02 mm
+- the bearing-centering interfaces are conical
+
+Clamp-to-bushing:
+- clamp seat Ø18.40 -> Ø10.40 over 1.60 mm
+- bushing seat Ø18.00 -> Ø10.00 over 1.60 mm
+- cylindrical body Ø10.00 in Ø10.40 bore
+- two bushing bodies retain 0.25 mm total axial overlength, so the rotating
+  bushing stack is clamped rather than the stationary clamp
+
+Bushing-to-screw / bushing-to-knob:
+- each bushing outer face has a shallow female centering cone
+- screw shoulder and knob use matching male centering cones
+- screw and knob do not bear directly on the clamp
+
+Contact profile:
+- lower primary contact Y=30.00..46.20 mm, height 16.20 mm
+- protrusion pocket Y=46.20..63.82 mm
+- upper secondary contact Y=63.82..80.02 mm, height 16.20 mm
+- lower primary contact still projects 0.50 mm farther toward the box
+
+Lead screw:
+- removable-knob RH8x2 section 8.50 mm
+- smooth Ø8.00 journal 13.95 mm
+- conical centering shoulder, max Ø11.20 mm
+- main RH8x2 working thread remains 74.00 mm
+
+The v5 STLs are generated locally as binary STL and validated as watertight,
+single-component meshes before upload. GitHub files are written as base64 Git
+blobs and checked against the exact local payload.
