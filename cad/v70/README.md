@@ -137,3 +137,18 @@ openscad --export-format binstl -o part.stl part.scad
 
 All four locally rendered v3 meshes were checked as watertight, single-component
 meshes before physical fit testing.
+
+
+### GitHub binary STL validation
+
+The v3 STLs committed in `cad/v70/STL/` are the exact locally validated
+binary STL bytes. They were uploaded through the Git data API as base64 blobs
+and then fetched again from the committed HEAD. Blob SHA and decoded byte
+length matched the local files for all four parts:
+
+- clamp v3: 42,684 bytes, blob `bc0a0dca49e2f693a67b32e8e2679b6cde894270`
+- bushing v3: 76,884 bytes, blob `e368758d39aa2bbb31d311a99fd203082cdcaa78`
+- lead screw v3: 717,384 bytes, blob `5c673d0054a5cbcd1952ab5690385c58cdc542ec`
+- knob v3: 182,884 bytes, blob `49d15064ebe642e44e67df830a803bc18cfbb9c3`
+
+This avoids the previous UTF-8 / ASCII STL serialization path.
