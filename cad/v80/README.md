@@ -24,14 +24,16 @@ Current clamp mechanism:
 - `bushing_half` = V70 bushing half v5
 - `lead_screw` = V70 lead screw v5
 - `knob` = V70 knob v5
+- `lead_nut_pin_clip` = V70 lead-nut pin clip v4
+- `rack_pin_clip` = V70 rack-pin clip v4
 
 Their SCAD and validated binary STL blobs are copied byte-for-byte into V80.
 
 ## Intentionally NOT included
 
-The lead-nut retaining pin and clip system is not released into V80 yet.
+The corrected lead-nut retaining pin itself is still not promoted into V80 yet.
 
-The last lead-nut retaining pin is known to be **substantially too short**. Its length calculation must be redone from the real assembled geometry. All clip parts are also excluded for now so an obsolete/mismatched retaining system cannot accidentally be printed as part of the V80 set.
+The two approved V70 v4 clips are now included in V80. They retain the V50 plate-retainer clip topology (closed circular ring with a narrow rectangular side opening) and their validated binary STL blobs are reused unchanged.
 
 The open correction is documented in:
 
@@ -55,3 +57,5 @@ V80 was created from repository HEAD:
 `1a2beba6e2ab7973f8d8ca41061bbaabc297c9c4`
 
 No V60/V70 source geometry was regenerated during consolidation. Binary parts are referenced by their existing Git blobs so copied files remain byte-identical to the selected source versions.
+
+Clip promotion commit source: `826498f8c1946e2297675bba36959e4a0468d5f9`.
