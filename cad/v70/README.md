@@ -152,3 +152,70 @@ length matched the local files for all four parts:
 - knob v3: 182,884 bytes, blob `49d15064ebe642e44e67df830a803bc18cfbb9c3`
 
 This avoids the previous UTF-8 / ASCII STL serialization path.
+
+
+## Clamp / spindle v4 prototype
+
+V4 refines the v3 rotating-bushing concept.
+
+### Recessed two-piece bushing
+
+Each spindle uses two identical flanged bushing halves; therefore print four
+halves per clamp.
+
+- clamp screw-zone thickness: 12.00 mm
+- central bushing bore: Ø10.40 mm
+- flange pockets on both sides: Ø18.40 x 1.20 mm
+- bushing body: Ø10.00 / bore Ø8.35
+- flange: Ø18.00 x 2.20 mm
+- each body length from pocket floor toward centre: 4.925 mm
+- distance between clamp pocket floors: 9.60 mm
+- two bodies together: 9.85 mm
+
+The bushing stack is therefore 0.25 mm longer than the space between the pocket
+floors. When the knob is tightened against the screw shoulder, the two rotating
+bushing halves contact each other before either flange can clamp the stationary
+clamp. The clamp keeps nominal axial freedom while the spindle assembly can be
+tightened firmly.
+
+### Clamp contact profile
+
+The v3 box-contact strategy is retained:
+
+- lower contact remains the primary clamp zone
+- lower contact projects to Z=27.00 mm
+- upper secondary contact projects to Z=26.50 mm
+- primary contact therefore reaches 0.50 mm farther toward the box
+- protrusion pocket remains Y=46.20..63.82 mm
+- upper stabilising contact remains 25 mm high
+- rear screw-zone ribs are widened to 22 mm
+
+### Lead screw / knob
+
+- screw-on knob thread: RH8x2, 8.50 mm
+- smooth journal: Ø8.00 x 13.85 mm
+- fixed screw shoulder: Ø11.20 x 2.20 mm
+- frozen base spindle corridor: Ø11.80 mm
+- shoulder clearance in corridor: 0.30 mm radial
+- working RH8x2 thread: 74.00 mm
+- knob has a Ø16.00 x 0.80 mm clamp-facing nose
+- knob nose enters the Ø18.40 flange pocket and bears on the rotating bushing
+  flange rather than on the stationary clamp
+
+### STL validation
+
+V4 STLs are committed as binary Git blobs. Before upload every local mesh was
+checked as watertight and single-component. After the GitHub commit, each file
+was fetched through the GitHub API and its Git blob SHA and decoded byte count
+were compared against the local binary file.
+
+Validated binary commit:
+
+`b2da5c725c322b5b8c9f16271a7121fc01d0a1f4`
+
+- clamp: 157884 bytes, blob `9bb2da5bfcb00de060973f195d5fac982948d2c6`
+- bushing half: 76884 bytes, blob `acaf98f84e0cd1d092d5a1c521f13684dae50b1a`
+- lead screw: 717384 bytes, blob `7c7a42eb9c8cdd79afef9ba98545d64c4ee73e70`
+- knob: 227684 bytes, blob `e36c2ef022403b15d6af545b301b2013d89910e9`
+
+All four GitHub blob SHAs and byte counts match their local validated binaries.
