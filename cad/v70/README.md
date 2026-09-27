@@ -64,3 +64,76 @@ on the measured underside geometry of the box:
 The v2 STL is deliberately a robust fit prototype: the upper stepped block is
 solid. Once the real box contact on both press planes is confirmed, the upper
 section can be lightened without changing the contact geometry.
+
+
+## Clamp / lead screw v3 prototype
+
+V3 is an experimental redesign of the complete box-clamp spindle assembly. It
+does not replace the frozen V60 base or lead nut.
+
+### Clamp v3
+
+- width: 187.30 mm
+- total height: 88.57 mm
+- screw axis remains 15.00 mm above clamp bottom
+- box underside is 30.00 mm above clamp bottom
+- nominal protrusion starts at 46.45 mm and ends at 63.57 mm
+- protrusion pocket is 46.20..63.82 mm, giving 0.50 mm total vertical clearance
+- lower contact is the primary clamp zone and projects to Z=27.00 mm
+- upper 25 mm zone is secondary/stabilising and projects to Z=26.50 mm
+- primary lower contact therefore reaches 0.50 mm farther toward the box
+- the protrusion itself is recessed to the 8.00 mm backbone plane
+- screw zone is reinforced to 10.00 mm thickness
+- two 20 mm rear ribs connect the upper section to the screw stations
+- spindle bores are Ø10.40 for rotating bushings
+
+### Rotating bushing
+
+One bushing is required for each spindle:
+
+- body Ø10.00
+- bore Ø8.35 for the Ø8.00 screw journal
+- body length 10.25 mm
+- clamp bearing thickness 10.00 mm
+- resulting nominal axial freedom: 0.25 mm
+- outer flange Ø14.00 x 2.00 mm
+
+The screw shoulder and removable knob clamp the rotating bushing, not the
+stationary clamp. This removes the previous conical retainer from the v3
+prototype.
+
+### Lead screw v3
+
+From knob side toward the frozen lead nut:
+
+- RH8x2 knob thread: 8.50 mm
+- smooth Ø8.00 journal: 10.25 mm
+- Ø10.80 x 2.00 mm shoulder
+- RH8x2 working thread: 74.00 mm
+
+The Ø10.80 shoulder remains inside the frozen Ø11.80 base spindle corridor
+with 0.50 mm radial clearance. The working thread is the previous 24 mm plus
+50 mm reserve so the spindle can remain engaged in the lead nut when the box
+is removed.
+
+### Knob v3
+
+- separate scalloped Ø30 x 8 mm knob
+- through female RH8x2 thread
+- tightens against the rotating bushing flange
+
+The screw-on knob is deliberately still a prototype. Its resistance to
+self-loosening during repeated opening/closing must be checked physically
+before this mechanism is treated as final.
+
+### Binary STL build
+
+Generate slicer-ready binary STLs explicitly; do not rely on GitHub text-file
+serialization for STL output:
+
+```sh
+openscad --export-format binstl -o part.stl part.scad
+```
+
+All four locally rendered v3 meshes were checked as watertight, single-component
+meshes before physical fit testing.
