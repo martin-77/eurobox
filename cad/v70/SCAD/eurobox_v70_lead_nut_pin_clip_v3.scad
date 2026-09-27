@@ -1,4 +1,4 @@
-$fn=48;
+$fn=32;
 
 module tight_c_clip(outer_d, inner_d, t, throat_w, entry_w) {
     outer_r=outer_d/2;
