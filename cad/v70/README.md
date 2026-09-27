@@ -259,3 +259,34 @@ Lead screw:
 The v5 STLs are generated locally as binary STL and validated as watertight,
 single-component meshes before upload. GitHub files are written as base64 Git
 blobs and checked against the exact local payload.
+
+
+## Clamp v6 — support-free backing
+
+V6 changes only the clamp body. The V5 bushing halves, lead screw and knob are
+unchanged and remain compatible.
+
+V5 had the reinforced screw region extending to Z=-4 while the majority of
+the rear clamp face started at Z=0. In the intended broad-face print
+orientation this left a 4 mm unsupported region.
+
+V6 extends the complete clamp backbone from Z=-4 to Z=+8, producing a single
+continuous planar bed face. The added region is deliberately a closed CAD
+volume rather than explicit honeycomb. Material saving and internal structure
+are handled by the slicer.
+
+Recommended baseline for this part:
+
+- PETG
+- 0.20 mm layers
+- 30% gyroid
+- 7 bottom layers
+- 7 top layers
+- 3 perimeters or the stronger project profile
+
+At 0.20 mm, seven bottom and seven top layers provide 1.4 mm skins on both
+sides of the 12 mm backbone; the remaining core is filled with gyroid. This
+keeps the complete underside printable without support while retaining a
+continuous load path.
+
+The V5 box-contact dimensions and both conical bushing seats remain unchanged.
