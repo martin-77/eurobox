@@ -1,22 +1,40 @@
 # V70 lead-nut retaining pin correction
 
-Status: **NOT RELEASED / DO NOT COPY TO V80**
+Status: **RECALCULATED / RELEASED TO V80**
 
-The most recently generated lead-nut retaining pin is physically **clearly too short**.
-The previous length calculation was wrong and must not be reused.
+The earlier retaining pin was physically too short and is rejected.
 
-Required correction before the pin is released again:
+The replacement was re-derived from the actual frozen V60/V80 base service geometry, including both retaining walls, the complete service path and the external clip pocket.
 
-- re-derive the required pin length from the actual assembled V60/V70 base + lead-nut geometry;
-- include the complete distance through both retaining walls / bearing faces, not only the nominal lead-nut width;
-- include the required outer projection for the retaining clip;
-- validate the groove/clip position against the real assembled exit face;
-- make a physical fit test before promoting the pin or any lead-nut clip into V80.
+## Frozen service geometry
 
-Until that rework is completed, the following are deliberately excluded from V80:
+- head pocket: X = -14.35 .. -11.65 mm, Ø6.70 mm
+- retaining wall, left: X = -11.35 .. -8.20 mm
+- retaining wall, right: X = +8.20 .. +11.35 mm
+- clip pocket: X = +11.20 .. +13.20 mm, Ø7.10 mm
+- complete shaft service path: X = -14.35 .. +15.05 mm, Ø3.40 mm
 
-- lead-nut retaining pin;
-- lead-nut pin clip;
-- all clip parts carried over from the previous pin/clip experiments.
+## Released retaining pin
 
-Do not infer a replacement length from the rejected part. Measure/recalculate from the assembly first.
+- head: -13.65 .. -11.65 mm, Ø6.50 mm
+- shaft: -11.65 .. +11.40 mm, Ø3.00 mm
+- clip groove: +11.40 .. +13.00 mm, Ø2.40 mm
+- tip: +13.00 .. +14.50 mm, Ø3.00 mm
+- total length: 28.15 mm
+
+This leaves 0.55 mm end clearance to the +15.05 mm service-path limit while the Ø3.00 shaft passes completely through both retaining walls.
+
+## Matching clip
+
+Released clip geometry is the V70 v4 / V80 clip:
+
+- V50-style closed-ring topology
+- relaxed ID Ø2.10 mm
+- opening 1.60 mm
+- OD Ø7.00 mm
+- thickness 1.30 mm
+- target pin groove Ø2.40 mm × 1.60 mm
+
+The clip therefore has 0.30 mm total axial clearance in the groove and 0.10 mm diametral clearance to the Ø7.10 base clip pocket.
+
+The prior short pin and the earlier incompatible clip experiments remain rejected.
