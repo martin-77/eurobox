@@ -1,0 +1,68 @@
+{
+  "exports": {
+    "eurobox_v90_base_left": {
+      "fcstd": 5152515,
+      "step": 8592097,
+      "stl": 2342484,
+      "stl_triangles": 46848
+    },
+    "eurobox_v90_base_right": {
+      "fcstd": 5149768,
+      "step": 8592097,
+      "stl": 2342484,
+      "stl_triangles": 46848
+    },
+    "eurobox_v90_clamp": {
+      "fcstd": 5839,
+      "step": 26624,
+      "stl": 1035484,
+      "stl_triangles": 20708
+    }
+  },
+  "failures": [],
+  "guide": {
+    "base_height_at_guide_mm": 30.0,
+    "base_installed_xz_mm": [
+      [
+        -3.65,
+        24.54
+      ],
+      [
+        103.65,
+        24.54
+      ]
+    ],
+    "base_lead_nut_pocket_to_guide_ligament_mm": 11.725,
+    "base_spindle_corridor_to_guide_ligament_mm": 14.025,
+    "bore_d_mm": 10.15,
+    "clamp_screw_hole_to_pin_ligament_mm": 14.8,
+    "crosshead_y_mm": [
+      190.68,
+      214.115
+    ],
+    "diametral_clearance_mm": 0.15000000000000036,
+    "guide_length_mm": 23.435,
+    "max_clamp_gap_mm": 30.0,
+    "pin_d_mm": 10.0,
+    "pin_exposed_length_mm": 83.435,
+    "pin_inset_from_screw_axis_mm": 25.0,
+    "pin_local_xy_mm": [
+      [
+        40.0,
+        15.0
+      ],
+      [
+        147.3,
+        15.0
+      ]
+    ],
+    "pin_spacing_mm": 107.3,
+    "pin_tip_fillet_r_mm": 1.0,
+    "sleeve_outer_d_mm": 14.15,
+    "target_rear_protrusion_mm": 30.0,
+    "vertical_bore_ligament_mm": 9.925,
+    "vertical_sleeve_margin_mm": 7.925
+  },
+  "source": "v80 base + v80 clamp geometry",
+  "version": "v90"
+}
