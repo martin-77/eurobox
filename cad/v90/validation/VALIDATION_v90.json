@@ -1,19 +1,19 @@
 {
   "exports": {
     "eurobox_v90_base_left": {
-      "fcstd": 5152515,
+      "fcstd": 5152531,
       "step": 8592097,
       "stl": 2342484,
       "stl_triangles": 46848
     },
     "eurobox_v90_base_right": {
-      "fcstd": 5149768,
+      "fcstd": 5149784,
       "step": 8592097,
       "stl": 2342484,
       "stl_triangles": 46848
     },
     "eurobox_v90_clamp": {
-      "fcstd": 5839,
+      "fcstd": 5842,
       "step": 26624,
       "stl": 1035484,
       "stl_triangles": 20708
