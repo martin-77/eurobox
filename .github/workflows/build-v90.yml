@@ -1,0 +1,165 @@
+name: Build Eurobox v90 guided clamp
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build_v90_guided_clamp.py"
+      - ".github/workflows/build-v90.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      - name: Cache FreeCAD AppImage
+        id: freecad-cache
+        uses: actions/cache@v5
+        with:
+          path: FreeCAD.AppImage
+          key: freecad-1.1.3-linux-x86_64-py311
+
+      - name: Download verified FreeCAD 1.1.3
+        if: steps.freecad-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o FreeCAD.AppImage \
+            https://github.com/FreeCAD/FreeCAD/releases/download/1.1.3/FreeCAD_1.1.3-conda-Linux-x86_64-py311.AppImage
+
+      - name: Verify and extract FreeCAD
+        run: |
+          set -euo pipefail
+          echo "3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb03a8f5ef  FreeCAD.AppImage" | sha256sum -c -
+          chmod +x FreeCAD.AppImage
+          rm -rf squashfs-root
+          ./FreeCAD.AppImage --appimage-extract >/dev/null
+          FREECADCMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) | head -n1)
+          test -n "$FREECADCMD"
+          echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
+          "$FREECADCMD" -c 'import FreeCAD,Part,Mesh,Import; print(FreeCAD.Version()); assert Part.makeBox(1,1,1).isValid()'
+
+      - name: Compile v90 builder
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/build_v90_guided_clamp.py
+
+      - name: Build and hard-check v90
+        run: |
+          set -euo pipefail
+          rm -rf build_v90
+          "$FREECADCMD" -c "import sys; sys.path.insert(0, 'scripts'); import build_v90_guided_clamp" 2>&1 | tee build_v90.log
+
+          test -s build_v90/eurobox_v90_base_right.step
+          test -s build_v90/eurobox_v90_base_left.step
+          test -s build_v90/eurobox_v90_clamp.step
+          test -s build_v90/eurobox_v90_base_right.FCStd
+          test -s build_v90/eurobox_v90_base_left.FCStd
+          test -s build_v90/eurobox_v90_clamp.FCStd
+          test -s build_v90/eurobox_v90_base_right.stl
+          test -s build_v90/eurobox_v90_base_left.stl
+          test -s build_v90/eurobox_v90_clamp.stl
+          test -s build_v90/VALIDATION_v90.json
+
+          python3 - <<'PY'
+          import json, struct
+          from pathlib import Path
+
+          v = json.loads(Path('build_v90/VALIDATION_v90.json').read_text())
+          assert v['failures'] == []
+          assert abs(v['guide']['pin_d_mm'] - 10.0) < 1e-9
+          assert abs(v['guide']['bore_d_mm'] - 10.15) < 1e-9
+          assert v['guide']['vertical_bore_ligament_mm'] > 9.9
+          assert v['guide']['base_lead_nut_pocket_to_guide_ligament_mm'] > 11.0
+          assert v['guide']['pin_spacing_mm'] > 100.0
+
+          for p in Path('build_v90').glob('*.stl'):
+              data = p.read_bytes()
+              assert len(data) >= 84, p
+              n = struct.unpack('<I', data[80:84])[0]
+              assert len(data) == 84 + 50*n, f'{p} is not canonical binary STL'
+          PY
+
+      - name: Publish validated v90 CAD
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          mkdir -p cad/v90/FCStd cad/v90/STEP cad/v90/STL cad/v90/validation preview-stl/v90
+
+          rm -f cad/v90/FCStd/eurobox_v90_*.FCStd
+          rm -f cad/v90/STEP/eurobox_v90_*.step
+          rm -f cad/v90/STL/eurobox_v90_*.stl
+          rm -f preview-stl/v90/eurobox_v90_*.stl
+
+          cp build_v90/eurobox_v90_*.FCStd cad/v90/FCStd/
+          cp build_v90/eurobox_v90_*.step cad/v90/STEP/
+          cp build_v90/eurobox_v90_*.stl cad/v90/STL/
+          cp build_v90/eurobox_v90_*.stl preview-stl/v90/
+          cp build_v90/VALIDATION_v90.json cad/v90/validation/
+
+          cat > cad/v90/README.md <<'EOF'
+          # Eurobox carrier v90
+
+          V90 adds a full-length two-pin guide between the box clamp and the base while keeping the complete V80 clamp travel.
+
+          Changed parts:
+
+          - `base_left` / `base_right`: two full-length cylindrical guide sleeves through the remote box-clamp crosshead.
+          - `clamp`: two integral Ø10 mm guide pins with lightly rounded tips.
+
+          Guide geometry:
+
+          - pin diameter: Ø10.00 mm
+          - base guide bore: Ø10.15 mm
+          - two pin axes remain fully engaged through the complete base crosshead at every clamp setting
+          - maximum design gap clamp→base: 30 mm
+          - pins may protrude about 30 mm behind the base at maximum gap
+          - guide pins are placed 25 mm inboard from the two existing clamp screw axes, maximizing pin spacing while retaining large ligaments around the existing screw/lead-nut service geometry
+
+          All STL files in this directory are generated as **binary STL** by FreeCAD and hard-checked before publication. No ASCII STL is published.
+
+          All other mechanism parts remain V80 unless promoted separately later.
+          EOF
+
+          cat > preview-stl/v90/README.md <<'EOF'
+          # v90 preview/print meshes
+
+          Binary STL mirrors of the validated v90 base and clamp outputs from `cad/v90/STL/`.
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cad/v90 preview-stl/v90
+          if git diff --cached --quiet; then
+            echo "Validated v90 repository outputs already current"
+          else
+            git commit -m "Publish guided-clamp v90 binary CAD"
+            git pull --rebase origin main
+            git push
+          fi
+
+      - name: Upload complete v90 proof
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: eurobox-v90-guided-clamp
+          path: |
+            build_v90/VALIDATION_v90.json
+            build_v90/eurobox_v90_*.step
+            build_v90/eurobox_v90_*.FCStd
+            build_v90/eurobox_v90_*.stl
+            build_v90.log
