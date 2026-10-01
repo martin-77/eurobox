@@ -26,7 +26,7 @@ jobs:
       - name: Install runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfuse2 openscad
+          sudo apt-get install -y libfuse2
 
       - name: Cache FreeCAD AppImage
         id: freecad-cache
@@ -65,13 +65,11 @@ jobs:
           rm -rf build_v90
           "$FREECADCMD" -c "import sys; sys.path.insert(0, 'scripts'); import build_v90_guided_clamp" 2>&1 | tee build_v90.log
 
-          # Re-render the retaining pin from its authoritative SCAD source.
-          # The previously published STL was geometrically closed but had 128
-          # shared edges with identical winding, which PrusaSlicer reports as
-          # mesh errors. OpenSCAD emits a consistently oriented binary mesh.
-          openscad --export-format binstl \
-            -o build_v90/eurobox_v90_lead_nut_retaining_pin.stl \
-            cad/v80/SCAD/eurobox_v80_lead_nut_retaining_pin.scad
+          # Reuse the repaired canonical binary V80 retaining pin byte-for-byte.
+          # Its topology gate below protects against the former 128 same-winding
+          # shared-edge errors. Never round-trip this part through ASCII STL.
+          cp cad/v80/STL/eurobox_v80_lead_nut_retaining_pin.stl \
+            build_v90/eurobox_v90_lead_nut_retaining_pin.stl
 
           test -s build_v90/eurobox_v90_base_right.step
           test -s build_v90/eurobox_v90_base_left.step
