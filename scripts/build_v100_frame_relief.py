@@ -13,15 +13,22 @@ os.makedirs(OUT, exist_ok=True)
 
 RACK_TUBE_D = 12.42
 RACK_TUBE_R = RACK_TUBE_D / 2.0
+# The actual V90 upper saddle is cut at R=6.31 mm around a Ø12.42 mm tube.
+# The relief must rise all the way to this saddle/contact level so the local
+# section no longer wraps the front half of the rack tube.
+UPPER_SADDLE_R = 6.31
 RACK_CLAMP_REFERENCE_W = 28.0
 RELIEF_W = 2.0 * RACK_CLAMP_REFERENCE_W
 RELIEF_X0 = -RELIEF_W / 2.0
 RELIEF_X1 = RELIEF_W / 2.0
 RACK_CLAMP_X = (-80.0, 80.0)
-RELIEF_Y0 = RACK_TUBE_R
+# In the relief window keep only the upper tube support.  Cutting from the
+# tube centreline toward +Y removes the front-side wrap completely, while the
+# top saddle remains untouched.
+RELIEF_Y0 = 0.0
 RELIEF_Y1 = 30.0
 RELIEF_Z0 = -20.0
-RELIEF_Z1 = RACK_TUBE_R
+RELIEF_Z1 = UPPER_SADDLE_R
 
 
 def fail(msg):
@@ -140,10 +147,10 @@ if abs(right_removed - left_removed) > 1e-3:
 
 if abs(RELIEF_W - 2.0 * RACK_CLAMP_REFERENCE_W) > 1e-9:
     fail('relief is not exactly two reference clamp widths')
-if abs(RELIEF_Y0 - RACK_TUBE_R) > 1e-9:
-    fail('relief no longer starts at the rack-tube front tangent')
-if abs(RELIEF_Z1 - RACK_TUBE_R) > 1e-9:
-    fail('relief top no longer matches rack-tube tangent height')
+if abs(RELIEF_Y0) > 1e-9:
+    fail('relief no longer starts at the rack-tube centre plane')
+if abs(RELIEF_Z1 - UPPER_SADDLE_R) > 1e-9:
+    fail('relief top no longer reaches the upper saddle/contact level')
 
 clear_from_clamp_centre = abs(RACK_CLAMP_X[0] - RELIEF_X0)
 clear_in_clamp_widths = clear_from_clamp_centre / RACK_CLAMP_REFERENCE_W
@@ -173,6 +180,7 @@ validation = {
     'rack_tube': {
         'diameter_mm': RACK_TUBE_D,
         'radius_mm': RACK_TUBE_R,
+        'upper_saddle_radius_mm': UPPER_SADDLE_R,
     },
     'relief': {
         'reference_clamp_width_mm': RACK_CLAMP_REFERENCE_W,
@@ -181,7 +189,9 @@ validation = {
         'y_mm': [RELIEF_Y0, RELIEF_Y1],
         'z_mm': [RELIEF_Z0, RELIEF_Z1],
         'front_side': '+Y',
-        'starts_at_tube_tangent': True,
+        'starts_at_tube_centre_plane': True,
+        'rises_to_upper_saddle_contact_level': True,
+        'front_wrap_removed_in_relief_window': True,
         'saddle_contact_surface_changed': False,
         'clearance_from_each_clamp_centre_mm': clear_from_clamp_centre,
         'clearance_from_each_clamp_centre_in_clamp_widths': round(clear_in_clamp_widths, 6),
