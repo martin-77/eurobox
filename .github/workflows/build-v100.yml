@@ -82,8 +82,11 @@ jobs:
           assert abs(r['reference_clamp_width_mm'] - 28.0) < 1e-9
           assert abs(r['width_mm'] - 56.0) < 1e-9
           assert r['x_mm'] == [-28.0, 28.0]
-          assert abs(r['y_mm'][0] - 6.21) < 1e-9
-          assert r['starts_at_tube_tangent'] is True
+          assert abs(r['y_mm'][0] - 0.0) < 1e-9
+          assert abs(r['z_mm'][1] - 6.31) < 1e-9
+          assert r['starts_at_tube_centre_plane'] is True
+          assert r['rises_to_upper_saddle_contact_level'] is True
+          assert r['front_wrap_removed_in_relief_window'] is True
           assert r['saddle_contact_surface_changed'] is False
           assert r['clearance_from_each_clamp_centre_in_clamp_widths'] > 1.85
 
