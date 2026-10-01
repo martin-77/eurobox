@@ -1,0 +1,47 @@
+{
+  "change": "local front-side rack-frame/pin relief only",
+  "exports": {
+    "eurobox_v100_base_left": {
+      "fcstd_bytes": 5201084,
+      "step_bytes": 8591283,
+      "stl_bytes": 2344084,
+      "stl_triangles": 46880
+    },
+    "eurobox_v100_base_right": {
+      "fcstd_bytes": 5196652,
+      "step_bytes": 8599518,
+      "stl_bytes": 2344084,
+      "stl_triangles": 46880
+    }
+  },
+  "failures": [],
+  "rack_tube": {
+    "diameter_mm": 12.42,
+    "radius_mm": 6.21
+  },
+  "relief": {
+    "clearance_from_each_clamp_centre_in_clamp_widths": 1.857143,
+    "clearance_from_each_clamp_centre_mm": 52.0,
+    "front_side": "+Y",
+    "left_removed_volume_mm3": 270.546403,
+    "reference_clamp_width_mm": 28.0,
+    "right_removed_volume_mm3": 270.546403,
+    "saddle_contact_surface_changed": false,
+    "starts_at_tube_tangent": true,
+    "width_mm": 56.0,
+    "x_mm": [
+      -28.0,
+      28.0
+    ],
+    "y_mm": [
+      6.21,
+      30.0
+    ],
+    "z_mm": [
+      -20.0,
+      6.21
+    ]
+  },
+  "source": "released v90 handed base STEP files",
+  "version": "v100"
+}
