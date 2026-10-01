@@ -1,19 +1,19 @@
 {
   "exports": {
     "eurobox_v90_base_left": {
-      "fcstd": 5152531,
+      "fcstd": 5152529,
       "step": 8592097,
       "stl": 2342484,
       "stl_triangles": 46848
     },
     "eurobox_v90_base_right": {
-      "fcstd": 5149784,
+      "fcstd": 5149783,
       "step": 8592097,
       "stl": 2342484,
       "stl_triangles": 46848
     },
     "eurobox_v90_clamp": {
-      "fcstd": 5842,
+      "fcstd": 5837,
       "step": 26624,
       "stl": 1035484,
       "stl_triangles": 20708
@@ -62,6 +62,20 @@
     "target_rear_protrusion_mm": 30.0,
     "vertical_bore_ligament_mm": 9.925,
     "vertical_sleeve_margin_mm": 7.925
+  },
+  "handing": {
+    "fore_aft_axis": "X",
+    "left_from_right": "mirror across Y=0 only",
+    "left_x_bounds_mm": [
+      -99.0,
+      196.0
+    ],
+    "mirror_back_signature_equal": true,
+    "rear_stop_x_preserved": true,
+    "right_x_bounds_mm": [
+      -99.0,
+      196.0
+    ]
   },
   "source": "v80 base + v80 clamp geometry",
   "version": "v90"
