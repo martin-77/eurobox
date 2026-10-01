@@ -253,17 +253,45 @@ base_left_v90.mirror(App.Vector(0, 0, 0), App.Vector(0, 1, 0))
 base_left_v90 = require_single(base_left_v90, 'v90 guided base left')
 
 # Hard handing proof: mirroring LEFT back across Y must reproduce RIGHT.
+# Do not use a full BRep boolean common() here: on the complete carrier it is
+# unnecessarily expensive. Compare exact topological counts plus rounded vertex
+# coordinates, volume, area and bounds instead.
 _left_back = base_left_v90.copy()
 _left_back.mirror(App.Vector(0, 0, 0), App.Vector(0, 1, 0))
 _left_back = require_single(_left_back, 'v90 left mirrored back to right')
-_handed_common = base_right_v90.common(_left_back).Volume
-_handed_delta = abs(
-    base_right_v90.Volume + _left_back.Volume - 2.0 * _handed_common
-)
-if _handed_delta > 1e-4:
-    fail(f'left/right Y-mirror mismatch: {_handed_delta:.6f} mm3')
 
-# Fore/aft envelope must stay identical.  This explicitly guards against the
+def shape_signature(shape):
+    vertices = sorted(
+        (
+            round(v.Point.x, 6),
+            round(v.Point.y, 6),
+            round(v.Point.z, 6),
+        )
+        for v in shape.Vertexes
+    )
+    return {
+        'vertices': vertices,
+        'vertex_count': len(shape.Vertexes),
+        'edge_count': len(shape.Edges),
+        'face_count': len(shape.Faces),
+        'volume': round(shape.Volume, 6),
+        'area': round(shape.Area, 6),
+        'bbox': (
+            round(shape.BoundBox.XMin, 6),
+            round(shape.BoundBox.XMax, 6),
+            round(shape.BoundBox.YMin, 6),
+            round(shape.BoundBox.YMax, 6),
+            round(shape.BoundBox.ZMin, 6),
+            round(shape.BoundBox.ZMax, 6),
+        ),
+    }
+
+_right_signature = shape_signature(base_right_v90)
+_left_back_signature = shape_signature(_left_back)
+if _right_signature != _left_back_signature:
+    fail('left/right Y-mirror signature mismatch')
+
+# Fore/aft envelope must stay identical. This explicitly guards against the
 # old X-mirror regression which put the rear stop on the wrong end.
 for axis_name, a, b in (
     ('XMin', base_right_v90.BoundBox.XMin, base_left_v90.BoundBox.XMin),
@@ -328,7 +356,7 @@ validation = {
         'left_from_right': 'mirror across Y=0 only',
         'fore_aft_axis': 'X',
         'rear_stop_x_preserved': True,
-        'mirror_back_volume_delta_mm3': round(_handed_delta, 9),
+        'mirror_back_signature_equal': True,
         'right_x_bounds_mm': [
             round(base_right_v90.BoundBox.XMin, 6),
             round(base_right_v90.BoundBox.XMax, 6),
