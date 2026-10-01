@@ -1,19 +1,19 @@
 {
   "exports": {
     "eurobox_v90_base_left": {
-      "fcstd": 5152529,
-      "step": 8592097,
+      "fcstd": 5054475,
+      "step": 8583934,
       "stl": 2342484,
       "stl_triangles": 46848
     },
     "eurobox_v90_base_right": {
-      "fcstd": 5149783,
+      "fcstd": 5149781,
       "step": 8592097,
       "stl": 2342484,
       "stl_triangles": 46848
     },
     "eurobox_v90_clamp": {
-      "fcstd": 5837,
+      "fcstd": 5842,
       "step": 26624,
       "stl": 1035484,
       "stl_triangles": 20708
@@ -65,14 +65,18 @@
   },
   "handing": {
     "fore_aft_axis": "X",
-    "left_from_right": "mirror across Y=0 only",
-    "left_x_bounds_mm": [
+    "left_from_right": "local mirror across X=0",
+    "left_install_transform": "180deg rotation about Z on opposite rack side",
+    "left_installed_x_bounds_mm": [
       -99.0,
       196.0
     ],
-    "mirror_back_signature_equal": true,
-    "rear_stop_x_preserved": true,
-    "right_x_bounds_mm": [
+    "left_local_x_bounds_mm": [
+      -196.0,
+      99.0
+    ],
+    "rear_stop_world_x_preserved": true,
+    "right_local_x_bounds_mm": [
       -99.0,
       196.0
     ]
