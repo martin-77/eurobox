@@ -244,61 +244,31 @@ base_v80_path = os.path.join(
 base_right_v80 = load_step_single(base_v80_path, 'v80_base_right')
 base_right_v90, guide_span = add_guides_to_base(base_right_v80)
 
-# LEFT/RIGHT must be mirrored only across the bicycle lateral axis.
-# X is the fore/aft direction: mirroring X would move the rear stop to the
-# front on one side.  Mirror Y instead so both parts keep the stop at the same
-# rear X position while becoming true left/right handed mates.
+# V60/V80 handedness is an X mirror in local part coordinates.  The left
+# carrier is then installed with the existing 180° Z turnaround on the opposite
+# rack rail.  The combination preserves the rear stop in the same world-side
+# fore/aft position while making the printed parts true handed mates.
 base_left_v90 = base_right_v90.copy()
-base_left_v90.mirror(App.Vector(0, 0, 0), App.Vector(0, 1, 0))
+base_left_v90.mirror(App.Vector(0, 0, 0), App.Vector(1, 0, 0))
 base_left_v90 = require_single(base_left_v90, 'v90 guided base left')
 
-# Hard handing proof: mirroring LEFT back across Y must reproduce RIGHT.
-# Do not use a full BRep boolean common() here: on the complete carrier it is
-# unnecessarily expensive. Compare exact topological counts plus rounded vertex
-# coordinates, volume, area and bounds instead.
-_left_back = base_left_v90.copy()
-_left_back.mirror(App.Vector(0, 0, 0), App.Vector(0, 1, 0))
-_left_back = require_single(_left_back, 'v90 left mirrored back to right')
+# Local handedness: LEFT must be the X mirror of RIGHT, not an identical copy.
+if abs(base_left_v90.BoundBox.XMin + base_right_v90.BoundBox.XMax) > 1e-6:
+    fail('LEFT XMin is not mirrored RIGHT XMax')
+if abs(base_left_v90.BoundBox.XMax + base_right_v90.BoundBox.XMin) > 1e-6:
+    fail('LEFT XMax is not mirrored RIGHT XMin')
 
-def shape_signature(shape):
-    vertices = sorted(
-        (
-            round(v.Point.x, 6),
-            round(v.Point.y, 6),
-            round(v.Point.z, 6),
-        )
-        for v in shape.Vertexes
-    )
-    return {
-        'vertices': vertices,
-        'vertex_count': len(shape.Vertexes),
-        'edge_count': len(shape.Edges),
-        'face_count': len(shape.Faces),
-        'volume': round(shape.Volume, 6),
-        'area': round(shape.Area, 6),
-        'bbox': (
-            round(shape.BoundBox.XMin, 6),
-            round(shape.BoundBox.XMax, 6),
-            round(shape.BoundBox.YMin, 6),
-            round(shape.BoundBox.YMax, 6),
-            round(shape.BoundBox.ZMin, 6),
-            round(shape.BoundBox.ZMax, 6),
-        ),
-    }
-
-_right_signature = shape_signature(base_right_v90)
-_left_back_signature = shape_signature(_left_back)
-if _right_signature != _left_back_signature:
-    fail('left/right Y-mirror signature mismatch')
-
-# Fore/aft envelope must stay identical. This explicitly guards against the
-# old X-mirror regression which put the rear stop on the wrong end.
+# Installation proof: the existing left-side 180° Z turnaround restores the
+# same fore/aft X envelope, so both physical rear stops point rearward.
+_left_installed = base_left_v90.copy()
+_left_installed.rotate(App.Vector(0, 0, 0), App.Vector(0, 0, 1), 180.0)
+_left_installed = require_single(_left_installed, 'v90 installed left base')
 for axis_name, a, b in (
-    ('XMin', base_right_v90.BoundBox.XMin, base_left_v90.BoundBox.XMin),
-    ('XMax', base_right_v90.BoundBox.XMax, base_left_v90.BoundBox.XMax),
+    ('XMin', base_right_v90.BoundBox.XMin, _left_installed.BoundBox.XMin),
+    ('XMax', base_right_v90.BoundBox.XMax, _left_installed.BoundBox.XMax),
 ):
     if abs(a - b) > 1e-6:
-        fail(f'left/right {axis_name} differs after handing: {a:.6f} != {b:.6f}')
+        fail(f'installed LEFT {axis_name} does not preserve rear-stop direction: {a:.6f} != {b:.6f}')
 
 guide_len = guide_span[1] - guide_span[0]
 pin_exposed_len = MAX_CLAMP_GAP + guide_len + TARGET_REAR_PROTRUSION
@@ -349,21 +319,34 @@ for name, shape in (
         'stl_triangles': tri_count,
     }
 
+# Regression gate for the exact v90 failure: left/right STL files must not be
+# byte-identical, because they are handed parts.
+with open(os.path.join(OUT, 'eurobox_v90_base_left.stl'), 'rb') as f:
+    left_stl_bytes = f.read()
+with open(os.path.join(OUT, 'eurobox_v90_base_right.stl'), 'rb') as f:
+    right_stl_bytes = f.read()
+if left_stl_bytes == right_stl_bytes:
+    fail('v90 base_left/base_right STL exports are byte-identical')
+
 validation = {
     'version': 'v90',
     'source': 'v80 base + v80 clamp geometry',
     'handing': {
-        'left_from_right': 'mirror across Y=0 only',
+        'left_from_right': 'local mirror across X=0',
+        'left_install_transform': '180deg rotation about Z on opposite rack side',
         'fore_aft_axis': 'X',
-        'rear_stop_x_preserved': True,
-        'mirror_back_signature_equal': True,
-        'right_x_bounds_mm': [
+        'rear_stop_world_x_preserved': True,
+        'right_local_x_bounds_mm': [
             round(base_right_v90.BoundBox.XMin, 6),
             round(base_right_v90.BoundBox.XMax, 6),
         ],
-        'left_x_bounds_mm': [
+        'left_local_x_bounds_mm': [
             round(base_left_v90.BoundBox.XMin, 6),
             round(base_left_v90.BoundBox.XMax, 6),
+        ],
+        'left_installed_x_bounds_mm': [
+            round(_left_installed.BoundBox.XMin, 6),
+            round(_left_installed.BoundBox.XMax, 6),
         ],
     },
     'guide': {
