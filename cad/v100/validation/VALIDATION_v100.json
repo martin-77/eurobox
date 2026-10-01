@@ -2,19 +2,43 @@
   "change": "local front-side rack-frame/pin relief only",
   "exports": {
     "eurobox_v100_base_left": {
-      "fcstd_bytes": 5200522,
+      "fcstd_bytes": 5200524,
       "step_bytes": 8589796,
       "stl_bytes": 2349484,
       "stl_triangles": 46988
     },
     "eurobox_v100_base_right": {
-      "fcstd_bytes": 5196285,
+      "fcstd_bytes": 5196275,
       "step_bytes": 8598030,
       "stl_bytes": 2349484,
       "stl_triangles": 46988
+    },
+    "eurobox_v100_rack_lower": {
+      "fcstd_bytes": 7600,
+      "step_bytes": 37914,
+      "stl_bytes": 109284,
+      "stl_triangles": 2184
     }
   },
   "failures": [],
+  "rack_lower_slot": {
+    "existing_bore_d_mm": 5.0,
+    "old_bore_centre_y_mm": 11.0,
+    "opens_toward": "+Y/front",
+    "pad_front_y_mm": 18.0,
+    "removed_volume_mm3": 327.372798,
+    "retention_by_hand_knob": true,
+    "screw_can_remain_in_upper_while_swinging": true,
+    "slot_width_mm": 5.0,
+    "slot_x_mm": [
+      -2.5,
+      2.5
+    ],
+    "slot_y_mm": [
+      11.0,
+      19.0
+    ]
+  },
   "rack_tube": {
     "diameter_mm": 12.42,
     "radius_mm": 6.21,
