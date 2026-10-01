@@ -244,11 +244,33 @@ base_v80_path = os.path.join(
 base_right_v80 = load_step_single(base_v80_path, 'v80_base_right')
 base_right_v90, guide_span = add_guides_to_base(base_right_v80)
 
-# V80 left is the X-mirrored handed mate.  Derive V90 the same way so the new
-# guide geometry is guaranteed to remain handed/symmetric.
+# LEFT/RIGHT must be mirrored only across the bicycle lateral axis.
+# X is the fore/aft direction: mirroring X would move the rear stop to the
+# front on one side.  Mirror Y instead so both parts keep the stop at the same
+# rear X position while becoming true left/right handed mates.
 base_left_v90 = base_right_v90.copy()
-base_left_v90.mirror(App.Vector(0, 0, 0), App.Vector(1, 0, 0))
+base_left_v90.mirror(App.Vector(0, 0, 0), App.Vector(0, 1, 0))
 base_left_v90 = require_single(base_left_v90, 'v90 guided base left')
+
+# Hard handing proof: mirroring LEFT back across Y must reproduce RIGHT.
+_left_back = base_left_v90.copy()
+_left_back.mirror(App.Vector(0, 0, 0), App.Vector(0, 1, 0))
+_left_back = require_single(_left_back, 'v90 left mirrored back to right')
+_handed_common = base_right_v90.common(_left_back).Volume
+_handed_delta = abs(
+    base_right_v90.Volume + _left_back.Volume - 2.0 * _handed_common
+)
+if _handed_delta > 1e-4:
+    fail(f'left/right Y-mirror mismatch: {_handed_delta:.6f} mm3')
+
+# Fore/aft envelope must stay identical.  This explicitly guards against the
+# old X-mirror regression which put the rear stop on the wrong end.
+for axis_name, a, b in (
+    ('XMin', base_right_v90.BoundBox.XMin, base_left_v90.BoundBox.XMin),
+    ('XMax', base_right_v90.BoundBox.XMax, base_left_v90.BoundBox.XMax),
+):
+    if abs(a - b) > 1e-6:
+        fail(f'left/right {axis_name} differs after handing: {a:.6f} != {b:.6f}')
 
 guide_len = guide_span[1] - guide_span[0]
 pin_exposed_len = MAX_CLAMP_GAP + guide_len + TARGET_REAR_PROTRUSION
@@ -302,6 +324,20 @@ for name, shape in (
 validation = {
     'version': 'v90',
     'source': 'v80 base + v80 clamp geometry',
+    'handing': {
+        'left_from_right': 'mirror across Y=0 only',
+        'fore_aft_axis': 'X',
+        'rear_stop_x_preserved': True,
+        'mirror_back_volume_delta_mm3': round(_handed_delta, 9),
+        'right_x_bounds_mm': [
+            round(base_right_v90.BoundBox.XMin, 6),
+            round(base_right_v90.BoundBox.XMax, 6),
+        ],
+        'left_x_bounds_mm': [
+            round(base_left_v90.BoundBox.XMin, 6),
+            round(base_left_v90.BoundBox.XMax, 6),
+        ],
+    },
     'guide': {
         'pin_d_mm': PIN_D,
         'bore_d_mm': GUIDE_BORE_D,
