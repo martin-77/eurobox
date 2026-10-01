@@ -2,44 +2,47 @@
   "change": "local front-side rack-frame/pin relief only",
   "exports": {
     "eurobox_v100_base_left": {
-      "fcstd_bytes": 5201084,
-      "step_bytes": 8591283,
-      "stl_bytes": 2344084,
-      "stl_triangles": 46880
+      "fcstd_bytes": 5200522,
+      "step_bytes": 8589796,
+      "stl_bytes": 2349484,
+      "stl_triangles": 46988
     },
     "eurobox_v100_base_right": {
-      "fcstd_bytes": 5196652,
-      "step_bytes": 8599518,
-      "stl_bytes": 2344084,
-      "stl_triangles": 46880
+      "fcstd_bytes": 5196285,
+      "step_bytes": 8598030,
+      "stl_bytes": 2349484,
+      "stl_triangles": 46988
     }
   },
   "failures": [],
   "rack_tube": {
     "diameter_mm": 12.42,
-    "radius_mm": 6.21
+    "radius_mm": 6.21,
+    "upper_saddle_radius_mm": 6.31
   },
   "relief": {
     "clearance_from_each_clamp_centre_in_clamp_widths": 1.857143,
     "clearance_from_each_clamp_centre_mm": 52.0,
     "front_side": "+Y",
-    "left_removed_volume_mm3": 270.546403,
+    "front_wrap_removed_in_relief_window": true,
+    "left_removed_volume_mm3": 722.316458,
     "reference_clamp_width_mm": 28.0,
-    "right_removed_volume_mm3": 270.546403,
+    "right_removed_volume_mm3": 722.316458,
+    "rises_to_upper_saddle_contact_level": true,
     "saddle_contact_surface_changed": false,
-    "starts_at_tube_tangent": true,
+    "starts_at_tube_centre_plane": true,
     "width_mm": 56.0,
     "x_mm": [
       -28.0,
       28.0
     ],
     "y_mm": [
-      6.21,
+      0.0,
       30.0
     ],
     "z_mm": [
       -20.0,
-      6.21
+      6.31
     ]
   },
   "source": "released v90 handed base STEP files",
