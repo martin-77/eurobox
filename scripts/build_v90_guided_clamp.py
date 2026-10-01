@@ -249,7 +249,11 @@ base_right_v90, guide_span = add_guides_to_base(base_right_v80)
 # rack rail.  The combination preserves the rear stop in the same world-side
 # fore/aft position while making the printed parts true handed mates.
 base_left_v90 = base_right_v90.copy()
-base_left_v90.mirror(App.Vector(0, 0, 0), App.Vector(1, 0, 0))
+_mirror_result = base_left_v90.mirror(
+    App.Vector(0, 0, 0), App.Vector(1, 0, 0)
+)
+if _mirror_result is not None:
+    base_left_v90 = _mirror_result
 base_left_v90 = require_single(base_left_v90, 'v90 guided base left')
 
 # Local handedness: LEFT must be the X mirror of RIGHT, not an identical copy.
@@ -261,7 +265,11 @@ if abs(base_left_v90.BoundBox.XMax + base_right_v90.BoundBox.XMin) > 1e-6:
 # Installation proof: the existing left-side 180° Z turnaround restores the
 # same fore/aft X envelope, so both physical rear stops point rearward.
 _left_installed = base_left_v90.copy()
-_left_installed.rotate(App.Vector(0, 0, 0), App.Vector(0, 0, 1), 180.0)
+_rotate_result = _left_installed.rotate(
+    App.Vector(0, 0, 0), App.Vector(0, 0, 1), 180.0
+)
+if _rotate_result is not None:
+    _left_installed = _rotate_result
 _left_installed = require_single(_left_installed, 'v90 installed left base')
 for axis_name, a, b in (
     ('XMin', base_right_v90.BoundBox.XMin, _left_installed.BoundBox.XMin),
