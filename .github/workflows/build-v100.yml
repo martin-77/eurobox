@@ -70,6 +70,9 @@ jobs:
           test -s build_v100/eurobox_v100_base_left.FCStd
           test -s build_v100/eurobox_v100_base_right.stl
           test -s build_v100/eurobox_v100_base_left.stl
+          test -s build_v100/eurobox_v100_rack_lower.step
+          test -s build_v100/eurobox_v100_rack_lower.FCStd
+          test -s build_v100/eurobox_v100_rack_lower.stl
           test -s build_v100/VALIDATION_v100.json
 
           python3 - <<'PY'
@@ -89,6 +92,15 @@ jobs:
           assert r['front_wrap_removed_in_relief_window'] is True
           assert r['saddle_contact_surface_changed'] is False
           assert r['clearance_from_each_clamp_centre_in_clamp_widths'] > 1.85
+
+          s = v['rack_lower_slot']
+          assert abs(s['existing_bore_d_mm'] - 5.0) < 1e-9
+          assert abs(s['slot_width_mm'] - 5.0) < 1e-9
+          assert s['slot_x_mm'] == [-2.5, 2.5]
+          assert s['slot_y_mm'] == [11.0, 19.0]
+          assert s['opens_toward'] == '+Y/front'
+          assert s['screw_can_remain_in_upper_while_swinging'] is True
+          assert s['retention_by_hand_knob'] is True
 
           left = Path('build_v100/eurobox_v100_base_left.stl').read_bytes()
           right = Path('build_v100/eurobox_v100_base_right.stl').read_bytes()
@@ -116,11 +128,14 @@ jobs:
           cp build_v100/eurobox_v100_base_*.FCStd cad/v100/FCStd/
           cp build_v100/eurobox_v100_base_*.step cad/v100/STEP/
           cp build_v100/eurobox_v100_base_*.stl cad/v100/STL/
+          cp build_v100/eurobox_v100_rack_lower.FCStd cad/v100/FCStd/
+          cp build_v100/eurobox_v100_rack_lower.step cad/v100/STEP/
+          cp build_v100/eurobox_v100_rack_lower.stl cad/v100/STL/
 
           for src in cad/v90/FCStd/eurobox_v90_*.FCStd; do
             base=$(basename "$src")
             case "$base" in
-              eurobox_v90_base_left.FCStd|eurobox_v90_base_right.FCStd) continue ;;
+              eurobox_v90_base_left.FCStd|eurobox_v90_base_right.FCStd|eurobox_v90_rack_lower.FCStd) continue ;;
             esac
             dst=$(printf '%s\n' "$base" | sed 's/eurobox_v90_/eurobox_v100_/')
             cp "$src" "cad/v100/FCStd/$dst"
@@ -129,7 +144,7 @@ jobs:
           for src in cad/v90/STEP/eurobox_v90_*.step; do
             base=$(basename "$src")
             case "$base" in
-              eurobox_v90_base_left.step|eurobox_v90_base_right.step) continue ;;
+              eurobox_v90_base_left.step|eurobox_v90_base_right.step|eurobox_v90_rack_lower.step) continue ;;
             esac
             dst=$(printf '%s\n' "$base" | sed 's/eurobox_v90_/eurobox_v100_/')
             cp "$src" "cad/v100/STEP/$dst"
@@ -138,7 +153,7 @@ jobs:
           for src in cad/v90/STL/eurobox_v90_*.stl; do
             base=$(basename "$src")
             case "$base" in
-              eurobox_v90_base_left.stl|eurobox_v90_base_right.stl) continue ;;
+              eurobox_v90_base_left.stl|eurobox_v90_base_right.stl|eurobox_v90_rack_lower.stl) continue ;;
             esac
             dst=$(printf '%s\n' "$base" | sed 's/eurobox_v90_/eurobox_v100_/')
             cp "$src" "cad/v100/STL/$dst"
@@ -175,22 +190,27 @@ jobs:
           cat > cad/v100/README.md <<'EOF'
           # Eurobox carrier v100
 
-          V100 keeps the complete released V90 design and changes only the two handed bases.
+          V100 keeps the released V90 design and adds two local service changes.
 
-          A local relief is added between the two rack clamps where the bicycle-rack/frame pin crosses the rack tube.
-
-          Geometry:
+          Base/frame relief:
           - rack tube: Ø12.42 mm
           - reference rack-clamp width: 28 mm
           - relief width: 56 mm = 2 × clamp width
           - relief X: -28 .. +28 mm
           - nearest relief edge is 52 mm from either ±80 mm rack-clamp centre (~1.86 clamp widths)
           - relief is only on the +Y/front side
-          - the cut starts exactly at the tube tangent Y=+6.21 mm
-          - the complete cylindrical upper saddle/contact surface remains unchanged
-          - height, tube support and all V90 clamp/guide geometry are unchanged
+          - the cut starts at the rack-tube centre plane Y=0
+          - the relief rises to the actual upper saddle/contact level Z=+6.31 mm
+          - the upper tube-support/contact surface itself remains unchanged
 
-          Only base_left and base_right are regenerated. Every other component is promoted byte-for-byte from V90.
+          Rack Lower:
+          - the existing Ø5.0 mm M4 clearance bore at Y=+11 mm is opened toward +Y/front
+          - open slot width: 5.0 mm
+          - slot runs from Y=+11 to +19 mm, through the complete closure tongue
+          - the Lower can therefore swing up around a screw that remains threaded in the Upper
+          - final clamping/retention is provided by the hand knob
+
+          V100-native regenerated parts are base_left, base_right and rack_lower. Every other component is promoted byte-for-byte from V90.
 
           All STL files are canonical binary STL. ASCII STL is rejected by the build/publish gate.
           EOF
@@ -200,7 +220,7 @@ jobs:
 
           Complete binary STL mirror of cad/v100/STL/.
 
-          V100 changes only the two handed bases by adding the local front-side rack-frame/pin relief. All other parts are byte-for-byte V90 geometry under V100 filenames.
+          V100 changes the two handed bases by adding the local front-side rack-frame/pin relief and changes rack_lower by opening the M4 closure bore into a front-facing slot. All other parts are byte-for-byte V90 geometry under V100 filenames.
           EOF
 
           git config user.name "github-actions[bot]"
@@ -224,4 +244,7 @@ jobs:
             build_v100/eurobox_v100_base_*.step
             build_v100/eurobox_v100_base_*.FCStd
             build_v100/eurobox_v100_base_*.stl
+            build_v100/eurobox_v100_rack_lower.step
+            build_v100/eurobox_v100_rack_lower.FCStd
+            build_v100/eurobox_v100_rack_lower.stl
             build_v100.log
