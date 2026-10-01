@@ -1,0 +1,224 @@
+name: Build Eurobox v100 local rack relief
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build_v100_frame_relief.py"
+      - ".github/workflows/build-v100.yml"
+
+concurrency:
+  group: eurobox-v100-rack-relief
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      - name: Cache FreeCAD AppImage
+        id: freecad-cache
+        uses: actions/cache@v5
+        with:
+          path: FreeCAD.AppImage
+          key: freecad-1.1.3-linux-x86_64-py311
+
+      - name: Download verified FreeCAD 1.1.3
+        if: steps.freecad-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o FreeCAD.AppImage \
+            https://github.com/FreeCAD/FreeCAD/releases/download/1.1.3/FreeCAD_1.1.3-Linux-x86_64-py311.AppImage
+
+      - name: Verify and extract FreeCAD
+        run: |
+          set -euo pipefail
+          echo "3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb03a8f5ef  FreeCAD.AppImage" | sha256sum -c -
+          chmod +x FreeCAD.AppImage
+          rm -rf squashfs-root
+          ./FreeCAD.AppImage --appimage-extract >/dev/null
+          FREECADCMD=$(find squashfs-root -type f \( -name FreeCADCmd -o -name freecadcmd \) | head -n1)
+          test -n "$FREECADCMD"
+          echo "FREECADCMD=$FREECADCMD" >> "$GITHUB_ENV"
+          "$FREECADCMD" -c 'import FreeCAD,Part,Mesh,Import; print(FreeCAD.Version()); assert Part.makeBox(1,1,1).isValid()'
+
+      - name: Compile v100 builder
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/build_v100_frame_relief.py
+
+      - name: Build and hard-check v100
+        run: |
+          set -euo pipefail
+          rm -rf build_v100
+          "$FREECADCMD" -c "import sys; sys.path.insert(0, 'scripts'); import build_v100_frame_relief" 2>&1 | tee build_v100.log
+
+          test -s build_v100/eurobox_v100_base_right.step
+          test -s build_v100/eurobox_v100_base_left.step
+          test -s build_v100/eurobox_v100_base_right.FCStd
+          test -s build_v100/eurobox_v100_base_left.FCStd
+          test -s build_v100/eurobox_v100_base_right.stl
+          test -s build_v100/eurobox_v100_base_left.stl
+          test -s build_v100/VALIDATION_v100.json
+
+          python3 - <<'PY'
+          import json, struct
+          from pathlib import Path
+
+          v = json.loads(Path('build_v100/VALIDATION_v100.json').read_text())
+          assert v['failures'] == []
+          r = v['relief']
+          assert abs(r['reference_clamp_width_mm'] - 28.0) < 1e-9
+          assert abs(r['width_mm'] - 56.0) < 1e-9
+          assert r['x_mm'] == [-28.0, 28.0]
+          assert abs(r['y_mm'][0] - 6.21) < 1e-9
+          assert r['starts_at_tube_tangent'] is True
+          assert r['saddle_contact_surface_changed'] is False
+          assert r['clearance_from_each_clamp_centre_in_clamp_widths'] > 1.85
+
+          left = Path('build_v100/eurobox_v100_base_left.stl').read_bytes()
+          right = Path('build_v100/eurobox_v100_base_right.stl').read_bytes()
+          assert left != right, 'v100 handed bases must not be byte-identical'
+
+          for p in Path('build_v100').glob('*.stl'):
+              data = p.read_bytes()
+              assert len(data) >= 84, p
+              n = struct.unpack('<I', data[80:84])[0]
+              assert len(data) == 84 + 50*n, f'{p} is not canonical binary STL'
+          PY
+
+      - name: Publish complete validated v100 CAD set
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          mkdir -p cad/v100/FCStd cad/v100/STEP cad/v100/STL cad/v100/SCAD cad/v100/validation preview-stl/v100
+
+          rm -f cad/v100/FCStd/eurobox_v100_*.FCStd
+          rm -f cad/v100/STEP/eurobox_v100_*.step
+          rm -f cad/v100/STL/eurobox_v100_*.stl
+          rm -f cad/v100/SCAD/eurobox_v100_*.scad
+          rm -f preview-stl/v100/eurobox_v100_*.stl
+
+          cp build_v100/eurobox_v100_base_*.FCStd cad/v100/FCStd/
+          cp build_v100/eurobox_v100_base_*.step cad/v100/STEP/
+          cp build_v100/eurobox_v100_base_*.stl cad/v100/STL/
+
+          for src in cad/v90/FCStd/eurobox_v90_*.FCStd; do
+            base=$(basename "$src")
+            case "$base" in
+              eurobox_v90_base_left.FCStd|eurobox_v90_base_right.FCStd) continue ;;
+            esac
+            dst=$(printf '%s\n' "$base" | sed 's/eurobox_v90_/eurobox_v100_/')
+            cp "$src" "cad/v100/FCStd/$dst"
+          done
+
+          for src in cad/v90/STEP/eurobox_v90_*.step; do
+            base=$(basename "$src")
+            case "$base" in
+              eurobox_v90_base_left.step|eurobox_v90_base_right.step) continue ;;
+            esac
+            dst=$(printf '%s\n' "$base" | sed 's/eurobox_v90_/eurobox_v100_/')
+            cp "$src" "cad/v100/STEP/$dst"
+          done
+
+          for src in cad/v90/STL/eurobox_v90_*.stl; do
+            base=$(basename "$src")
+            case "$base" in
+              eurobox_v90_base_left.stl|eurobox_v90_base_right.stl) continue ;;
+            esac
+            dst=$(printf '%s\n' "$base" | sed 's/eurobox_v90_/eurobox_v100_/')
+            cp "$src" "cad/v100/STL/$dst"
+          done
+
+          for src in cad/v90/SCAD/eurobox_v90_*.scad; do
+            base=$(basename "$src")
+            dst=$(printf '%s\n' "$base" | sed 's/eurobox_v90_/eurobox_v100_/')
+            cp "$src" "cad/v100/SCAD/$dst"
+          done
+
+          cp cad/v100/STL/eurobox_v100_*.stl preview-stl/v100/
+          cp build_v100/VALIDATION_v100.json cad/v100/validation/
+
+          python3 - <<'PY'
+          import struct
+          from pathlib import Path
+
+          v90 = {p.name.replace('eurobox_v90_', '') for p in Path('cad/v90/STL').glob('eurobox_v90_*.stl')}
+          v100 = {p.name.replace('eurobox_v100_', '') for p in Path('cad/v100/STL').glob('eurobox_v100_*.stl')}
+          assert v100 == v90, f'V100/V90 component manifest mismatch: {sorted(v100 ^ v90)}'
+
+          left = Path('cad/v100/STL/eurobox_v100_base_left.stl').read_bytes()
+          right = Path('cad/v100/STL/eurobox_v100_base_right.stl').read_bytes()
+          assert left != right, 'published v100 handed bases are byte-identical'
+
+          for p in sorted(Path('cad/v100/STL').glob('eurobox_v100_*.stl')):
+              data = p.read_bytes()
+              assert len(data) >= 84, p
+              n = struct.unpack('<I', data[80:84])[0]
+              assert len(data) == 84 + 50*n, f'{p} is not canonical binary STL'
+          PY
+
+          cat > cad/v100/README.md <<'EOF'
+          # Eurobox carrier v100
+
+          V100 keeps the complete released V90 design and changes only the two handed bases.
+
+          A local relief is added between the two rack clamps where the bicycle-rack/frame pin crosses the rack tube.
+
+          Geometry:
+          - rack tube: Ø12.42 mm
+          - reference rack-clamp width: 28 mm
+          - relief width: 56 mm = 2 × clamp width
+          - relief X: -28 .. +28 mm
+          - nearest relief edge is 52 mm from either ±80 mm rack-clamp centre (~1.86 clamp widths)
+          - relief is only on the +Y/front side
+          - the cut starts exactly at the tube tangent Y=+6.21 mm
+          - the complete cylindrical upper saddle/contact surface remains unchanged
+          - height, tube support and all V90 clamp/guide geometry are unchanged
+
+          Only base_left and base_right are regenerated. Every other component is promoted byte-for-byte from V90.
+
+          All STL files are canonical binary STL. ASCII STL is rejected by the build/publish gate.
+          EOF
+
+          cat > preview-stl/v100/README.md <<'EOF'
+          # v100 preview/print meshes
+
+          Complete binary STL mirror of cad/v100/STL/.
+
+          V100 changes only the two handed bases by adding the local front-side rack-frame/pin relief. All other parts are byte-for-byte V90 geometry under V100 filenames.
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cad/v100 preview-stl/v100
+          if git diff --cached --quiet; then
+            echo "Validated complete v100 repository outputs already current"
+          else
+            git commit -m "Publish local rack-relief v100 CAD set"
+            git pull --rebase origin main
+            git push
+          fi
+
+      - name: Upload complete v100 proof
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: eurobox-v100-rack-relief
+          path: |
+            build_v100/VALIDATION_v100.json
+            build_v100/eurobox_v100_base_*.step
+            build_v100/eurobox_v100_base_*.FCStd
+            build_v100/eurobox_v100_base_*.stl
+            build_v100.log
