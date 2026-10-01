@@ -30,6 +30,22 @@ RELIEF_Y1 = 30.0
 RELIEF_Z0 = -20.0
 RELIEF_Z1 = UPPER_SADDLE_R
 
+# V100 rack-Lower screw slot.
+# The existing closure bore is Ø5.0 at Y=+11 mm. Open that bore toward the
+# front edge (+Y) so the Lower can swing up around an M4 screw that remains
+# threaded in the fixed Upper. The hand knob supplies the clamping/retention,
+# so the Lower itself does not need a closed screw eye.
+RACK_LOWER_CLEAR_D = 5.0
+RACK_LOWER_SLOT_HALF_W = RACK_LOWER_CLEAR_D / 2.0
+RACK_LOWER_CLOSURE_Y = 11.0
+RACK_LOWER_PAD_FRONT_Y = 18.0
+RACK_LOWER_SLOT_Y0 = RACK_LOWER_CLOSURE_Y
+RACK_LOWER_SLOT_Y1 = RACK_LOWER_PAD_FRONT_Y + 1.0
+# The v90 STEP is the natural print-oriented Lower (installed Z shifted +14.5).
+# Cut through the complete tongue thickness with generous Z overrun only.
+RACK_LOWER_SLOT_Z0 = -1.0
+RACK_LOWER_SLOT_Z1 = 20.0
+
 
 def fail(msg):
     raise RuntimeError(msg)
@@ -83,6 +99,53 @@ def apply_relief(base, label):
     return result, removed
 
 
+def make_rack_lower_slot():
+    return Part.makeBox(
+        2.0 * RACK_LOWER_SLOT_HALF_W,
+        RACK_LOWER_SLOT_Y1 - RACK_LOWER_SLOT_Y0,
+        RACK_LOWER_SLOT_Z1 - RACK_LOWER_SLOT_Z0,
+        App.Vector(
+            -RACK_LOWER_SLOT_HALF_W,
+            RACK_LOWER_SLOT_Y0,
+            RACK_LOWER_SLOT_Z0,
+        ),
+    )
+
+
+def apply_rack_lower_slot(lower):
+    before_volume = lower.Volume
+    cutter = make_rack_lower_slot()
+    result = lower.cut(cutter).removeSplitter()
+    result = require_single(result, 'v100 rack lower with open screw slot')
+    removed = before_volume - result.Volume
+    if removed <= 20.0:
+        fail(
+            'rack-lower slot removed too little material: '
+            f'{removed:.6f} mm3'
+        )
+
+    # Hard proof that the former closed Ø5 screw bore is now open to +Y/front.
+    # This probe runs down the slot centre from the old bore centre to beyond
+    # the front edge and must have no remaining solid intersection.
+    probe = Part.makeBox(
+        1.0,
+        RACK_LOWER_SLOT_Y1 - RACK_LOWER_SLOT_Y0,
+        RACK_LOWER_SLOT_Z1 - RACK_LOWER_SLOT_Z0,
+        App.Vector(
+            -0.5,
+            RACK_LOWER_SLOT_Y0,
+            RACK_LOWER_SLOT_Z0,
+        ),
+    )
+    common = result.common(probe)
+    if not common.isNull() and common.Volume > 1e-6:
+        fail(
+            'rack-lower screw slot is not continuously open to the front: '
+            f'{common.Volume:.6f} mm3 remains'
+        )
+    return result, removed
+
+
 def export_shape(name, shape):
     step_path = os.path.join(OUT, name + '.step')
     fcstd_path = os.path.join(OUT, name + '.FCStd')
@@ -120,9 +183,14 @@ left_v90 = load_step_single(
     os.path.join(src_dir, 'eurobox_v90_base_left.step'),
     'v90_base_left',
 )
+rack_lower_v90 = load_step_single(
+    os.path.join(src_dir, 'eurobox_v90_rack_lower.step'),
+    'v90_rack_lower',
+)
 
 right_v100, right_removed = apply_relief(right_v90, 'v100 base right')
 left_v100, left_removed = apply_relief(left_v90, 'v100 base left')
+rack_lower_v100, rack_lower_slot_removed = apply_rack_lower_slot(rack_lower_v90)
 
 for label, before, after in (
     ('right', right_v90, right_v100),
@@ -164,6 +232,7 @@ exports = {}
 for name, shape in (
     ('eurobox_v100_base_right', right_v100),
     ('eurobox_v100_base_left', left_v100),
+    ('eurobox_v100_rack_lower', rack_lower_v100),
 ):
     paths = export_shape(name, shape)
     exports[name] = {
@@ -197,6 +266,18 @@ validation = {
         'clearance_from_each_clamp_centre_in_clamp_widths': round(clear_in_clamp_widths, 6),
         'right_removed_volume_mm3': round(right_removed, 6),
         'left_removed_volume_mm3': round(left_removed, 6),
+    },
+    'rack_lower_slot': {
+        'existing_bore_d_mm': RACK_LOWER_CLEAR_D,
+        'slot_width_mm': 2.0 * RACK_LOWER_SLOT_HALF_W,
+        'slot_x_mm': [-RACK_LOWER_SLOT_HALF_W, RACK_LOWER_SLOT_HALF_W],
+        'slot_y_mm': [RACK_LOWER_SLOT_Y0, RACK_LOWER_SLOT_Y1],
+        'opens_toward': '+Y/front',
+        'old_bore_centre_y_mm': RACK_LOWER_CLOSURE_Y,
+        'pad_front_y_mm': RACK_LOWER_PAD_FRONT_Y,
+        'screw_can_remain_in_upper_while_swinging': True,
+        'retention_by_hand_knob': True,
+        'removed_volume_mm3': round(rack_lower_slot_removed, 6),
     },
     'exports': exports,
     'failures': [],
