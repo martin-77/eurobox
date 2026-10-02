@@ -1,0 +1,21 @@
+{
+  "axial_insertion_direction_changed": false,
+  "change": "exact X reflection of the standard retainer to reverse thread chirality",
+  "export": {
+    "fcstd_bytes": 2371158,
+    "step_bytes": 3362826,
+    "stl_bytes": 869284,
+    "stl_triangles": 17384
+  },
+  "failures": [],
+  "intended_base": "current v100 LEFT base only",
+  "mirror_back_signature_equal": true,
+  "mirror_plane": "X=0",
+  "operation_note": "tightening direction is opposite to the standard retainer",
+  "purpose": "service workaround for the currently mirrored LEFT base female thread",
+  "source": "cad/v100/STEP/eurobox_v100_rack_nut_retainer.step",
+  "standard_retainer_still_required_for": "current v100 RIGHT base",
+  "thread_axis": "Z",
+  "thread_handedness_reversed": true,
+  "version": "v110"
+}
