@@ -46,6 +46,16 @@ RACK_LOWER_SLOT_Y1 = RACK_LOWER_PAD_FRONT_Y + 1.0
 RACK_LOWER_SLOT_Z0 = -1.0
 RACK_LOWER_SLOT_Z1 = 20.0
 
+# Normalize the mirrored LEFT base back to the standard/default rack-retainer
+# thread handedness by transplanting the exact RIGHT-base service cavity.
+# Only the threaded service zone is replaced; the rest of each handed base
+# remains untouched.
+RETAINER_STATIONS_X = (-80.0, 80.0)
+RETAINER_AXIS_Y = 11.0
+RETAINER_THREAD_Z0 = 11.0
+RETAINER_TOP_Z = 39.54
+RETAINER_SERVICE_R = 6.50
+
 
 def fail(msg):
     raise RuntimeError(msg)
@@ -97,6 +107,68 @@ def apply_relief(base, label):
     if removed <= 1.0:
         fail(f'{label}: relief removed too little material: {removed:.6f} mm3')
     return result, removed
+
+
+def service_cylinder(xc):
+    return Part.makeCylinder(
+        RETAINER_SERVICE_R,
+        RETAINER_TOP_Z - RETAINER_THREAD_Z0,
+        App.Vector(xc, RETAINER_AXIS_Y, RETAINER_THREAD_Z0),
+        App.Vector(0, 0, 1),
+    )
+
+
+def cavity_signature(shape):
+    return {
+        'volume_mm3': round(shape.Volume, 6),
+        'area_mm2': round(shape.Area, 6),
+        'solids': len(shape.Solids),
+        'faces': len(shape.Faces),
+        'edges': len(shape.Edges),
+        'bounds_mm': [
+            round(shape.BoundBox.XMin, 6),
+            round(shape.BoundBox.XMax, 6),
+            round(shape.BoundBox.YMin, 6),
+            round(shape.BoundBox.YMax, 6),
+            round(shape.BoundBox.ZMin, 6),
+            round(shape.BoundBox.ZMax, 6),
+        ],
+    }
+
+
+def normalize_left_retainer_threads(left, right):
+    out = left
+    witnesses = []
+    for xc in RETAINER_STATIONS_X:
+        service = service_cylinder(xc)
+
+        # Exact female-thread/service-mouth void from the already correct RIGHT
+        # base.  This includes the default retainer's thread chirality and phase.
+        donor_void = service.cut(right).removeSplitter()
+        if donor_void.isNull() or donor_void.Volume <= 1.0:
+            fail(f'RIGHT donor retainer cavity missing at X={xc}')
+
+        # First restore solid material in the complete threaded service zone,
+        # thereby erasing the mirrored/opposite-handed helix. Then subtract the
+        # RIGHT donor void byte-for-geometry.
+        out = out.fuse(service).removeSplitter()
+        out = require_single(out, f'LEFT after retainer service refill X={xc}')
+        out = out.cut(donor_void).removeSplitter()
+        out = require_single(out, f'LEFT after default retainer cavity transplant X={xc}')
+
+        resulting_void = service.cut(out).removeSplitter()
+        donor_sig = cavity_signature(donor_void)
+        result_sig = cavity_signature(resulting_void)
+        if donor_sig != result_sig:
+            fail(f'LEFT retainer cavity does not match RIGHT/default thread at X={xc}')
+
+        witnesses.append({
+            'x_mm': xc,
+            'donor_void_volume_mm3': round(donor_void.Volume, 6),
+            'result_void_volume_mm3': round(resulting_void.Volume, 6),
+            'signature_equal': True,
+        })
+    return out, witnesses
 
 
 def make_rack_lower_slot():
@@ -190,6 +262,9 @@ rack_lower_v90 = load_step_single(
 
 right_v100, right_removed = apply_relief(right_v90, 'v100 base right')
 left_v100, left_removed = apply_relief(left_v90, 'v100 base left')
+left_v100, retainer_thread_witness = normalize_left_retainer_threads(
+    left_v100, right_v100
+)
 rack_lower_v100, rack_lower_slot_removed = apply_rack_lower_slot(rack_lower_v90)
 
 for label, before, after in (
@@ -266,6 +341,14 @@ validation = {
         'clearance_from_each_clamp_centre_in_clamp_widths': round(clear_in_clamp_widths, 6),
         'right_removed_volume_mm3': round(right_removed, 6),
         'left_removed_volume_mm3': round(left_removed, 6),
+    },
+    'retainer_thread_normalization': {
+        'default_retainer_for_both_bases': True,
+        'right_base_changed': False,
+        'left_base_thread_service_zone_rebuilt_from_right_cavity': True,
+        'service_radius_mm': RETAINER_SERVICE_R,
+        'z_mm': [RETAINER_THREAD_Z0, RETAINER_TOP_Z],
+        'stations': retainer_thread_witness,
     },
     'rack_lower_slot': {
         'existing_bore_d_mm': RACK_LOWER_CLEAR_D,
