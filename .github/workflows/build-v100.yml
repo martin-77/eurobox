@@ -93,6 +93,13 @@ jobs:
           assert r['saddle_contact_surface_changed'] is False
           assert r['clearance_from_each_clamp_centre_in_clamp_widths'] > 1.85
 
+          t = v['retainer_thread_normalization']
+          assert t['default_retainer_for_both_bases'] is True
+          assert t['right_base_changed'] is False
+          assert t['left_base_thread_service_zone_rebuilt_from_right_cavity'] is True
+          assert len(t['stations']) == 2
+          assert all(x['signature_equal'] is True for x in t['stations'])
+
           s = v['rack_lower_slot']
           assert abs(s['existing_bore_d_mm'] - 5.0) < 1e-9
           assert abs(s['slot_width_mm'] - 5.0) < 1e-9
@@ -190,7 +197,7 @@ jobs:
           cat > cad/v100/README.md <<'EOF'
           # Eurobox carrier v100
 
-          V100 keeps the released V90 design and adds two local service changes.
+          V100 keeps the released V90 design and adds local service corrections.
 
           Base/frame relief:
           - rack tube: Ø12.42 mm
@@ -202,6 +209,12 @@ jobs:
           - the cut starts at the rack-tube centre plane Y=0
           - the relief rises to the actual upper saddle/contact level Z=+6.31 mm
           - the upper tube-support/contact surface itself remains unchanged
+
+          Retainer thread:
+          - the RIGHT base keeps the released default retainer thread unchanged
+          - the LEFT base service-thread zone is rebuilt from the RIGHT-base cavity after handing
+          - both bases therefore accept the same standard/default rack-nut retainer
+          - the temporary opposite-hand service retainer remains only a compatibility part in V110 for already-printed older LEFT bases
 
           Rack Lower:
           - the existing Ø5.0 mm M4 clearance bore at Y=+11 mm is opened toward +Y/front
