@@ -20,5 +20,6 @@
     "base_corridor_d_mm": 11.80
   },
   "ci": "binary STL generation + watertight checks + generated-part single-component checks + critical extents + canonical-set completeness",
-  "status": "pending V120 workflow run"
+  "workflow_run": 39043639969,
+  "status": "passed"
 }
