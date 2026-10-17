@@ -50,6 +50,15 @@ The 27.70 mm support keeps the proven 30 x 30 mm end pads and Ø20 mm body. Its 
 - Ø15.40 out to 7.55 mm from the clamp face to clear the 12.79-AF x 6.20 mm stop nut
 - Ø8.90 running bore through the remaining support
 
+Fit check for the measured stop nut:
+
+- a regular 12.79 mm-AF hex has about 14.77 mm across corners
+- Ø15.40 relief leaves about 0.63 mm diametral / 0.315 mm radial clearance
+- bushing-collar projection 0.85 mm + nut height 6.20 mm = 7.05 mm
+- 7.55 mm cavity depth therefore leaves 0.50 mm axial freedom
+- the nut ends about 20.65 mm before the base end of the 27.70 mm support, so it cannot reach the frozen Ø11.8 base spindle corridor
+- the Ø20 support body retains about 2.30 mm radial wall around the Ø15.40 nut cavity, in addition to the 30 x 30 clamp-side pad
+
 This lets the stop nut sit inside the existing 27.7 mm clamp-to-base distance rather than adding 6.2 mm to the assembly length.
 
 ## Knob
