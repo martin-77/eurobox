@@ -1,0 +1,110 @@
+name: Build V110 M8 steel spindle
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [v110-m8-steel-spindle]
+    paths:
+      - 'cad/v110/SCAD/**'
+      - 'cad/v110/README.md'
+      - '.github/workflows/build-v110-m8.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip v110-m8-ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v110-m8-steel-spindle
+          fetch-depth: 0
+
+      - name: Install OpenSCAD and mesh validator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad
+          python -m pip install --disable-pip-version-check trimesh
+
+      - name: Build canonical binary STLs
+        run: |
+          set -euo pipefail
+          mkdir -p cad/v110/STL
+
+          for part in \
+            eurobox_v110_clamp \
+            eurobox_v110_bushing_half \
+            eurobox_v110_knob \
+            eurobox_v110_knob_cap \
+            eurobox_v110_lead_nut \
+            eurobox_v110_spindle_support_sleeve_27_7 \
+            eurobox_v110_lead_nut_pin_clip \
+            eurobox_v110_lead_nut_retaining_pin \
+            eurobox_v110_rack_pin_clip
+          do
+            openscad --export-format binstl \
+              -o "cad/v110/STL/${part}.stl" \
+              "cad/v110/SCAD/${part}.scad"
+          done
+
+          # The load-bearing base/rack geometry stays on the proven frozen V60
+          # geometry; V110 changes only the box-clamp spindle system.
+          cp cad/v60/STL/eurobox_v60_base_left.stl cad/v110/STL/eurobox_v110_base_left.stl
+          cp cad/v60/STL/eurobox_v60_base_right.stl cad/v110/STL/eurobox_v110_base_right.stl
+          cp cad/v60/STL/eurobox_v60_rack_lower.stl cad/v110/STL/eurobox_v110_rack_lower.stl
+          cp cad/v60/STL/eurobox_v60_rack_hand_knob.stl cad/v110/STL/eurobox_v110_rack_hand_knob.stl
+          cp cad/v60/STL/eurobox_v60_rack_nut_retainer.stl cad/v110/STL/eurobox_v110_rack_nut_retainer.stl
+          cp cad/v60/STL/eurobox_v60_rack_pin.stl cad/v110/STL/eurobox_v110_rack_pin.stl
+
+          # V110 uses a real steel M8x120 screw. Never publish the obsolete
+          # printed lead screw under the V110 canonical STL set.
+          rm -f cad/v110/STL/eurobox_v110_lead_screw.stl
+
+      - name: Validate meshes and critical dimensions
+        run: |
+          python - <<'PY'
+          import glob, os, trimesh
+
+          required = {
+              'eurobox_v110_bushing_half.stl': ([17.9,17.9,6.9],[18.1,18.1,7.1]),
+              'eurobox_v110_knob.stl': ([29.0,29.0,10.2],[30.1,30.1,10.4]),
+              'eurobox_v110_knob_cap.stl': ([16.0,16.0,1.2],[16.2,16.2,1.4]),
+              'eurobox_v110_lead_nut.stl': ([15.9,13.9,22.9],[16.1,14.1,23.1]),
+              'eurobox_v110_spindle_support_sleeve_27_7.stl': ([27.6,29.9,29.9],[27.8,30.1,30.1]),
+          }
+
+          for path in sorted(glob.glob('cad/v110/STL/*.stl')):
+              m = trimesh.load_mesh(path, process=True)
+              if not m.is_watertight:
+                  raise SystemExit(f'not watertight: {path}')
+              if len(m.split(only_watertight=False)) != 1:
+                  raise SystemExit(f'not single-component: {path}')
+
+          for name,(lo,hi) in required.items():
+              p='cad/v110/STL/'+name
+              if not os.path.exists(p):
+                  raise SystemExit(f'missing: {p}')
+              m=trimesh.load_mesh(p,process=True)
+              ext=m.extents
+              for i,(v,a,b) in enumerate(zip(ext,lo,hi)):
+                  if not (a <= v <= b):
+                      raise SystemExit(f'{name} extent[{i}]={v:.4f}, expected {a}..{b}')
+
+          obsolete='cad/v110/STL/eurobox_v110_lead_screw.stl'
+          if os.path.exists(obsolete):
+              raise SystemExit('obsolete printed V110 lead screw still present')
+          PY
+
+      - name: Commit binary STL output
+        run: |
+          if git diff --quiet -- cad/v110/STL; then
+            echo 'No STL changes.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add cad/v110/STL
+          git commit -m 'build(v110): publish M8 steel spindle binary STLs [skip v110-m8-ci]'
+          git push origin HEAD:v110-m8-steel-spindle
