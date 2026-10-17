@@ -1,0 +1,24 @@
+{
+  "version": "v120",
+  "source": "promoted from validated V110 M8 steel-spindle geometry",
+  "steel_spindle": "M8x120 full-thread, DIN 933 / ISO 4017, M8x1.25",
+  "printed_lead_screw": false,
+  "hardware": {
+    "nut_af_mm": 12.79,
+    "nut_h_mm": 6.20,
+    "head_af_mm": 12.90,
+    "head_h_mm": 5.50
+  },
+  "critical": {
+    "lead_nut_stack_mm": 12.40,
+    "lead_nut_pocket_len_mm": 12.75,
+    "phase_clearance_mm": 0.35,
+    "support_len_mm": 27.70,
+    "support_stop_nut_relief_d_mm": 15.40,
+    "support_stop_nut_relief_depth_mm": 7.55,
+    "support_bore_d_mm": 8.90,
+    "base_corridor_d_mm": 11.80
+  },
+  "ci": "binary STL generation + watertight checks + generated-part single-component checks + critical extents + canonical-set completeness",
+  "status": "pending V120 workflow run"
+}

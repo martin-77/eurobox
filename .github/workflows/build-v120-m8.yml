@@ -1,0 +1,135 @@
+name: Build V120 M8 steel spindle
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [v120-m8-steel-spindle]
+    paths:
+      - 'cad/v120/SCAD/**'
+      - 'cad/v120/README.md'
+      - '.github/workflows/build-v120-m8.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip v120-m8-ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v120-m8-steel-spindle
+          fetch-depth: 0
+
+      - name: Install OpenSCAD and mesh validator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad
+          python -m pip install --disable-pip-version-check trimesh networkx
+
+      - name: Build canonical binary STLs
+        run: |
+          set -euo pipefail
+          mkdir -p cad/v120/STL
+
+          for part in \
+            eurobox_v120_clamp \
+            eurobox_v120_bushing_half \
+            eurobox_v120_knob \
+            eurobox_v120_knob_cap \
+            eurobox_v120_lead_nut \
+            eurobox_v120_spindle_support_sleeve_27_7 \
+            eurobox_v120_lead_nut_pin_clip \
+            eurobox_v120_lead_nut_retaining_pin \
+            eurobox_v120_rack_pin_clip
+          do
+            openscad --export-format binstl \
+              -o "cad/v120/STL/${part}.stl" \
+              "cad/v120/SCAD/${part}.scad"
+          done
+
+          # Frozen, already-proven production geometry. V120 is a complete
+          # package, so all required print meshes live under cad/v120/STL.
+          cp cad/v110/STL/eurobox_v110_base_left.stl cad/v120/STL/eurobox_v120_base_left.stl
+          cp cad/v110/STL/eurobox_v110_base_right.stl cad/v120/STL/eurobox_v120_base_right.stl
+          cp cad/v110/STL/eurobox_v110_rack_lower.stl cad/v120/STL/eurobox_v120_rack_lower.stl
+          cp cad/v110/STL/eurobox_v110_rack_hand_knob.stl cad/v120/STL/eurobox_v120_rack_hand_knob.stl
+          cp cad/v110/STL/eurobox_v110_rack_nut_retainer.stl cad/v120/STL/eurobox_v120_rack_nut_retainer.stl
+          cp cad/v110/STL/eurobox_v110_rack_nut_retainer_left_hand.stl cad/v120/STL/eurobox_v120_rack_nut_retainer_left_hand.stl
+          cp cad/v110/STL/eurobox_v110_rack_pin.stl cad/v120/STL/eurobox_v120_rack_pin.stl
+
+          # Steel M8 spindle only; never publish a printed spindle in V120.
+          rm -f cad/v120/STL/eurobox_v120_lead_screw.stl
+
+      - name: Validate meshes and critical dimensions
+        run: |
+          python - <<'PY'
+          import glob, os, trimesh
+
+          generated = {
+              'eurobox_v120_clamp.stl',
+              'eurobox_v120_bushing_half.stl',
+              'eurobox_v120_knob.stl',
+              'eurobox_v120_knob_cap.stl',
+              'eurobox_v120_lead_nut.stl',
+              'eurobox_v120_spindle_support_sleeve_27_7.stl',
+              'eurobox_v120_lead_nut_pin_clip.stl',
+              'eurobox_v120_lead_nut_retaining_pin.stl',
+              'eurobox_v120_rack_pin_clip.stl',
+          }
+
+          canonical = generated | {
+              'eurobox_v120_base_left.stl',
+              'eurobox_v120_base_right.stl',
+              'eurobox_v120_rack_lower.stl',
+              'eurobox_v120_rack_hand_knob.stl',
+              'eurobox_v120_rack_nut_retainer.stl',
+              'eurobox_v120_rack_nut_retainer_left_hand.stl',
+              'eurobox_v120_rack_pin.stl',
+          }
+
+          actual = {os.path.basename(p) for p in glob.glob('cad/v120/STL/*.stl')}
+          missing = canonical - actual
+          if missing:
+              raise SystemExit(f'missing canonical V120 STL(s): {sorted(missing)}')
+
+          obsolete = 'eurobox_v120_lead_screw.stl'
+          if obsolete in actual:
+              raise SystemExit('obsolete printed V120 lead screw still present')
+
+          for path in sorted(glob.glob('cad/v120/STL/*.stl')):
+              m = trimesh.load_mesh(path, process=True)
+              if not m.is_watertight:
+                  raise SystemExit(f'not watertight: {path}')
+              if os.path.basename(path) in generated and len(m.split(only_watertight=False)) != 1:
+                  raise SystemExit(f'generated part not single-component: {path}')
+
+          required = {
+              'eurobox_v120_bushing_half.stl': ([17.9,17.9,6.9],[18.1,18.1,7.1]),
+              'eurobox_v120_knob.stl': ([29.0,29.0,10.2],[30.1,30.1,10.4]),
+              'eurobox_v120_knob_cap.stl': ([16.0,16.0,1.2],[16.2,16.2,1.4]),
+              'eurobox_v120_lead_nut.stl': ([15.9,13.9,22.9],[16.1,14.1,23.1]),
+              'eurobox_v120_spindle_support_sleeve_27_7.stl': ([27.6,29.9,29.9],[27.8,30.1,30.1]),
+          }
+
+          for name,(lo,hi) in required.items():
+              p='cad/v120/STL/'+name
+              m=trimesh.load_mesh(p,process=True)
+              ext=m.extents
+              for i,(v,a,b) in enumerate(zip(ext,lo,hi)):
+                  if not (a <= v <= b):
+                      raise SystemExit(f'{name} extent[{i}]={v:.4f}, expected {a}..{b}')
+          PY
+
+      - name: Commit binary STL output
+        run: |
+          if git diff --quiet -- cad/v120/STL; then
+            echo 'No STL changes.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add cad/v120/STL
+          git commit -m 'build(v120): publish complete M8 steel-spindle STL set [skip v120-m8-ci]'
+          git push origin HEAD:v120-m8-steel-spindle
