@@ -27,16 +27,27 @@ pin_z = 10.00;
 pin_hole_d = 3.40;
 pin_drop_w = 3.80;
 
-function semicircle_pts(n=48) = [
+function semicircle_right(n=48) = [
     for(i=[0:n])
         let(z=-profile_r + profile_r*i/n,
             x=sqrt(max(0,profile_r*profile_r-z*z)))
         [x,z]
 ];
+
+// OpenSCAD 2021.01 has no reverse() function. Generate the left side in
+// descending index order instead. Skip i=0 because polygon closure returns to
+// the one mathematical bottom point from semicircle_right().
+function semicircle_left(n=48) = [
+    for(i=[n:-1:1])
+        let(z=-profile_r + profile_r*i/n,
+            x=sqrt(max(0,profile_r*profile_r-z*z)))
+        [-x,z]
+];
+
 function carrier_profile() = concat(
-    semicircle_pts(),
+    semicircle_right(),
     [[profile_r,body_z1],[-profile_r,body_z1]],
-    [for(p=reverse(semicircle_pts())) [-p[0],p[1]]]
+    semicircle_left()
 );
 
 module prism_xz_neg_y(points,len,y_front=0) {
